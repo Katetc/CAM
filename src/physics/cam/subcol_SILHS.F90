@@ -947,8 +947,8 @@ contains
                                         Nc_in_cloud, rcm_in, cld_frac_in, &            ! In
                                         ice_supersat_frac_in, hydromet, wphydrometp, & ! In
                                         corr_array_n_cloud, corr_array_n_below, &      ! In
-                                        pdf_params_chnk(1:pverp-top_lev+1,i,lchnk), &  ! In
-                                        l_stats_samp, &    ! In
+                                        pdf_params_chnk(i,lchnk), &                    ! In
+                                        l_stats_samp, &                                ! In
                                         hydrometp2, &                                  ! Out
                                         mu_x_1, mu_x_2, &                              ! Out
                                         sigma_x_1, sigma_x_2, &                        ! Out
@@ -1004,7 +1004,7 @@ contains
          call generate_silhs_sample_api &
               ( iter, pdf_dim, num_subcols, sequence_length, pverp-top_lev+1, & ! In
                 l_calc_weights_all_levs_itime, &                   ! In 
-                pdf_params_chnk(1:pverp-top_lev+1,i,lchnk), delta_zm, rcm_in, Lscale, & ! In
+                pdf_params_chnk(i,lchnk), delta_zm, rcm_in, Lscale, & ! In
                 rho_ds_zt, mu_x_1, mu_x_2, sigma_x_1, sigma_x_2, & ! In 
                 corr_cholesky_mtx_1, corr_cholesky_mtx_2, &        ! In
                 hydromet_pdf_params, &                             ! In
@@ -1016,7 +1016,7 @@ contains
                                                pdf_dim, hydromet_dim, & ! In
                                                X_mixt_comp_all_levs, & ! In
                                                X_nl_all_levs_raw, &    ! In
-                                               pdf_params_chnk(1:pverp-top_lev+1,i,lchnk), & ! In
+                                               pdf_params_chnk(i,lchnk), & ! In
                                                l_use_Ncn_to_Nc, & ! In
                                                lh_clipped_vars, & ! Out
                                                X_nl_all_levs )    ! Out
@@ -1024,7 +1024,7 @@ contains
          ! Test subcolumns by comparing to an estimate of kessler autoconversion
          call est_kessler_microphys_api &
               ( pverp-top_lev+1, num_subcols, pdf_dim, X_nl_all_levs, &
-                pdf_params_chnk(1:pverp-top_lev+1,i,lchnk), &
+                pdf_params_chnk(i,lchnk), &
                 rcm_in, cld_frac_in, X_mixt_comp_all_levs, lh_sample_point_weights, &
                 lh_AKm, AKm, AKstd, AKstd_cld, AKm_rcm, AKm_rcc, lh_rcm_avg)
 
@@ -1554,7 +1554,7 @@ contains
        ! Make the call!!!!!
        call lh_microphys_var_covar_driver_api &
             ( pverp-top_lev+1, ns, ztodt, height_depndt_weights(igrdcol,1:pverp-top_lev+1,1:ns), &
-              pdf_params_chnk(1:pverp-top_lev+1,igrdcol,lchnk), &
+              pdf_params_chnk(igrdcol,lchnk), &
               rt_all_clubb(igrdcol,1:pverp-top_lev+1,1:ns), thl_all_clubb(igrdcol,1:pverp-top_lev+1,1:ns), &
               w_all_clubb(igrdcol,1:pverp-top_lev+1,1:ns), qctend_clubb(igrdcol,1:pverp-top_lev+1,1:ns), &
               qvtend_clubb(igrdcol,1:pverp-top_lev+1,1:ns), thltend_clubb(igrdcol,1:pverp-top_lev+1,1:ns), &
