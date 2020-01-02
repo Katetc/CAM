@@ -708,7 +708,7 @@ end subroutine clubb_init_cnst
                                 em_min, &
                                 iC1, iC1b, iC2rt, iC2thl, iC2rtthl, igamma_coef, igamma_coefb, &
                                 imult_coef, ic_K10, l_stability_correct_tau_zm, iskw_max_mag, &
-                                iC8, iC8b, iC11, iC11b, iC4, iC14, iup2_vp2_factor, &
+                                iC8, iC8b, iC11, iC11b, iC4, iC14, iup2_vp2_factor, params_list, &
                                 l_use_C7_Richardson, l_use_C11_Richardson, l_brunt_vaisala_freq_moist, &
                                 l_use_thvm_in_bv_freq, l_rcm_supersat_adj, l_damp_wp3_Skw_squared, &
                                 l_predict_upwp_vpwp, l_min_wp2_from_corr_wx, l_min_xp2_from_corr_wx, &
@@ -774,7 +774,7 @@ end subroutine clubb_init_cnst
     logical :: history_amwg, history_clubb
 
     integer :: err_code                   ! Code for when CLUBB fails
-    integer :: k, l                       ! Indices
+    integer :: j, k, l                    ! Indices
     integer :: ntop_eddy                        ! Top    interface level to which eddy vertical diffusion is applied ( = 1 )
     integer :: nbot_eddy                        ! Bottom interface level to which eddy vertical diffusion is applied ( = pver )
     integer :: nmodes, nspec, m
@@ -992,6 +992,13 @@ end subroutine clubb_init_cnst
        call endrun('clubb_ini_cam:  FATAL ERROR CALLING SETUP_CLUBB_CORE')
     end if
 !$OMP END PARALLEL
+
+    ! Print the list of CLUBB parameters
+    if ( masterproc ) then
+       do j = 1, nparams, 1
+          write(*,*) params_list(j), " = ", clubb_params(j)
+       enddo
+    endif
 
     ! ----------------------------------------------------------------- !
     ! Set-up HB diffusion.  Only initialized to diagnose PBL depth      !
