@@ -1594,8 +1594,8 @@ end subroutine clubb_init_cnst
    real(r8), pointer, dimension(:,:) :: cmeliq 
    real(r8), pointer, dimension(:,:) :: cmfmc_sh ! Shallow convective mass flux--m subc (pcols,pverp) [kg/m2/s/]
 
-   type(pdf_parameter), allocatable, pointer :: pdf_params    ! PDF parameters (thermo. levs.) [units vary]
-   type(pdf_parameter), allocatable, pointer :: pdf_params_zm ! PDF parameters on momentum levs. [units vary]
+   type(pdf_parameter), pointer :: pdf_params    ! PDF parameters (thermo. levs.) [units vary]
+   type(pdf_parameter), pointer :: pdf_params_zm ! PDF parameters on momentum levs. [units vary]
 
    real(r8), pointer, dimension(:,:) :: qsatfac
    real(r8), pointer, dimension(:,:) :: npccn
