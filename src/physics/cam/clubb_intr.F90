@@ -27,7 +27,7 @@ module clubb_intr
   use ref_pres,      only: top_lev => trop_cloud_top_lev  
   use zm_conv_intr,  only: zmconv_microp
 #ifdef CLUBB_SGS
-  use clubb_api_module, only: pdf_parameter
+  use clubb_api_module, only: pdf_parameter, implicit_coefs_terms
 #endif
 
   implicit none
@@ -252,6 +252,7 @@ module clubb_intr
   type(pdf_parameter), target, allocatable, public, protected :: &
                                               pdf_params_chnk(:,:)    ! PDF parameters (thermo. levs.) [units vary]
   type(pdf_parameter), target, allocatable :: pdf_params_zm_chnk(:,:) ! PDF parameters on momentum levs. [units vary]
+  type(implicit_coefs_terms), target, allocatable :: pdf_implicit_coefs_terms_chnk(:,:) ! PDF impl. coefs. & expl. terms      [units vary]
 #endif
 
   contains
@@ -720,6 +721,7 @@ end subroutine clubb_init_cnst
     use clubb_api_module, only: &
          setup_clubb_core_api, &
          init_pdf_params_api, &
+         init_pdf_implicit_coefs_terms_api, &
          time_precision, &
          core_rknd, &
          set_clubb_debug_level_api, &
@@ -803,13 +805,16 @@ end subroutine clubb_init_cnst
     ! Allocate PDF parameters across columns and chunks
     allocate( &
        pdf_params_chnk(pcols,begchunk:endchunk),   &
-       pdf_params_zm_chnk(pcols,begchunk:endchunk) )
+       pdf_params_zm_chnk(pcols,begchunk:endchunk), &
+       pdf_implicit_coefs_terms_chnk(pcols,begchunk:endchunk) )
 
     ! Allocate (in the vertical) and zero PDF parameters
     do j = 1, pcols, 1
        do l = begchunk, endchunk, 1
           call init_pdf_params_api( pverp+1-top_lev, pdf_params_chnk(j,l) )
           call init_pdf_params_api( pverp+1-top_lev, pdf_params_zm_chnk(j,l) )
+          call init_pdf_implicit_coefs_terms_api( pverp+1-top_lev, sclr_dim, &
+                                                  pdf_implicit_coefs_terms_chnk(j,l) )
        enddo ! l = begchunk, endchunk, 1
     enddo ! j = 1, pcols, 1
 
@@ -1311,8 +1316,8 @@ end subroutine clubb_init_cnst
         stats_rad_zt, &
         stats_rad_zm, &
         l_output_rad_files, &
-        pdf_parameter, &
         init_pdf_params_api, &
+        init_pdf_implicit_coefs_terms_api, &
         stats_begin_timestep_api, &
         hydromet_dim, calculate_thlp2_rad_api, mu, update_xp2_mc_api, &
         sat_mixrat_liq_api, &
@@ -1596,6 +1601,7 @@ end subroutine clubb_init_cnst
 
    type(pdf_parameter), pointer :: pdf_params    ! PDF parameters (thermo. levs.) [units vary]
    type(pdf_parameter), pointer :: pdf_params_zm ! PDF parameters on momentum levs. [units vary]
+   type(implicit_coefs_terms), pointer :: pdf_implicit_coefs_terms ! PDF impl. coefs. & expl. terms      [units vary]
 
    real(r8), pointer, dimension(:,:) :: qsatfac
    real(r8), pointer, dimension(:,:) :: npccn
@@ -1706,6 +1712,8 @@ end subroutine clubb_init_cnst
    !  Initialize clubb's pdf_parameter type variables
    call init_pdf_params_api( pverp+1-top_lev, pdf_params )
    call init_pdf_params_api( pverp+1-top_lev, pdf_params_zm )
+   call init_pdf_implicit_coefs_terms_api( pverp+1-top_lev, sclr_dim, &
+                                           pdf_implicit_coefs_terms )
 
    !  Establish associations between pointers and physics buffer fields   
 
@@ -2270,6 +2278,7 @@ end subroutine clubb_init_cnst
 
       pdf_params    => pdf_params_chnk(i,lchnk)
       pdf_params_zm => pdf_params_zm_chnk(i,lchnk)
+      pdf_implicit_coefs_terms => pdf_implicit_coefs_terms_chnk(i,lchnk)
 
       stats_nsamp = nint(stats_tsamp/dtime)
       stats_nout = nint(stats_tout/dtime)
@@ -2306,6 +2315,7 @@ end subroutine clubb_init_cnst
             wpthvp_in, wp2thvp_in, rtpthvp_in, thlpthvp_in, &
             sclrpthvp_inout, &
             pdf_params, pdf_params_zm, &
+            pdf_implicit_coefs_terms, &
             khzm_out, khzt_out, &
             qclvar_out, thlprcp_out, &
             wprcp_out, ice_supersat_frac_out, &
