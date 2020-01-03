@@ -91,6 +91,13 @@ clubb_do_adv = .false.
 clubb_expldiff = .false.
 clubb_rainevap_turb = .false.
 clubb_cloudtop_cooling = .false.
+clubb_l_use_C7_Richardson = .true.
+clubb_l_use_C11_Richardson = .true.
+clubb_l_brunt_vaisala_freq_moist = .true.
+clubb_l_use_thvm_in_bv_freq = .true.
+clubb_l_rcm_supersat_adj = .false.
+clubb_l_stability_correct_tau_zm = .false.
+clubb_C14 = 1.0
 fincl1 = 'U:A','PS:A','T:A','V:A','OMEGA:A','Z3:A','PRECT:A',
 'CLDLIQ:A', 'CLDICE:A', 'LWCF:A', 'SWCF:A', 'FLUT:A',
 'TMQ:A', 'PRECC:A', 'PRECL:A', 'CME:A', 'PRODPREC:A',
