@@ -1328,8 +1328,6 @@ end subroutine clubb_init_cnst
         stats_rad_zt, &
         stats_rad_zm, &
         l_output_rad_files, &
-        init_pdf_params_api, &
-        init_pdf_implicit_coefs_terms_api, &
         stats_begin_timestep_api, &
         hydromet_dim, calculate_thlp2_rad_api, mu, update_xp2_mc_api, &
         sat_mixrat_liq_api, &
@@ -1614,10 +1612,6 @@ end subroutine clubb_init_cnst
    real(r8), pointer, dimension(:,:) :: cmeliq 
    real(r8), pointer, dimension(:,:) :: cmfmc_sh ! Shallow convective mass flux--m subc (pcols,pverp) [kg/m2/s/]
 
-   type(pdf_parameter), pointer :: pdf_params    ! PDF parameters (thermo. levs.) [units vary]
-   type(pdf_parameter), pointer :: pdf_params_zm ! PDF parameters on momentum levs. [units vary]
-   type(implicit_coefs_terms), pointer :: pdf_implicit_coefs_terms ! PDF impl. coefs. & expl. terms      [units vary]
-
    real(r8), pointer, dimension(:,:) :: qsatfac
    real(r8), pointer, dimension(:,:) :: npccn
    real(r8), pointer, dimension(:,:) :: prer_evap
@@ -1721,14 +1715,7 @@ end subroutine clubb_init_cnst
    lchnk = state%lchnk
 
    !  Determine time step of physics buffer
-   
    itim_old = pbuf_old_tim_idx()
-
-   !  Initialize clubb's pdf_parameter type variables
-   call init_pdf_params_api( pverp+1-top_lev, pdf_params )
-   call init_pdf_params_api( pverp+1-top_lev, pdf_params_zm )
-   call init_pdf_implicit_coefs_terms_api( pverp+1-top_lev, sclr_dim, &
-                                           pdf_implicit_coefs_terms )
 
    !  Establish associations between pointers and physics buffer fields   
 
@@ -2298,10 +2285,6 @@ end subroutine clubb_init_cnst
         edsclr_in(1,icnt+2) = edsclr_in(2,icnt+2)  
       endif    
 
-      pdf_params    => pdf_params_chnk(i,lchnk)
-      pdf_params_zm => pdf_params_zm_chnk(i,lchnk)
-      pdf_implicit_coefs_terms => pdf_implicit_coefs_terms_chnk(i,lchnk)
-
       stats_nsamp = nint(stats_tsamp/dtime)
       stats_nout = nint(stats_tout/dtime)
 
@@ -2337,8 +2320,8 @@ end subroutine clubb_init_cnst
             rcm_inout, cloud_frac_inout, &
             wpthvp_in, wp2thvp_in, rtpthvp_in, thlpthvp_in, &
             sclrpthvp_inout, &
-            pdf_params, pdf_params_zm, &
-            pdf_implicit_coefs_terms, &
+            pdf_params_chnk(i,lchnk), pdf_params_zm_chnk(i,lchnk), &
+            pdf_implicit_coefs_terms_chnk(i,lchnk), &
             khzm_out, khzt_out, &
             qclvar_out, thlprcp_out, &
             wprcp_out, ice_supersat_frac_out, &
@@ -2353,7 +2336,7 @@ end subroutine clubb_init_cnst
          if (do_rainturb) then
             rvm_in = rtm_in - rcm_inout 
             call update_xp2_mc_api(nlev+1, dtime, cloud_frac_inout, &
-            rcm_inout, rvm_in, thlm_in, wm_zt, exner, pre_in, pdf_params, &
+            rcm_inout, rvm_in, thlm_in, wm_zt, exner, pre_in, pdf_params_chnk(i,lchnk), &
             rtp2_mc_out, thlp2_mc_out, &
             wprtp_mc_out, wpthlp_mc_out, &
             rtpthlp_mc_out)
@@ -2451,13 +2434,19 @@ end subroutine clubb_init_cnst
          thl2_zt_out(i,pverp-k+1)  = thl2_zt(k)
          wp2_zt_out(i,pverp-k+1)   = wp2_zt(k)
 
-         mean_rt           = pdf_params%mixt_frac(k)*pdf_params%rt_1(k) &
-            + (1.0_r8-pdf_params%mixt_frac(k))*pdf_params%rt_2(k)
+         mean_rt &
+         = pdf_params_chnk(i,lchnk)%mixt_frac(k) &
+           * pdf_params_chnk(i,lchnk)%rt_1(k) &
+           + ( 1.0_r8 - pdf_params_chnk(i,lchnk)%mixt_frac(k) ) &
+             * pdf_params_chnk(i,lchnk)%rt_2(k)
 
-         pdfp_rtp2(i,pverp-k+1)    = pdf_params%mixt_frac(k) &
-            *((pdf_params%rt_1(k) - mean_rt)**2 + pdf_params%varnce_rt_1(k)) &
-            + (1.0_r8-pdf_params%mixt_frac(k)) &
-            *((pdf_params%rt_2(k) - mean_rt)**2 + pdf_params%varnce_rt_2(k))
+         pdfp_rtp2(i,pverp-k+1) &
+         = pdf_params_chnk(i,lchnk)%mixt_frac(k) &
+           * ( ( pdf_params_chnk(i,lchnk)%rt_1(k) - mean_rt )**2 &
+               + pdf_params_chnk(i,lchnk)%varnce_rt_1(k) ) &
+           + ( 1.0_r8 - pdf_params_chnk(i,lchnk)%mixt_frac(k) ) &
+             * ( ( pdf_params_chnk(i,lchnk)%rt_2(k) - mean_rt )**2 &
+                 + pdf_params_chnk(i,lchnk)%varnce_rt_2(k) )
 
          do ixind=1,edsclr_dim
             edsclr_out(pverp-k+1,ixind) = edsclr_in(k,ixind)
