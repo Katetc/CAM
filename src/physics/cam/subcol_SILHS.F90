@@ -20,6 +20,9 @@ module subcol_SILHS
    use clubb_api_module, only: &
         hmp2_ip_on_hmm2_ip_slope_type, &
         hmp2_ip_on_hmm2_ip_intrcpt_type
+
+   use silhs_api_module, only: &
+        silhs_config_flags_type
 #endif
 #endif
    use physconst,     only: cpair, gravit, latvap, latice, rair
@@ -100,6 +103,8 @@ module subcol_SILHS
 #ifdef SILHS
     type(hmp2_ip_on_hmm2_ip_slope_type) :: subcol_SILHS_hmp2_ip_on_hmm2_ip_slope    
     type(hmp2_ip_on_hmm2_ip_intrcpt_type) :: subcol_SILHS_hmp2_ip_on_hmm2_ip_intrcpt
+
+    type(silhs_config_flags_type) :: silhs_config_flags
 #endif
 #endif
 
@@ -243,7 +248,8 @@ contains
                                          Ncnp2_on_Ncnm2, &
                                          set_clubb_debug_level_api
 
-    use silhs_api_module, only :         l_lh_importance_sampling
+      use silhs_api_module,        only: set_default_silhs_config_flags_api, &
+                                         initialize_silhs_config_flags_type_api
 
 #endif
 #endif
@@ -272,6 +278,23 @@ contains
           iiNi,         & ! Hydrometeor array index for ice concentration, Ni
           iiNg            ! Hydrometeor array index for graupel concentration, Ng
 
+      integer :: &
+          cluster_allocation_strategy
+
+      logical :: &
+          l_lh_importance_sampling, &
+          l_Lscale_vert_avg, &
+          l_lh_straight_mc, &
+          l_lh_clustered_sampling, &
+          l_rcm_in_cloud_k_lh_start, &
+          l_random_k_lh_start, &
+          l_max_overlap_in_cloud, &
+          l_lh_instant_var_covar_src, &
+          l_lh_limit_weights, &
+          l_lh_var_frac, &
+          l_lh_normalize_weights
+
+
       ! Set CLUBB's debug level
       ! This is called in module clubb_intr; no need to do it here.
 !      call set_clubb_debug_level_api( 0 )
@@ -279,6 +302,18 @@ contains
       !-------------------------------
       ! CLUBB-SILHS Parameters (global module variables)
       !-------------------------------
+      call set_default_silhs_config_flags_api( cluster_allocation_strategy, &
+                                               l_lh_importance_sampling, &
+                                               l_Lscale_vert_avg, &
+                                               l_lh_straight_mc, &
+                                               l_lh_clustered_sampling, &
+                                               l_rcm_in_cloud_k_lh_start, &
+                                               l_random_k_lh_start, &
+                                               l_max_overlap_in_cloud, &
+                                               l_lh_instant_var_covar_src, &
+                                               l_lh_limit_weights, &
+                                               l_lh_var_frac, &
+                                               l_lh_normalize_weights )
 
       l_fix_w_chi_eta_correlations = .true.
       l_lh_importance_sampling = .true.
@@ -287,6 +322,20 @@ contains
 !      l_prescribed_avg_deltaz = .false.
       l_use_cloud_cover = .false.
       l_const_Nc_in_cloud = .true.
+
+      call initialize_silhs_config_flags_type_api( cluster_allocation_strategy, &
+                                                   l_lh_importance_sampling, &
+                                                   l_Lscale_vert_avg, &
+                                                   l_lh_straight_mc, &
+                                                   l_lh_clustered_sampling, &
+                                                   l_rcm_in_cloud_k_lh_start, &
+                                                   l_random_k_lh_start, &
+                                                   l_max_overlap_in_cloud, &
+                                                   l_lh_instant_var_covar_src, &
+                                                   l_lh_limit_weights, &
+                                                   l_lh_var_frac, &
+                                                   l_lh_normalize_weights, &
+                                                   silhs_config_flags )
 
       ! Values from the namelist
       docldfracscaling = subcol_SILHS_use_clear_col
@@ -1007,7 +1056,7 @@ contains
                 pdf_params_chnk(i,lchnk), delta_zm, rcm_in, Lscale, & ! In
                 rho_ds_zt, mu_x_1, mu_x_2, sigma_x_1, sigma_x_2, & ! In 
                 corr_cholesky_mtx_1, corr_cholesky_mtx_2, &        ! In
-                hydromet_pdf_params, &                             ! In
+                hydromet_pdf_params, silhs_config_flags, &         ! In
                 X_nl_all_levs_raw, X_mixt_comp_all_levs, &         ! Out
                 lh_sample_point_weights)                           ! Out
 
@@ -1026,6 +1075,7 @@ contains
               ( pverp-top_lev+1, num_subcols, pdf_dim, X_nl_all_levs, &
                 pdf_params_chnk(i,lchnk), &
                 rcm_in, cld_frac_in, X_mixt_comp_all_levs, lh_sample_point_weights, &
+                silhs_config_flags%l_lh_importance_sampling, &
                 lh_AKm, AKm, AKstd, AKstd_cld, AKm_rcm, AKm_rcc, lh_rcm_avg)
 
          ! Calc column liquid water for output (rcm)
@@ -1558,6 +1608,7 @@ contains
               rt_all_clubb(igrdcol,1:pverp-top_lev+1,1:ns), thl_all_clubb(igrdcol,1:pverp-top_lev+1,1:ns), &
               w_all_clubb(igrdcol,1:pverp-top_lev+1,1:ns), qctend_clubb(igrdcol,1:pverp-top_lev+1,1:ns), &
               qvtend_clubb(igrdcol,1:pverp-top_lev+1,1:ns), thltend_clubb(igrdcol,1:pverp-top_lev+1,1:ns), &
+              silhs_config_flags%l_lh_instant_var_covar_src, &
               rtp2_mc_zt(igrdcol,1:pverp-top_lev+1), thlp2_mc_zt(igrdcol,1:pverp-top_lev+1), &
               wprtp_mc_zt(igrdcol,1:pverp-top_lev+1), wpthlp_mc_zt(igrdcol,1:pverp-top_lev+1), &
               rtpthlp_mc_zt(igrdcol,1:pverp-top_lev+1) )
