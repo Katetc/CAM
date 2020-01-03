@@ -1,0 +1,23 @@
+===============================================
+Useful right now!
+===============================================
+
+budget_plotter_multicol.py: Plots CLUBB's budgets in each column.
+
+cam_budget_plotter.py: Plots CAM's budgets (e.g., TL, Q) in each column.
+
+cam_profile_plotter_multicol.py: Plots select CAM and CLUBB profiles (more can be added easily) in each column.
+
+===============================================
+Useful some day, maybe.
+===============================================
+
+droplet_timeseries_plotter.py: Plots droplet number as a timeseries over months. Needs monthly averaged NetCDF files from a global simulation. This script will likely need to be modified to be useful.
+
+droplet_timeseries_plotter_scam.py: Same as droplet_timeseries_plotter.py, but for SCAM.
+
+global_contour.py: Creates a global contour plot of a CAM or CLUBB variable from a global CAM simulation. This script will likely need to be modified to be useful.
+
+ratio_plotter_scam.py: Basically a profile plotter for SCAM. Will need to be modified to be useful.
+
+README: This file!

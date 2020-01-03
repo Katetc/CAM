@@ -1,0 +1,15 @@
+This directory contains useful scripts for analyzing CAM(-CLUBB(-SILHS)) runs.
+
+python_scripts: Contains various postprocessing scripts written in python.
+
+all_diagnostics.bash: Convenience script that runs the AMWG diagnostics, budget plotter (in python_scripts), and profile plotter (also in python_scripts), and stores all the output in a ZIP archive.
+
+amwg_cmd.sh: Convenience script that runs the AMWG diagnostics for the case given as an argument.
+
+CAM_amwgplots2pdf.bash: Creates a PDF file from the AMWG diagnostics results given as an argument.
+
+CAM_amwgplots2pdf_all.bash: Calls CAM_amwgplots2pdf.bash for all subdirectories of the directory given as an argument
+
+diag140804.csh: The AMWG diagnostics script. This is a script produced by NCAR, stored in this repository for convenience.
+
+README: This file!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
