@@ -1395,29 +1395,49 @@ This allows using a different mpirun command to launch unit tests
     </resource_limits>
   </machine>
 
-  <machine MACH="homebrew">
+ <!-- UWM larson-group configurations -->
+
+  <machine MACH="nelson">
     <DESC>
 
-      Customize these fields as appropriate for your system,
-      particularly changing MAX_TASKS_PER_NODE and MAX_MPITASKS_PER_NODE to the
-      number of cores on your machine.  You may also want to change
-      instances of '$ENV{HOME}/projects' to your desired directory
-      organization.  You can use this in either of two ways: (1)
-      Without making any changes, by adding `--machine homebrew` to
-      create_newcase or create_test (2) Copying this into a
-      config_machines.xml file in your personal .cime directory and
-      then changing the machine name (MACH="homebrew") to
-      your machine name and the NODENAME_REGEX to something matching
-      your machine's hostname.  With (2), you should not need the
-      `--machine` argument, because the machine should be determined
-      automatically.  However, with (2), you will also need to copy the
-      homebrew-specific settings in config_compilers.xml into a
-      config_compilers.xml file in your personal .cime directory, again
-      changing the machine name (MACH="homebrew") to your machine name.
+    </DESC>
+    <NODENAME_REGEX>nelson.math.uwm.edu</NODENAME_REGEX>
+    <OS>Linux</OS>
+    <COMPILERS>gnu</COMPILERS>
+    <MPILIBS>mpich</MPILIBS>
+    <CIME_OUTPUT_ROOT>/home/pub/cam_output/scratch</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/home/pub/cam_inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/home/pub/cam_output/ptclm-data</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>/home/pub/cam_output/scratch/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/home/pub/cam_output/baselines</BASELINE_ROOT>
+    <CCSM_CPRNC>$CIMEROOT/tools/cprnc/cprnc</CCSM_CPRNC>
+    <GMAKE>make</GMAKE>
+    <GMAKE_J>4</GMAKE_J>
+    <BATCH_SYSTEM>none</BATCH_SYSTEM>
+    <SUPPORTED_BY>Larson Group</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>1</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>1</MAX_MPITASKS_PER_NODE>
+    <mpirun mpilib="default">
+      <executable>/usr/local/mpi/MPICH-3.3.1-gfortran/bin/mpirun</executable>
+      <arguments>
+        <arg name="anum_tasks"> -np $TOTALPES</arg>
+        <arg name="labelstdout">-prepend-rank</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="none"/>
+    <environment_variables>
+      <env name="NETCDF_FORTRAN_PATH">/usr/local/NETCDF-Fortran-4.4.5-gfortran</env>
+      <env name="NETCDF_C_PATH">/usr/local/NETCDF-C-4.7.0-gfortran</env>
+    </environment_variables>
+
+  </machine>
+
+  <machine MACH="carson">
+    <DESC>
 
     </DESC>
-    <NODENAME_REGEX> something.matching.your.machine.hostname </NODENAME_REGEX>
-    <OS>Darwin</OS>
+    <NODENAME_REGEX>carson.math.uwm.edu</NODENAME_REGEX>
+    <OS>Linux</OS>
     <COMPILERS>gnu</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <CIME_OUTPUT_ROOT>$ENV{HOME}/projects/scratch</CIME_OUTPUT_ROOT>
@@ -1429,21 +1449,58 @@ This allows using a different mpirun command to launch unit tests
     <GMAKE>make</GMAKE>
     <GMAKE_J>4</GMAKE_J>
     <BATCH_SYSTEM>none</BATCH_SYSTEM>
-    <SUPPORTED_BY>__YOUR_NAME_HERE__</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>8</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>4</MAX_MPITASKS_PER_NODE>
+    <SUPPORTED_BY>Larson Group</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>1</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>1</MAX_MPITASKS_PER_NODE>
     <mpirun mpilib="default">
-      <executable>mpirun</executable>
+      <executable>/usr/local/mpi/MPICH-3.3.1-gfortran/bin/mpirun</executable>
       <arguments>
-	<arg name="anum_tasks"> -np {{ total_tasks }}</arg>
-	<arg name="labelstdout">-prepend-rank</arg>
+        <arg name="anum_tasks"> -np $TOTALPES</arg>
+        <arg name="labelstdout">-prepend-rank</arg>
       </arguments>
     </mpirun>
     <module_system type="none"/>
     <environment_variables>
-      <env name="NETCDF_PATH">/usr/local</env>
+      <env name="NETCDF_FORTRAN_PATH">/usr/local/NETCDF-Fortran-4.4.5-gfortran</env>
+      <env name="NETCDF_C_PATH">/usr/local/NETCDF-C-4.7.0-gfortran</env>
     </environment_variables>
   </machine>
+
+  <machine MACH="homebrew">
+    <DESC>
+
+    </DESC>
+    <NODENAME_REGEX>.*.math.uwm.edu</NODENAME_REGEX>
+    <OS>Linux</OS>
+    <COMPILERS>gnu</COMPILERS>
+    <MPILIBS>mpich</MPILIBS>
+    <CIME_OUTPUT_ROOT>$ENV{HOME}/projects/scratch</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>$ENV{HOME}/projects/cesm-inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>$ENV{HOME}/projects/ptclm-data</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$ENV{HOME}/projects/scratch/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>$ENV{HOME}/projects/baselines</BASELINE_ROOT>
+    <CCSM_CPRNC>$CIMEROOT/tools/cprnc/build/cprnc</CCSM_CPRNC>
+    <GMAKE>make</GMAKE>
+    <GMAKE_J>4</GMAKE_J>
+    <BATCH_SYSTEM>none</BATCH_SYSTEM>
+    <SUPPORTED_BY>Larson Group</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>1</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>1</MAX_MPITASKS_PER_NODE>
+    <mpirun mpilib="default">
+      <executable>/usr/local/mpi/MPICH-3.3.1-gfortran/bin/mpirun</executable>
+      <arguments>
+        <arg name="anum_tasks"> -np $TOTALPES</arg>
+        <arg name="labelstdout">-prepend-rank</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="none"/>
+    <environment_variables>
+      <env name="NETCDF_FORTRAN_PATH">/usr/local/NETCDF-Fortran-4.4.5-gfortran</env>
+      <env name="NETCDF_C_PATH">/usr/local/NETCDF-C-4.7.0-gfortran</env>
+    </environment_variables>
+  </machine>
+
+ <!-- End of UWM larson-group configurations -->
 
   <machine MACH="izumi">
     <DESC>NCAR CGD Linux Cluster 48 pes/node, batch system is PBS</DESC>

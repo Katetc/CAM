@@ -982,13 +982,39 @@ using a fortran linker.
   </SLIBS>
 </compiler>
 
-<compiler MACH="homebrew" COMPILER="gnu">
-  <LDFLAGS>
-    <!-- These LDFLAGS provide lapack and blas support on a Mac. This
-         may require installation of the Apple Developer Tools. -->
-    <append> -framework Accelerate </append>
-  </LDFLAGS>
+ <!-- UWM larson-group configurations -->
+
+<compiler MACH="homebrew">
+  <SCC> /usr/local/mpi/MPICH-3.3.1-gfortran/bin/mpicc </SCC>
+  <SFC> /usr/local/mpi/MPICH-3.3.1-gfortran/bin/mpif90 </SFC>
+  <MPICC> /usr/local/mpi/MPICH-3.3.1-gfortran/bin/mpicc  </MPICC>
+  <MPIFC> /usr/local/mpi/MPICH-3.3.1-gfortran/bin/mpif90 </MPIFC>
+  <SLIBS>
+   <base> -L/usr/local/NETCDF-Fortran-4.4.5-gfortran/lib -lnetcdff -L/usr/local/NETCDF-C-4.7.0-gfortran/lib -lnetcdf -L/usr/local/lapack-3.8.0 -llapack -lrefblas </base>
+  </SLIBS>
 </compiler>
+
+<compiler MACH="carson">
+  <SCC> /usr/local/mpi/MPICH-3.3.1-gfortran/bin/mpicc </SCC>
+  <SFC> /usr/local/mpi/MPICH-3.3.1-gfortran/bin/mpif90 </SFC>
+  <MPICC> /usr/local/mpi/MPICH-3.3.1-gfortran/bin/mpicc  </MPICC>
+  <MPIFC> /usr/local/mpi/MPICH-3.3.1-gfortran/bin/mpif90 </MPIFC>
+  <SLIBS>
+   <base> -L/usr/local/NETCDF-Fortran-4.4.5-gfortran/lib -lnetcdff -L/usr/local/NETCDF-C-4.7.0-gfortran/lib -lnetcdf -L/usr/local/lapack-3.8.0 -llapack -lrefblas </base>
+  </SLIBS>
+</compiler>
+
+<compiler MACH="nelson">
+  <SCC> /usr/local/mpi/MPICH-3.3.1-gfortran/bin/mpicc </SCC>
+  <SFC> /usr/local/mpi/MPICH-3.3.1-gfortran/bin/mpif90 </SFC>
+  <MPICC> /usr/local/mpi/MPICH-3.3.1-gfortran/bin/mpicc  </MPICC>
+  <MPIFC> /usr/local/mpi/MPICH-3.3.1-gfortran/bin/mpif90 </MPIFC>
+  <SLIBS>
+   <base> -L/usr/local/NETCDF-Fortran-4.4.5-gfortran/lib -lnetcdff -L/usr/local/NETCDF-C-4.7.0-gfortran/lib -lnetcdf -L/usr/local/lapack-3.8.0 -llapack -lrefblas </base>
+  </SLIBS>
+</compiler>
+
+ <!-- End of UWM larson-group configurations -->
 
 <compiler MACH="laramie">
   <CPPDEFS>
