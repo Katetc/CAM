@@ -173,8 +173,12 @@ module clubb_intr
     rtpthlp_idx, &     	! covariance of thetal and rt
     rtp2_idx, &        	! variance of total water
     thlp2_idx, &       	! variance of thetal
+    rtp3_idx, &        	! total water 3rd order
+    thlp3_idx, &       	! thetal 3rd order
     up2_idx, &         	! variance of east-west wind
     vp2_idx, &         	! variance of north-south wind
+    up3_idx, &         	! east-west wind 3rd order
+    vp3_idx, &         	! north-south wind 3rd order
     upwp_idx, &        	! east-west momentum flux
     vpwp_idx, &        	! north-south momentum flux
     thlm_idx, &        	! mean thetal
@@ -340,6 +344,11 @@ module clubb_intr
     call pbuf_add_field('THLP2_nadv',      'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), thlp2_idx)
     call pbuf_add_field('UP2_nadv',        'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), up2_idx)
     call pbuf_add_field('VP2_nadv',        'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), vp2_idx)    
+
+    call pbuf_add_field('RTP3',       'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), rtp3_idx)
+    call pbuf_add_field('THLP3',      'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), thlp3_idx)
+    call pbuf_add_field('UP3',        'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), up3_idx)
+    call pbuf_add_field('VP3',        'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), vp3_idx)
 
     call pbuf_add_field('UPWP',       'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), upwp_idx)
     call pbuf_add_field('VPWP',       'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), vpwp_idx)
@@ -1238,6 +1247,11 @@ end subroutine clubb_init_cnst
        call pbuf_set_field(pbuf2d, up2_idx,     w_tol_sqd)
        call pbuf_set_field(pbuf2d, vp2_idx,     w_tol_sqd)
       
+       call pbuf_set_field(pbuf2d, rtp3_idx,    0.0_r8)
+       call pbuf_set_field(pbuf2d, thlp3_idx,   0.0_r8)
+       call pbuf_set_field(pbuf2d, up3_idx,     0.0_r8)
+       call pbuf_set_field(pbuf2d, vp3_idx,     0.0_r8)
+      
        call pbuf_set_field(pbuf2d, upwp_idx,    0.0_r8)
        call pbuf_set_field(pbuf2d, vpwp_idx,    0.0_r8)
        call pbuf_set_field(pbuf2d, wpthvp_idx,  0.0_r8)
@@ -1403,6 +1417,8 @@ end subroutine clubb_init_cnst
    real(r8) :: rtpthlp_in(pverp+1-top_lev)		! covariance of thetal and qt			[kg/kg K]
    real(r8) :: rtp2_in(pverp+1-top_lev)			! total water variance				[kg^2/kg^2]
    real(r8) :: thlp2_in(pverp+1-top_lev)		! thetal variance				[K^2]
+   real(r8) :: rtp3_in(pverp+1-top_lev)			! total water 3rd order				[kg^3/kg^3]
+   real(r8) :: thlp3_in(pverp+1-top_lev)		! thetal 3rd order				[K^3]
    real(r8) :: up2_in(pverp+1-top_lev)			! meridional wind variance			[m^2/s^2]
    real(r8) :: vp2_in(pverp+1-top_lev)			! zonal wind variance				[m^2/s^2]
    real(r8) :: up3_in(pverp+1-top_lev)                  ! meridional wind third-order                   [m^3/s^3]
@@ -1498,15 +1514,6 @@ end subroutine clubb_init_cnst
    real(r8) :: grid_dx(pcols), grid_dy(pcols)   ! CAM grid [m]
    real(r8) :: host_dx, host_dy                 ! CAM grid [m]
 
-   ! thlp3 and rtp3 are used in CLUBB only if l_use_3D_closure is 
-   ! set to true in CLUBB's model_flags.F90. This flag and thlp3 and rtp3 are 
-   ! experimental as of 15-Jul 2015 and can only be used when thlp3 and rtp3 are  
-   ! input to CLUBB using l_input_fields 
-   real(r8) :: thlp3_dummy(pverp)                ! 3rd moment of thl. Used only in CLUBB-SCM     [K^3] 
-   real(r8) :: thlp3_dummy_in(pverp)             ! 3rd moment of thl. Used only in CLUBB-SCM     [K^3] 
-   real(r8) :: rtp3_dummy(pverp)                 ! 3rd moment of rt. Used only in CLUBB-SCM      [(kg/kg)^3] 
-   real(r8) :: rtp3_dummy_in(pverp)              ! 3rd moment of rt. Used only in CLUBB-SCM      [(kg/kg)^3] 
-   
    ! Variables below are needed to compute energy integrals for conservation
    real(r8) :: ke_a(pcols), ke_b(pcols), te_a(pcols), te_b(pcols)
    real(r8) :: wv_a(pcols), wv_b(pcols), wl_b(pcols), wl_a(pcols)
@@ -1577,8 +1584,12 @@ end subroutine clubb_init_cnst
    real(r8), pointer, dimension(:,:) :: rtpthlp  ! covariance of thetal and qt			[kg/kg K]
    real(r8), pointer, dimension(:,:) :: rtp2     ! moisture variance				[kg^2/kg^2]
    real(r8), pointer, dimension(:,:) :: thlp2    ! temperature variance				[K^2]
+   real(r8), pointer, dimension(:,:) :: rtp3     ! moisture 3rd order				[kg^3/kg^3]
+   real(r8), pointer, dimension(:,:) :: thlp3    ! temperature 3rd order			[K^3]
    real(r8), pointer, dimension(:,:) :: up2      ! east-west wind variance			[m^2/s^2]
    real(r8), pointer, dimension(:,:) :: vp2      ! north-south wind variance			[m^2/s^2]
+   real(r8), pointer, dimension(:,:) :: up3      ! east-west wind 3rd order			[m^3/s^3]
+   real(r8), pointer, dimension(:,:) :: vp3      ! north-south wind 3rd order			[m^3/s^3]
    real(r8), pointer, dimension(:,:) :: upwp     ! east-west momentum flux			[m^2/s^2]
    real(r8), pointer, dimension(:,:) :: vpwp     ! north-south momentum flux			[m^2/s^2]
    real(r8), pointer, dimension(:,:) :: wpthvp   ! w'th_v' (momentum levels)			[m/s K]
@@ -1728,6 +1739,11 @@ end subroutine clubb_init_cnst
    call pbuf_get_field(pbuf, thlp2_idx,   thlp2,   start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
    call pbuf_get_field(pbuf, up2_idx,     up2,     start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
    call pbuf_get_field(pbuf, vp2_idx,     vp2,     start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
+
+   call pbuf_get_field(pbuf, rtp3_idx,    rtp3,    start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
+   call pbuf_get_field(pbuf, thlp3_idx,   thlp3,   start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
+   call pbuf_get_field(pbuf, up3_idx,     up3,     start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
+   call pbuf_get_field(pbuf, vp3_idx,     vp3,     start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
 
    call pbuf_get_field(pbuf, upwp_idx,    upwp,    start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
    call pbuf_get_field(pbuf, vpwp_idx,    vpwp,    start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
@@ -2095,15 +2111,6 @@ end subroutine clubb_init_cnst
     
       endif
 
-      ! thlp3 and rtp3 are used in CLUBB only if l_use_3D_closure is 
-      ! set to true in CLUBB's model_flags.F90. This flag and thlp3 and rtp3 are 
-      ! experimental as of 15-Jul 2015 and can only be used when thlp3 and rtp3 are  
-      ! input to CLUBB using l_input_fields 
-
-      ! Assign dummy values 
-      thlp3_dummy(:) = 0._r8 
-      rtp3_dummy(:) = 0._r8 
-
       !  Define surface sources for transported variables for diffusion, will 
       !  be zero as these tendencies are done in vertical_diffusion
       do ixind=1,edsclr_dim
@@ -2187,14 +2194,14 @@ end subroutine clubb_init_cnst
          thlpthvp_in(k)= thlpthvp(i,pverp-k+1)
          up2_in(k)     = up2(i,pverp-k+1)
          vp2_in(k)     = vp2(i,pverp-k+1)
-!         up3_in(k)     = up3(i,pverp-k+1)  ! Need to add
-!         vp3_in(k)     = vp3(i,pverp-k+1)  ! Need to add
-         up3_in(k)     = 0.0_r8
-         vp3_in(k)     = 0.0_r8
+         up3_in(k)     = up3(i,pverp-k+1)
+         vp3_in(k)     = vp3(i,pverp-k+1)
          wp2_in(k)     = wp2(i,pverp-k+1)
          wp3_in(k)     = wp3(i,pverp-k+1)
          rtp2_in(k)    = rtp2(i,pverp-k+1)
          thlp2_in(k)   = thlp2(i,pverp-k+1)
+         rtp3_in(k)    = rtp3(i,pverp-k+1)
+         thlp3_in(k)   = thlp3(i,pverp-k+1)
          thlm_in(k)    = thlm(i,pverp-k+1)
          rtm_in(k)     = rtm(i,pverp-k+1)
          rvm_in(k)     = rvm(i,pverp-k+1)
@@ -2205,13 +2212,6 @@ end subroutine clubb_init_cnst
          cloud_frac_inout(k) = cloud_frac(i,pverp-k+1)
          sclrpthvp_inout(k,:) = 0._r8
  
-         ! thlp3 and rtp3 are used in CLUBB only if l_use_3D_closure is 
-         ! set to true in CLUBB's model_flags.F90. This flag and thlp3 and rtp3 are 
-         ! experimental as of 15-Jul 2015 and can only be used when thlp3 and rtp3 are  
-         ! input to CLUBB using l_input_fields 
-         thlp3_dummy_in(k) = thlp3_dummy(pverp-k+1) 
-         rtp3_dummy_in(k)  = rtp3_dummy(pverp-k+1) 
-
          if (k .ne. 1) then
             pre_in(k)    = prer_evap(i,pverp-k+1)
          endif
@@ -2313,7 +2313,7 @@ end subroutine clubb_init_cnst
             clubb_config_flags, &
             um_in, vm_in, upwp_in, vpwp_in, up2_in, vp2_in, up3_in, vp3_in, &
             thlm_in, rtm_in, wprtp_in, wpthlp_in, &
-            wp2_in, wp3_in, rtp2_in, rtp3_dummy_in, thlp2_in, thlp3_dummy_in, rtpthlp_in, &
+            wp2_in, wp3_in, rtp2_in, rtp3_in, thlp2_in, thlp3_in, rtpthlp_in, &
             sclrm, &
             sclrp2, sclrp3, sclrprtp, sclrpthlp, &
             wpsclrp, edsclr_in, err_code, &
@@ -2407,8 +2407,8 @@ end subroutine clubb_init_cnst
          thlpthvp(i,pverp-k+1)     = thlpthvp_in(k)
          up2(i,pverp-k+1)          = up2_in(k)
          vp2(i,pverp-k+1)          = vp2_in(k)
-!         up3(i,pverp-k+1)          = up3_in(k)  ! Need to add
-!         vp3(i,pverp-k+1)          = vp3_in(k)  ! Need to add
+         up3(i,pverp-k+1)          = up3_in(k)
+         vp3(i,pverp-k+1)          = vp3_in(k)
          thlm(i,pverp-k+1)         = thlm_in(k)
          rtm(i,pverp-k+1)          = rtm_in(k)
          wprtp(i,pverp-k+1)        = wprtp_in(k)
@@ -2417,6 +2417,8 @@ end subroutine clubb_init_cnst
          wp3(i,pverp-k+1)          = wp3_in(k)
          rtp2(i,pverp-k+1)         = rtp2_in(k)
          thlp2(i,pverp-k+1)        = thlp2_in(k)
+         rtp3(i,pverp-k+1)         = rtp3_in(k)
+         thlp3(i,pverp-k+1)        = thlp3_in(k)
          rtpthlp(i,pverp-k+1)      = rtpthlp_in(k)
          rcm(i,pverp-k+1)          = rcm_inout(k)
          ice_supersat_frac(i,pverp-k+1) = ice_supersat_frac_out(k)
