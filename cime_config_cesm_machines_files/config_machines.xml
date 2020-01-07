@@ -1439,13 +1439,13 @@ This allows using a different mpirun command to launch unit tests
     <NODENAME_REGEX>carson.math.uwm.edu</NODENAME_REGEX>
     <OS>Linux</OS>
     <COMPILERS>gnu</COMPILERS>
-    <MPILIBS>mpich</MPILIBS>
-    <CIME_OUTPUT_ROOT>$ENV{HOME}/projects/scratch</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>$ENV{HOME}/projects/cesm-inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>$ENV{HOME}/projects/ptclm-data</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$ENV{HOME}/projects/scratch/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>$ENV{HOME}/projects/baselines</BASELINE_ROOT>
-    <CCSM_CPRNC>$CIMEROOT/tools/cprnc/build/cprnc</CCSM_CPRNC>
+    <MPILIBS>mpich</MPILIBS>  
+    <CIME_OUTPUT_ROOT>$ENV{camSource}/run_plots/runs/</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/home/pub/cam_inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>$ENV{camSource}/run_plots/ptclm-data</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$ENV{camSource}/run_plots/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>$ENV{camSource}/run_plots/baselines</BASELINE_ROOT>
+    <CCSM_CPRNC>$CIMEROOT/tools/cprnc/cprnc</CCSM_CPRNC>	  
     <GMAKE>make</GMAKE>
     <GMAKE_J>4</GMAKE_J>
     <BATCH_SYSTEM>none</BATCH_SYSTEM>
