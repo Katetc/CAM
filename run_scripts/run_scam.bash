@@ -6,7 +6,7 @@
 #
 ##########################################################
 # Variables
-CASE="scam_atex"
+CASE="scam_$1"
 #MACH="cheyenne"
 CASEROOT="/home/$USER/projects/scratch/$CASE"
 MACH="nelson"
@@ -149,8 +149,14 @@ EOF
 
 # Run submission
 echo "----- Run Submission -----"
-./case.submit --no-batch || { echo "Error submitting run" >> /dev/stderr ; exit 1; }
+./case.submit --no-batch 2>&1 | tee -a log
 
-# Success?!
-echo "Success"'!'
-exit 0
+if [[ $(grep -c "ERROR" log) -eq 0 ]]; then
+  rm log
+  echo "Success!"
+  exit 0
+else
+  rm log
+  echo "Error submitting run" >> /dev/stderr
+  exit 1
+fi
