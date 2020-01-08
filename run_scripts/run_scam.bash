@@ -111,7 +111,7 @@ fincl1 = 'U:A','PS:A','T:A','V:A','OMEGA:A','Z3:A','PRECT:A',
 'QCRAT:A', $clubb_vars_zt_list,$clubb_vars_zm_list,
 'SL', 'Q', 'RHW', 'QRS', 'QRL', 'HR', 'FDL'
 !, 'SILHS_CLUBB_PRECIP_FRAC','SILHS_CLUBB_ICE_SS_FRAC'
-ncdata='/home/guozhun/projects/cesm-inputdata/atm/cam/inic/fv/cami_0000-09-01_64x128_L30_c031210.nc' 
+ncdata='/home/pub/cam_inputdata/atm/cam/inic/gaus/cami_0000-09-01_64x128_L30_c031210.nc' 
 fincl2 = 'CLDTOT', 'CLDST','CDNUMC','CLDLIQ','CLDICE','FLUT',
 'LWCF','SWCF','PRECT'
 end_restart = .true.
