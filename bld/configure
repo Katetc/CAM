@@ -2859,13 +2859,11 @@ sub write_filepath
     }
 
     if ($clubb_sgs) {
-       # print $fh "$camsrcdir/src/physics/clubb\n";
-       print $fh "$camsrcdir/src/physics/clubb_release/src/CLUBB_core\n";
+       print $fh "$camsrcdir/src/physics/clubb\n";
     }
 
     if ($silhs) {
-       # print $fh "$camsrcdir/src/physics/silhs\n";
-       print $fh "$camsrcdir/src/physics/clubb_release/src/SILHS\n";
+       print $fh "$camsrcdir/src/physics/silhs\n";
     }
 
 
