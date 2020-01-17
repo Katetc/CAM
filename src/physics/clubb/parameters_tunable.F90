@@ -376,24 +376,45 @@ module parameters_tunable
   ! (including updating list of nml variables)
   real( kind = core_rknd ) ::      &
     clubb_C1,                      &
+    clubb_C1b,                     &
+    clubb_C1c,                     &
     clubb_C2rt,                    &
     clubb_C2thl,                   &
     clubb_C2rtthl,                 &
+    clubb_C4,                      &
+    clubb_C5,                      &
     clubb_C6rt,                    &
     clubb_C6rtb,                   &
+    clubb_C6rtc,                   &
+    clubb_C6thlb,                  &
+    clubb_C6thlc,                  &
     clubb_C7,                      &
     clubb_C7b,                     &
     clubb_C8,                      &
     clubb_C11,                     &
     clubb_C11b,                    &
+    clubb_C11c,                    &
     clubb_C14,                     &
+    clubb_C15,                     &
     clubb_beta,                    &
     clubb_gamma_coef,              &
     clubb_gamma_coefb,             &
+    clubb_gamma_coefc,             &
     clubb_mu,                      &
     clubb_nu1,                     &
+    clubb_nu2,                     &
+    clubb_c_K2,                    &
     clubb_c_K10,                   &
-    clubb_wpxp_L_thresh
+    clubb_wpxp_L_thresh,           &
+    clubb_C_invrs_tau_bkgnd,       &
+    clubb_C_invrs_tau_sfc,         &
+    clubb_C_invrs_tau_shear,       &
+    clubb_C_invrs_tau_N2,          &
+    clubb_C_invrs_tau_N2_wp2,      &
+    clubb_C_invrs_tau_N2_xp2,      &
+    clubb_C_invrs_tau_N2_wpxp,     &
+    clubb_C_invrs_tau_N2_clear_wp3,&
+    clubb_C_wp2_splat
 #endif /*E3SM*/
 
   contains
@@ -965,24 +986,45 @@ module parameters_tunable
 
     namelist /clubb_param_nl/      &
     clubb_C1,                      &
+    clubb_C1b,                     &
+    clubb_C1c,                     &
     clubb_C2rt,                    &
     clubb_C2thl,                   &
     clubb_C2rtthl,                 &
+    clubb_C4,                      &
+    clubb_C5,                      &
     clubb_C6rt,                    &
     clubb_C6rtb,                   &
+    clubb_C6rtc,                   &
+    clubb_C6thlb,                  &
+    clubb_C6thlc,                  &
     clubb_C7,                      &
     clubb_C7b,                     &
     clubb_C8,                      &
     clubb_C11,                     &
     clubb_C11b,                    &
+    clubb_C11c,                    &
     clubb_C14,                     &
+    clubb_C15,                     &
     clubb_beta,                    &
     clubb_gamma_coef,              &
     clubb_gamma_coefb,             &
+    clubb_gamma_coefc,             &
     clubb_mu,                      &
     clubb_nu1,                     &
+    clubb_nu2,                     &
+    clubb_c_K2,                    &
     clubb_c_K10,                   &
-    clubb_wpxp_L_thresh
+    clubb_wpxp_L_thresh,           &
+    clubb_C_invrs_tau_bkgnd,       &
+    clubb_C_invrs_tau_sfc,         &
+    clubb_C_invrs_tau_shear,       &
+    clubb_C_invrs_tau_N2,          &
+    clubb_C_invrs_tau_N2_wp2,      &
+    clubb_C_invrs_tau_N2_xp2,      &
+    clubb_C_invrs_tau_N2_wpxp,     &
+    clubb_C_invrs_tau_N2_clear_wp3,&
+    clubb_C_wp2_splat
 
     integer :: read_status
     integer :: iunit
@@ -993,24 +1035,45 @@ module parameters_tunable
     ! This is made available for tuning 
      
     clubb_C1 = init_value
+    clubb_C1b = init_value
+    clubb_C1c = init_value
     clubb_C2rt = init_value
     clubb_C2thl = init_value
     clubb_C2rtthl = init_value
+    clubb_C4 = init_value
+    clubb_C5 = init_value
     clubb_C6rt = init_value
     clubb_C6rtb = init_value
+    clubb_C6rtc = init_value
+    clubb_C6thlb = init_value
+    clubb_C6thlc = init_value
     clubb_C7 = init_value
     clubb_C7b = init_value
     clubb_C8 = init_value
     clubb_C11 = init_value
     clubb_C11b = init_value
+    clubb_C11c = init_value
     clubb_C14 = init_value
+    clubb_C15 = init_value
     clubb_beta = init_value
     clubb_gamma_coef = init_value
     clubb_gamma_coefb = init_value
+    clubb_gamma_coefc = init_value
     clubb_mu = init_value
     clubb_nu1 = init_value
+    clubb_nu2 = init_value
+    clubb_c_K2 = init_value
     clubb_c_K10 = init_value
     clubb_wpxp_L_thresh = init_value
+    clubb_C_invrs_tau_bkgnd = init_value
+    clubb_C_invrs_tau_sfc = init_value
+    clubb_C_invrs_tau_shear = init_value
+    clubb_C_invrs_tau_N2 = init_value
+    clubb_C_invrs_tau_N2_wp2 = init_value
+    clubb_C_invrs_tau_N2_xp2 = init_value
+    clubb_C_invrs_tau_N2_wpxp = init_value
+    clubb_C_invrs_tau_N2_clear_wp3 = init_value
+    clubb_C_wp2_splat = init_value
 
     if (masterproc) then
       iunit = getunit()
@@ -1028,24 +1091,45 @@ module parameters_tunable
 #ifdef SPMD
    ! Broadcast namelist variables
    call mpibcast(clubb_C1,         1, mpir8,  0, mpicom)
+   call mpibcast(clubb_C1b,        1, mpir8,  0, mpicom)
+   call mpibcast(clubb_C1c,        1, mpir8,  0, mpicom)
    call mpibcast(clubb_C2rt,       1, mpir8,  0, mpicom)
    call mpibcast(clubb_C2thl,      1, mpir8,  0, mpicom)
    call mpibcast(clubb_C2rtthl,    1, mpir8,  0, mpicom)
+   call mpibcast(clubb_C4,         1, mpir8,  0, mpicom)
+   call mpibcast(clubb_C5,         1, mpir8,  0, mpicom)
    call mpibcast(clubb_C6rt,       1, mpir8,  0, mpicom)
    call mpibcast(clubb_C6rtb,      1, mpir8,  0, mpicom)
+   call mpibcast(clubb_C6rtc,      1, mpir8,  0, mpicom)
+   call mpibcast(clubb_C6thlb,     1, mpir8,  0, mpicom)
+   call mpibcast(clubb_C6thlc,     1, mpir8,  0, mpicom)
    call mpibcast(clubb_C7,         1, mpir8,  0, mpicom)
    call mpibcast(clubb_C7b,        1, mpir8,  0, mpicom)
    call mpibcast(clubb_C8,         1, mpir8,  0, mpicom)
    call mpibcast(clubb_C11,        1, mpir8,  0, mpicom)
    call mpibcast(clubb_C11b,       1, mpir8,  0, mpicom)
+   call mpibcast(clubb_C11c,       1, mpir8,  0, mpicom)
    call mpibcast(clubb_C14,        1, mpir8,  0, mpicom)
+   call mpibcast(clubb_C15,        1, mpir8,  0, mpicom)
    call mpibcast(clubb_beta,       1, mpir8,  0, mpicom)
    call mpibcast(clubb_gamma_coef, 1, mpir8,  0, mpicom)
    call mpibcast(clubb_gamma_coefb,1, mpir8,  0, mpicom)
+   call mpibcast(clubb_gamma_coefc,1, mpir8,  0, mpicom)
    call mpibcast(clubb_mu,         1, mpir8,  0, mpicom)
    call mpibcast(clubb_nu1,        1, mpir8,  0, mpicom)
+   call mpibcast(clubb_nu2,        1, mpir8,  0, mpicom)
+   call mpibcast(clubb_c_K2,       1, mpir8,  0, mpicom)
    call mpibcast(clubb_c_K10,      1, mpir8,  0, mpicom)
    call mpibcast(clubb_wpxp_L_thresh, 1, mpir8,  0, mpicom)
+   call mpibcast(clubb_C_invrs_tau_bkgnd, 1, mpir8,  0, mpicom)
+   call mpibcast(clubb_C_invrs_tau_sfc, 1, mpir8,  0, mpicom)
+   call mpibcast(clubb_C_invrs_tau_shear, 1, mpir8,  0, mpicom) 
+   call mpibcast(clubb_C_invrs_tau_N2 , 1, mpir8,  0, mpicom)
+   call mpibcast(clubb_C_invrs_tau_N2_wp2 , 1, mpir8,  0, mpicom)
+   call mpibcast(clubb_C_invrs_tau_N2_xp2 , 1, mpir8,  0, mpicom)
+   call mpibcast(clubb_C_invrs_tau_N2_wpxp , 1, mpir8,  0, mpicom)
+   call mpibcast(clubb_C_invrs_tau_N2_clear_wp3 , 1, mpir8,  0, mpicom)
+   call mpibcast(clubb_C_wp2_splat, 1, mpir8,  0, mpicom)
 #endif
 
 
@@ -1095,7 +1179,12 @@ module parameters_tunable
 #ifdef E3SM
     if (clubb_C1 /= init_value) then
        C1 = clubb_C1
-       C1b = C1
+    endif
+    if (clubb_C1b /= init_value) then
+       C1b = clubb_C1b
+    end if
+    if (clubb_C1c /= init_value) then
+       C1c = clubb_C1c
     end if
     ! if clubb_C2thl and clubb_C2rtthl not specified, continue to use C2thl=C2rt, C2rtthl = 1.3*C2rt
     ! to preserve existing compsets that have assumed so and only vary C2rt
@@ -1107,17 +1196,24 @@ module parameters_tunable
     ! Allows C2thl and C2rtthl to vary separately
     if (clubb_C2thl /= init_value) C2thl = clubb_C2thl
     if (clubb_C2rtthl /= init_value) C2rtthl = clubb_C2rtthl
+    if (clubb_C4 /= init_value) C4 = clubb_C4
+    if (clubb_C5 /= init_value) C5 = clubb_C5
     if (clubb_C6rt /= init_value) then
        C6rt = clubb_C6rt
        C6thl = C6rt
     end if
     if (clubb_C6rtb /= init_value) C6rtb = clubb_C6rtb
+    if (clubb_C6rtc /= init_value) C6rtc = clubb_C6rtc
+    if (clubb_C6thlb /= init_value) C6thlb = clubb_C6thlb
+    if (clubb_C6thlc /= init_value) C6thlc = clubb_C6thlc
     if (clubb_C7 /= init_value) C7 = clubb_C7
     if (clubb_C7b /= init_value) C7b = clubb_C7b
     if (clubb_C8 /= init_value) C8 = clubb_C8
     if (clubb_C11 /= init_value) C11 = clubb_C11
     if (clubb_C11b /= init_value) C11b = clubb_C11b
+    if (clubb_C11c /= init_value) C11c = clubb_C11c
     if (clubb_C14 /= init_value) C14 = clubb_C14
+    if (clubb_C15 /= init_value) C15 = clubb_C15
     if (clubb_beta /= init_value) beta = clubb_beta
     ! if clubb_gamma_coefb not specified, continue to use gamma_coefb=gamma_coef
     ! to preserve existing compsets that have assumed so  and only vary gamma_coef
@@ -1127,10 +1223,30 @@ module parameters_tunable
     end if
     ! Allows gamma_coefb to vary separately
     if (clubb_gamma_coefb /= init_value) gamma_coefb = clubb_gamma_coefb
+    if (clubb_gamma_coefc /= init_value) gamma_coefc = clubb_gamma_coefc
     if (clubb_mu /= init_value) mu = clubb_mu
     if (clubb_nu1 /= init_value) nu1 = clubb_nu1
+    if (clubb_nu2 /= init_value) nu2 = clubb_nu2
+    if (clubb_c_K2 /= init_value) c_K2 = clubb_c_K2
     if (clubb_c_K10 /= init_value) c_K10 = clubb_c_K10
-    if (clubb_wpxp_L_thresh /= init_value)wpxp_L_thresh = clubb_wpxp_L_thresh
+    if (clubb_wpxp_L_thresh /= init_value) wpxp_L_thresh = clubb_wpxp_L_thresh
+    if (clubb_C_invrs_tau_bkgnd /= init_value) &
+       C_invrs_tau_bkgnd = clubb_C_invrs_tau_bkgnd
+    if (clubb_C_invrs_tau_sfc /= init_value) &
+       C_invrs_tau_sfc = clubb_C_invrs_tau_sfc
+    if (clubb_C_invrs_tau_shear /= init_value) &
+       C_invrs_tau_shear = clubb_C_invrs_tau_shear
+    if (clubb_C_invrs_tau_N2 /= init_value) &
+       C_invrs_tau_N2 = clubb_C_invrs_tau_N2
+    if (clubb_C_invrs_tau_N2_wp2 /= init_value) &
+       C_invrs_tau_N2_wp2 = clubb_C_invrs_tau_N2_wp2
+    if (clubb_C_invrs_tau_N2_xp2 /= init_value) &
+       C_invrs_tau_N2_xp2 = clubb_C_invrs_tau_N2_xp2
+    if (clubb_C_invrs_tau_N2_wpxp /= init_value) &
+       C_invrs_tau_N2_wpxp = clubb_C_invrs_tau_N2_wpxp
+    if (clubb_C_invrs_tau_N2_clear_wp3 /= init_value) &
+       C_invrs_tau_N2_clear_wp3 = clubb_C_invrs_tau_N2_clear_wp3
+    if (clubb_C_wp2_splat  /= init_value ) C_wp2_splat = clubb_C_wp2_splat
 #endif /*E3SM*/
 
     ! Put the variables in the output array
