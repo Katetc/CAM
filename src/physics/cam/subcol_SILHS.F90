@@ -581,7 +581,6 @@ contains
                                          read_parameters_api
    
       use silhs_api_module, only :       generate_silhs_sample_api, & ! Ncn_to_Nc, &
-                                         lh_clipped_variables_type, &
                                          clip_transform_silhs_output_api, &
                                          est_kessler_microphys_api
 
@@ -694,8 +693,12 @@ contains
       !----------------
       ! Output from clip_transform_silhs_output_api
       !----------------
-      type(lh_clipped_variables_type), dimension(:,:), allocatable :: &
-        lh_clipped_vars
+      real( kind = core_rknd ), dimension(:,:), allocatable :: &
+        lh_rt_clipped,  & ! rt generated from silhs sample points
+        lh_thl_clipped, & ! thl generated from silhs sample points
+        lh_rc_clipped,  & ! rc generated from silhs sample points
+        lh_rv_clipped,  & ! rv generated from silhs sample points
+        lh_Nc_clipped     ! Nc generated from silhs sample points
 
       logical, parameter :: &
         l_use_Ncn_to_Nc = .true.  ! Whether to call Ncn_to_Nc (.true.) or not (.false.);
@@ -963,7 +966,11 @@ contains
          allocate( lh_sample_point_weights(pverp-top_lev+1,num_subcols) )
          allocate( X_mixt_comp_all_levs(pverp-top_lev+1,num_subcols) )
          allocate( X_nl_all_levs(pverp-top_lev+1,num_subcols,pdf_dim) )
-         allocate( lh_clipped_vars(pverp-top_lev+1,num_subcols) )
+         allocate( lh_rt_clipped(pverp-top_lev+1,num_subcols) )
+         allocate( lh_thl_clipped(pverp-top_lev+1,num_subcols) )
+         allocate( lh_rc_clipped(pverp-top_lev+1,num_subcols) )
+         allocate( lh_rv_clipped(pverp-top_lev+1,num_subcols) )
+         allocate( lh_Nc_clipped(pverp-top_lev+1,num_subcols) )
          ! Allocate arrays for output to either history files or for updating state_sc
          allocate( rc_all_points(pverp-top_lev+1, num_subcols) )
          allocate( rain_all_pts(pverp-top_lev+1, num_subcols) )
@@ -1084,7 +1091,9 @@ contains
                                                X_nl_all_levs, &        ! In
                                                pdf_params_chnk(i,lchnk), & ! In
                                                l_use_Ncn_to_Nc, & ! In
-                                               lh_clipped_vars )       ! Out
+                                               lh_rt_clipped, lh_thl_clipped, & ! Out
+                                               lh_rc_clipped, lh_rv_clipped, & ! Out
+                                               lh_Nc_clipped ) ! Out
 
          ! Test subcolumns by comparing to an estimate of kessler autoconversion
          call est_kessler_microphys_api &
@@ -1095,7 +1104,7 @@ contains
                 lh_AKm, AKm, AKstd, AKstd_cld, AKm_rcm, AKm_rcc, lh_rcm_avg)
 
          ! Calc column liquid water for output (rcm)
-         rc_all_points = lh_clipped_vars(:,:)%rc
+         rc_all_points = lh_rc_clipped(:,:)
 
          if ( iiPDF_rr > 0 ) then
              ! Calc subcolumn precipitating liq water for output (rrm)
@@ -1130,7 +1139,7 @@ contains
          ! Calc subcolumn vert velocity for output (wm)
          w_all_points = real( X_nl_all_levs(:,:,iiPDF_w), kind=r8 )
          ! Calc cloud liq water number conc 
-         nclw_all_pts = lh_clipped_vars(:,:)%Nc
+         nclw_all_pts = lh_Nc_clipped(:,:)
          ! Calc mean liquid water potential temp for clear air
          !call THL_profile(pver, state%t(i,:), invs_exner(i,:), No_cloud, Temp_prof)
 
@@ -1167,14 +1176,14 @@ contains
          ! Updating state variables
          do k = top_lev, pverp
             do j = 1, num_subcols
-               RT_lh_out(    stncol+j,k ) = lh_clipped_vars(pverp-k+1,j)%rt
+               RT_lh_out(    stncol+j,k ) = lh_rt_clipped(pverp-k+1,j)
                RCM_lh_out(   stncol+j,k ) = rc_all_points(pverp-k+1,j)
                NCLW_lh_out(  stncol+j,k ) = nclw_all_pts(pverp-k+1,j)
                ICE_lh_out(   stncol+j,k ) = ice_all_pts(pverp-k+1,j)
                NICE_lh_out(  stncol+j,k ) = nice_all_pts(pverp-k+1,j)
 !               RVM_lh_out(j,k) = RT_lh_out(stncol+j,k)-RCM_lh_out(stncol+j,k)-ICE_lh_out(stncol+j,k)
-               RVM_lh_out(   stncol+j,k ) = lh_clipped_vars(pverp-k+1,j)%rv
-               THL_lh_out(   stncol+j,k ) = lh_clipped_vars(pverp-k+1,j)%thl
+               RVM_lh_out(   stncol+j,k ) = lh_rv_clipped(pverp-k+1,j)
+               THL_lh_out(   stncol+j,k ) = lh_thl_clipped(pverp-k+1,j)
                RAIN_lh_out(  stncol+j,k ) = rain_all_pts(pverp-k+1,j)
                NRAIN_lh_out( stncol+j,k ) = nrain_all_pts(pverp-k+1,j)
                SNOW_lh_out(  stncol+j,k ) = snow_all_pts(pverp-k+1,j)
@@ -1352,7 +1361,8 @@ contains
      
          ! Deallocate the dynamic arrays used
          deallocate( lh_sample_point_weights, X_mixt_comp_all_levs, &
-                     X_nl_all_levs, lh_clipped_vars, &
+                     X_nl_all_levs, lh_rt_clipped, lh_thl_clipped, lh_rc_clipped, &
+                     lh_rv_clipped, lh_Nc_clipped, &
                      corr_array_1, corr_array_2, mu_x_1, mu_x_2, sigma_x_1, &
                      sigma_x_2, corr_cholesky_mtx_1, corr_cholesky_mtx_2 )
          ! deallocate( RVM_lh_out ) 
