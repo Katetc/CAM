@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Variables
-CASE="trunk_tag_cam5_4_175"
+CASE="test_CLUBB_ZM_default"
 CASEROOT="/glade/scratch/$USER/$CASE"
 MACH="cheyenne"
-COMPSET="F2000_DEV"
+COMPSET="F2000climo"
 #RES="f09_f09"
 RES="f19_f19"
 QUEUE="regular"
@@ -57,6 +57,20 @@ echo "----- Run configuration -----"
 ./xmlchange STOP_OPTION=nmonths
 ./xmlchange STOP_N=14
 ./xmlchange DOUT_S="FALSE" # Turn on/off short-term archiving
+
+cat >> user_nl_cam << EOF
+nhtfrq = 0,-24,-6,-3
+mfilt = 1,5000,5000
+history_amwg = .true.
+fincl1 = 'U:A','PS:A','T:A','V:A','OMEGA:A','Z3:A','PRECT:A',
+'CLDLIQ:A', 'CLDICE:A', 'LWCF:A', 'SWCF:A', 'FLUT:A',
+'TMQ:A', 'PRECC:A', 'PRECL:A', 'CME:A', 'PRODPREC:A',
+'EVAPPREC:A','EVAPSNOW:A','ICWMRST:A','ICIMRST:A','PRAO:A',
+'PRCO:A','QCSEVAP:A','QISEVAP:A','QVRES:A','CMEIOUT:A','VTRMI:A',
+'VTRMC:A','QCSEDTEN:A','QISEDTEN:A','MNUCCCO:A','MNUCCTO:A'
+fincl2 = 'CLDTOT', 'CLDST','CDNUMC','CLDLIQ','CLDICE','FLUT',
+'LWCF','SWCF','PRECT'
+EOF
 
 # Run submission
 echo "----- Run Submission -----"

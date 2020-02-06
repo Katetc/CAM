@@ -102,27 +102,31 @@ module clubb_intr
 
   real(r8) :: clubb_c1 = unset_r8
   real(r8) :: clubb_c1b = unset_r8
-  real(r8) :: clubb_c11 = unset_r8
-  real(r8) :: clubb_c11b = unset_r8
-  real(r8) :: clubb_c14 = unset_r8
-  real(r8) :: clubb_c_K10 = unset_r8
-  real(r8) :: clubb_c_K10h = unset_r8
-  real(r8) :: clubb_beta = unset_r8
   real(r8) :: clubb_C2rt = unset_r8
   real(r8) :: clubb_C2thl = unset_r8
   real(r8) :: clubb_C2rtthl = unset_r8
+  real(r8) :: clubb_C4 = unset_r8
   real(r8) :: clubb_C8 = unset_r8
   real(r8) :: clubb_C8b = unset_r8
   real(r8) :: clubb_C7 = unset_r8
   real(r8) :: clubb_C7b = unset_r8
+  real(r8) :: clubb_c11 = unset_r8
+  real(r8) :: clubb_c11b = unset_r8
+  real(r8) :: clubb_c14 = unset_r8
+  real(r8) :: clubb_c_K9 = unset_r8
+  real(r8) :: clubb_nu9 = unset_r8
+  real(r8) :: clubb_c_K10 = unset_r8
+  real(r8) :: clubb_c_K10h = unset_r8
   real(r8) :: clubb_gamma_coef = unset_r8
   real(r8) :: clubb_gamma_coefb = unset_r8
+  real(r8) :: clubb_beta = unset_r8
   real(r8) :: clubb_lambda0_stability_coef = unset_r8
   real(r8) :: clubb_lmin_coef = unset_r8
   real(r8) :: clubb_mult_coef = unset_r8
   real(r8) :: clubb_Skw_denom_coef = unset_r8
   real(r8) :: clubb_skw_max_mag = unset_r8
   real(r8) :: clubb_up2_vp2_factor = unset_r8
+  real(r8) :: clubb_C_wp2_splat = unset_r8
   logical  :: clubb_l_brunt_vaisala_freq_moist = .false.
   logical  :: clubb_l_call_pdf_closure_twice = .false.
   logical  :: clubb_l_damp_wp3_Skw_squared = .false.
@@ -139,6 +143,8 @@ module clubb_intr
   logical  :: clubb_l_use_cloud_cover = .false.
   logical  :: clubb_l_use_thvm_in_bv_freq = .false.
   logical  :: clubb_l_vert_avg_closure = .false.
+  logical  :: clubb_l_diag_Lscale_from_tau = .false.
+  logical  :: clubb_l_damp_wp2_using_em = .false.
 
 !  Constant parameters
   logical, parameter, private :: &
@@ -511,6 +517,7 @@ end subroutine clubb_init_cnst
     namelist /clubb_params_nl/ clubb_c1, clubb_c1b, clubb_c11, clubb_c11b, clubb_c14, clubb_mult_coef, clubb_gamma_coef, &
                                clubb_c_K10, clubb_c_K10h, clubb_beta, clubb_C2rt, clubb_C2thl, &
 			       clubb_C2rtthl, clubb_C8, clubb_C8b, clubb_C7, clubb_C7b, clubb_Skw_denom_coef, &
+                               clubb_C4, clubb_c_K9, clubb_nu9, clubb_C_wp2_splat, &
                                clubb_lambda0_stability_coef, clubb_l_lscale_plume_centered, &
                                clubb_l_use_ice_latent, clubb_do_liqsupersat, clubb_do_energyfix,&
                                clubb_lmin_coef, clubb_skw_max_mag, clubb_l_stability_correct_tau_zm, &
@@ -521,7 +528,8 @@ end subroutine clubb_init_cnst
                                clubb_l_predict_upwp_vpwp, clubb_l_min_wp2_from_corr_wx, &
                                clubb_l_min_xp2_from_corr_wx, clubb_l_upwind_xpyp_ta, clubb_l_vert_avg_closure, &
                                clubb_l_trapezoidal_rule_zt, clubb_l_trapezoidal_rule_zm, &
-                               clubb_l_call_pdf_closure_twice, clubb_l_use_cloud_cover
+                               clubb_l_call_pdf_closure_twice, clubb_l_use_cloud_cover, &
+                               clubb_l_diag_Lscale_from_tau, clubb_l_damp_wp2_using_em
 
     !----- Begin Code -----
 
@@ -627,6 +635,14 @@ end subroutine clubb_init_cnst
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_C7b")
     call mpi_bcast(clubb_Skw_denom_coef,         1, mpi_real8,   mstrid, mpicom, ierr)
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_Skw_denom_coef")
+    call mpi_bcast(clubb_C4,         1, mpi_real8,   mstrid, mpicom, ierr)
+    if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_C4")
+    call mpi_bcast(clubb_c_K9,         1, mpi_real8,   mstrid, mpicom, ierr)
+    if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_c_K9")
+    call mpi_bcast(clubb_nu9,         1, mpi_real8,   mstrid, mpicom, ierr)
+    if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_nu9")
+    call mpi_bcast(clubb_C_wp2_splat,         1, mpi_real8,   mstrid, mpicom, ierr)
+    if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_C_wp2_splat")
     call mpi_bcast(clubb_lambda0_stability_coef, 1, mpi_real8,   mstrid, mpicom, ierr)
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_lambda0_stability_coef")
     call mpi_bcast(clubb_l_lscale_plume_centered,1, mpi_logical, mstrid, mpicom, ierr)
@@ -679,6 +695,10 @@ end subroutine clubb_init_cnst
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_l_call_pdf_closure_twice")
     call mpi_bcast(clubb_l_use_cloud_cover,         1, mpi_logical, mstrid, mpicom, ierr)
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_l_use_cloud_cover")
+    call mpi_bcast(clubb_l_diag_Lscale_from_tau,         1, mpi_logical, mstrid, mpicom, ierr)
+    if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_l_diag_Lscale_from_tau")
+    call mpi_bcast(clubb_l_damp_wp2_using_em,         1, mpi_logical, mstrid, mpicom, ierr)
+    if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_l_damp_wp2_using_em")
 
     !  Overwrite defaults if they are true
     if (clubb_history) l_stats = .true.
@@ -763,7 +783,7 @@ end subroutine clubb_init_cnst
     use clubb_api_module, only: &
          ilambda0_stability_coef, ic_K10, ic_K10h, iC2rtthl, iC7, iC7b, iC8, iC8b, iC11, iC11b, &
          iC14, igamma_coef, imult_coef, ilmin_coef, iSkw_denom_coef, ibeta, iskw_max_mag, &
-         iC2rt, iC2thl, iC2rtthl
+         iC2rt, iC2thl, iC2rtthl, ic_K9, inu9, iC_wp2_splat
 
     use time_manager,              only: is_first_step
     use clubb_api_module,          only: hydromet_dim
@@ -976,6 +996,10 @@ end subroutine clubb_init_cnst
     clubb_params(iC1b) = clubb_C1b
     clubb_params(igamma_coefb) = clubb_gamma_coefb
     clubb_params(iup2_vp2_factor) = clubb_up2_vp2_factor
+    clubb_params(iC4) = clubb_C4
+    clubb_params(ic_K9) = clubb_c_K9
+    clubb_params(inu9)  = clubb_nu9
+    clubb_params(iC_wp2_splat) = clubb_C_wp2_splat
 
     call init_clubb_config_flags( clubb_config_flags ) ! In/Out
     clubb_config_flags%l_use_C7_Richardson = clubb_l_use_C7_Richardson
@@ -997,6 +1021,8 @@ end subroutine clubb_init_cnst
     clubb_config_flags%l_do_expldiff_rtm_thlm = do_expldiff
     clubb_config_flags%l_Lscale_plume_centered = clubb_l_lscale_plume_centered
     clubb_config_flags%l_use_ice_latent = clubb_l_use_ice_latent
+    clubb_config_flags%l_diag_Lscale_from_tau = clubb_l_diag_Lscale_from_tau
+    clubb_config_flags%l_damp_wp2_using_em = clubb_l_damp_wp2_using_em
 
    
     !  Set up CLUBB core.  Note that some of these inputs are overwritten
