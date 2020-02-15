@@ -816,6 +816,7 @@ end subroutine clubb_init_cnst
     integer :: lptr
 
     logical, parameter :: l_input_fields = .false. ! Always false for CAM-CLUBB.
+    logical, parameter :: l_update_pressure = .false. ! Always false for CAM-CLUBB.
 
     real(r8)  :: zt_g(pverp+1-top_lev)          ! Height dummy array
     real(r8)  :: zi_g(pverp+1-top_lev)          ! Height dummy array
@@ -1023,6 +1024,7 @@ end subroutine clubb_init_cnst
     clubb_config_flags%l_use_ice_latent = clubb_l_use_ice_latent
     clubb_config_flags%l_diag_Lscale_from_tau = clubb_l_diag_Lscale_from_tau
     clubb_config_flags%l_damp_wp2_using_em = clubb_l_damp_wp2_using_em
+    clubb_config_flags%l_update_pressure = l_update_pressure
 
    
     !  Set up CLUBB core.  Note that some of these inputs are overwritten
@@ -4235,7 +4237,8 @@ end function diag_ustar
       l_single_C2_Skw,              & ! Use a single Skewness dependent C2 for rtp2, thlp2, and
                                       ! rtpthlp
       l_damp_wp3_Skw_squared,       & ! Set damping on wp3 to use Skw^2 rather than Skw^4
-      l_prescribed_avg_deltaz         ! used in adj_low_res_nu. If .true., avg_deltaz = deltaz
+      l_prescribed_avg_deltaz,      & ! used in adj_low_res_nu. If .true., avg_deltaz = deltaz
+      l_update_pressure               ! Flag for having CLUBB update pressure and exner
 
     logical, save :: first_call = .true.
 
@@ -4278,7 +4281,8 @@ end function diag_ustar
                                                l_rcm_supersat_adj, & ! Out
                                                l_single_C2_Skw, & ! Out
                                                l_damp_wp3_Skw_squared, & ! Out
-                                               l_prescribed_avg_deltaz ) ! Out
+                                               l_prescribed_avg_deltaz, & ! Out
+                                               l_update_pressure ) ! Out
 
       call initialize_clubb_config_flags_type_api( l_use_precip_frac, & ! In
                                                    l_predict_upwp_vpwp, & ! In
@@ -4318,6 +4322,7 @@ end function diag_ustar
                                                    l_single_C2_Skw, & ! In
                                                    l_damp_wp3_Skw_squared, & ! In
                                                    l_prescribed_avg_deltaz, & ! In
+                                                   l_update_pressure, & ! In
                                                    clubb_config_flags_in ) ! Out
 
       first_call = .false.
