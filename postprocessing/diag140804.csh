@@ -167,7 +167,7 @@ set cntl_compute_climo = 1    # (0=ON,1=OFF)
 # First year of data is: $test_first_yr     (must be >= 1)
 # Number of years is: $test_nyrs         (must be >= 1)
 
-set test_first_yr = 0              # first year (must be >= 1)
+set test_first_yr = 2000              # first year (must be >= 1)
 set test_nyrs     = 1           # number of yrs (must be >= 1)
 
 # FOR CNTL == USER ONLY (otherwise skip this section)

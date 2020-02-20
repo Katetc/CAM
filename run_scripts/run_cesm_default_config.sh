@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Variables
-CASE="test_CLUBB_ZM_default"
+CASE="test_CLUBB_ZM_aee778a"
 CASEROOT="/glade/scratch/$USER/$CASE"
 MACH="cheyenne"
 COMPSET="F2000climo"
