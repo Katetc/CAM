@@ -1503,6 +1503,12 @@ end subroutine clubb_init_cnst
    real(r8) :: rtm_forcing(pverp+1-top_lev)		  ! r_t forcing (thermodynamic levels)          [(kg/kg)/s]	
    real(r8) :: um_forcing(pverp+1-top_lev)		  ! u wind forcing (thermodynamic levels)     	[m/s/s]
    real(r8) :: vm_forcing(pverp+1-top_lev)		  ! v wind forcing (thermodynamic levels)     	[m/s/s]
+   real(r8) :: rtm_ref(pverp+1-top_lev)                   ! Initial profile of rtm                      [kg/kg]
+   real(r8) :: thlm_ref(pverp+1-top_lev)                  ! Initial profile of thlm                     [K]
+   real(r8) :: um_ref(pverp+1-top_lev)                    ! Initial profile of um                       [m/s]
+   real(r8) :: vm_ref(pverp+1-top_lev)                    ! Initial profile of vm                       [m/s]
+   real(r8) :: ug(pverp+1-top_lev)                        ! U geostrophic wind                          [m/s]
+   real(r8) :: vg(pverp+1-top_lev)                        ! V geostrophic wind                          [m/s]
    real(r8) :: wm_zm(pverp+1-top_lev)			  ! w mean wind component on momentum levels  	[m/s]
    real(r8) :: wm_zt(pverp+1-top_lev)			  ! w mean wind component on thermo. levels   	[m/s]
    real(r8) :: p_in_Pa(pverp+1-top_lev)			  ! Air pressure (thermodynamic levels)       	[Pa]
@@ -2182,6 +2188,13 @@ end subroutine clubb_init_cnst
       thlp2_forcing   = 0._r8
       rtpthlp_forcing = 0._r8
 
+      rtm_ref = 0.0_r8
+      thlm_ref = 0.0_r8
+      um_ref = 0.0_r8
+      vm_ref = 0.0_r8
+      ug = 0.0_r8
+      vg = 0.0_r8
+
       ice_supersat_frac_out = 0._r8
 
       ! Add forcings for SILHS covariance contributions
@@ -2334,6 +2347,7 @@ end subroutine clubb_init_cnst
             rtpthlp_forcing, wm_zm, wm_zt, &
             wpthlp_sfc, wprtp_sfc, upwp_sfc, vpwp_sfc, &
             wpsclrp_sfc, wpedsclrp_sfc, &
+            rtm_ref, thlm_ref, um_ref, vm_ref, ug, vg, &
             p_in_Pa, rho_zm, rho_in, exner, &
             rho_ds_zm, rho_ds_zt, invrs_rho_ds_zm, &
             invrs_rho_ds_zt, thv_ds_zm, thv_ds_zt, hydromet, &
