@@ -1005,10 +1005,14 @@ contains
          ! The l_calc_w_corr flag is turned off by default, so wphydrometp will
          ! simply be set to 0 to simplify matters.
          wphydrometp = 0.0_r8
-     
+
+         do k = 1, pverp-top_lev+1
+            khzm(k) = khzm_in(i,pverp-k+1)
+         enddo
+
          ! make the call
          call setup_pdf_parameters_api( pverp-top_lev+1, pdf_dim, ztodt, &                 ! In
-                                        Nc_in_cloud, rcm_in, cld_frac_in, &                ! In
+                                        Nc_in_cloud, rcm_in, cld_frac_in, khzm, &          ! In
                                         ice_supersat_frac_in, hydromet, wphydrometp, &     ! In
                                         corr_array_n_cloud, corr_array_n_below, &          ! In
                                         pdf_params_chnk(i,lchnk), l_stats_samp, &          ! In
@@ -1056,8 +1060,7 @@ contains
          ! needs to be interpolated back to thermodynamic (midpoint) grid levels
          ! for further use.
          do k = 1, pverp-top_lev+1
-            khzm(k) = khzm_in(i,pverp-k+1)
-            tke(k)  = tke_in(i,pverp-k+1)
+            tke(k) = tke_in(i,pverp-k+1)
          enddo
          Lscale_zm = khzm / ( c_K * sqrt( max( tke, em_min ) ) )
 
