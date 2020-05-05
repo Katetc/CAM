@@ -3086,7 +3086,6 @@ if ($clubb_sgs  =~ /$TRUE/io) {
    add_default($nl, 'clubb_l_use_C7_Richardson');
    add_default($nl, 'clubb_l_use_C11_Richardson');
    add_default($nl, 'clubb_l_use_cloud_cover');
-   add_default($nl, 'clubb_l_use_ice_latent');
    add_default($nl, 'clubb_l_use_thvm_in_bv_freq');
    add_default($nl, 'clubb_l_vert_avg_closure');
    add_default($nl, 'clubb_l_diag_Lscale_from_tau');

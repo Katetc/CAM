@@ -164,7 +164,6 @@ module clubb_intr
   logical            :: history_budget
 
   logical            :: clubb_l_lscale_plume_centered
-  logical            :: clubb_l_use_ice_latent
 
   integer            :: history_budget_histfile_num
   integer            :: edsclr_dim       ! Number of scalars to transport in CLUBB
@@ -519,7 +518,7 @@ end subroutine clubb_init_cnst
 			       clubb_C2rtthl, clubb_C8, clubb_C8b, clubb_C7, clubb_C7b, clubb_Skw_denom_coef, &
                                clubb_C4, clubb_c_K9, clubb_nu9, clubb_C_wp2_splat, &
                                clubb_lambda0_stability_coef, clubb_l_lscale_plume_centered, &
-                               clubb_l_use_ice_latent, clubb_do_liqsupersat, clubb_do_energyfix,&
+                               clubb_do_liqsupersat, clubb_do_energyfix,&
                                clubb_lmin_coef, clubb_skw_max_mag, clubb_l_stability_correct_tau_zm, &
                                clubb_gamma_coefb, clubb_up2_vp2_factor, &
                                clubb_l_use_C7_Richardson, clubb_l_use_C11_Richardson, &
@@ -542,7 +541,6 @@ end subroutine clubb_init_cnst
     do_expldiff        = .false.   ! Initialize to false
 
     clubb_l_lscale_plume_centered = .false. ! Initialize to false!
-    clubb_l_use_ice_latent        = .false. ! Initialize to false!
 
     !  Read namelist to determine if CLUBB history should be called
     if (masterproc) then
@@ -647,8 +645,6 @@ end subroutine clubb_init_cnst
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_lambda0_stability_coef")
     call mpi_bcast(clubb_l_lscale_plume_centered,1, mpi_logical, mstrid, mpicom, ierr)
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_l_lscale_plume_centered")
-    call mpi_bcast(clubb_l_use_ice_latent,       1, mpi_logical, mstrid, mpicom, ierr)
-    if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_l_use_ice_latent")
     call mpi_bcast(clubb_do_liqsupersat,         1, mpi_logical, mstrid, mpicom, ierr)
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_do_liqsupersat")
     call mpi_bcast(clubb_do_energyfix,         1, mpi_logical, mstrid, mpicom, ierr)
@@ -1021,7 +1017,6 @@ end subroutine clubb_init_cnst
     clubb_config_flags%l_stability_correct_tau_zm = clubb_l_stability_correct_tau_zm
     clubb_config_flags%l_do_expldiff_rtm_thlm = do_expldiff
     clubb_config_flags%l_Lscale_plume_centered = clubb_l_lscale_plume_centered
-    clubb_config_flags%l_use_ice_latent = clubb_l_use_ice_latent
     clubb_config_flags%l_diag_Lscale_from_tau = clubb_l_diag_Lscale_from_tau
     clubb_config_flags%l_damp_wp2_using_em = clubb_l_damp_wp2_using_em
     clubb_config_flags%l_update_pressure = l_update_pressure
@@ -1042,7 +1037,6 @@ end subroutine clubb_init_cnst
            l_implemented, grid_type, zi_g(2), zi_g(1), zi_g(nlev+1),& ! In
            zi_g(1:nlev+1), zt_g(1:nlev+1), sfc_elevation, &           ! In
            clubb_config_flags%l_predict_upwp_vpwp, &                  ! In
-           clubb_config_flags%l_use_ice_latent, &                     ! In
            clubb_config_flags%l_prescribed_avg_deltaz, &              ! In
            clubb_config_flags%l_damp_wp2_using_em, &                  ! In
            clubb_config_flags%l_stability_correct_tau_zm, &           ! In
@@ -4243,8 +4237,6 @@ end function diag_ustar
       l_Lscale_plume_centered,      & ! Alternate that uses the PDF to compute the perturbed values
       l_diag_Lscale_from_tau,       & ! First diagnose dissipation time tau, and then diagnose the
                                       ! mixing length scale as Lscale = tau * tke
-      l_use_ice_latent,             & ! Includes the effects of ice latent heating in turbulence
-                                      ! terms
       l_use_C7_Richardson,          & ! Parameterize C7 based on Richardson number
       l_use_C11_Richardson,         & ! Parameterize C11 and C16 based on Richardson number
       l_brunt_vaisala_freq_moist,   & ! Use a different formula for the Brunt-Vaisala frequency in
@@ -4290,7 +4282,6 @@ end function diag_ustar
                                                l_do_expldiff_rtm_thlm, & ! Out
                                                l_Lscale_plume_centered, & ! Out
                                                l_diag_Lscale_from_tau, & ! Out
-                                               l_use_ice_latent, & ! Out
                                                l_use_C7_Richardson, & ! Out
                                                l_use_C11_Richardson, & ! Out
                                                l_brunt_vaisala_freq_moist, & ! Out
@@ -4330,7 +4321,6 @@ end function diag_ustar
                                                    l_do_expldiff_rtm_thlm, & ! In
                                                    l_Lscale_plume_centered, & ! In
                                                    l_diag_Lscale_from_tau, & ! In
-                                                   l_use_ice_latent, & ! In
                                                    l_use_C7_Richardson, & ! In
                                                    l_use_C11_Richardson, & ! In
                                                    l_brunt_vaisala_freq_moist, & ! In

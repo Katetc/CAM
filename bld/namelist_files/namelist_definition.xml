@@ -3579,12 +3579,6 @@ levels influence the amount of cloudiness and amount of cloud water in a
 grid box.
 </entry>
 
-<entry id="clubb_l_use_ice_latent" type="logical" category="pblrad"
-       group="clubb_params_nl" valid_values="" >
-Include the effects of ice latent heating in turbulence terms
-Default: .false.
-</entry>
-
 <entry id="clubb_l_use_thvm_in_bv_freq" type="logical" category="pblrad"
        group="clubb_params_nl" valid_values="" >
 Flag to use mean theta-v in the calculation of Brunt-Vaisala frequency.
