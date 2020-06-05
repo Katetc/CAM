@@ -2370,6 +2370,10 @@ contains
           !===================================================
           ! Calculate cloud microphysics
           !===================================================
+          
+          if (is_subcol_on() .ne. use_subcol_microp ) then
+            call endrun("Error calculating cloud microphysics: is_subcol_on() != use_subcol_microp")
+          end if
 
           if (is_subcol_on()) then
              ! Allocate sub-column structures.
