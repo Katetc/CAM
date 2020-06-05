@@ -2371,7 +2371,7 @@ contains
           ! Calculate cloud microphysics
           !===================================================
           
-          if (is_subcol_on() .ne. use_subcol_microp ) then
+          if (is_subcol_on() .neqv. use_subcol_microp ) then
             call endrun("Error calculating cloud microphysics: is_subcol_on() != use_subcol_microp")
           end if
 
