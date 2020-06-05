@@ -1,13 +1,15 @@
 #!/bin/bash
 #
 # How to use:
-#  Pass the case name you wish to run as the first argument (this is = $1)
+#  Pass the case name you wish to run as the last argument (this is = $1)
 #  e.g. "./run_scam.bash atex"
+#
+#  To run with SILHS sampling enabled, add -s or --silhs before the case name
+#  e.g "./run_scam.bash -s atex"
 #
 ##########################################################
 # Variables
-CASE="scam_$1"
-#MACH="cheyenne"
+CASE="scam_${@: -1}"
 CASEROOT="/home/$USER/projects/scratch/$CASE"
 MACH="nelson"
 COMPSET="FSCAM"
@@ -18,6 +20,36 @@ WALL_TIME="00:15:00" # H:MM:SS
 # Configuration parameters
 NUMSC=4
 MGVER=2 # Currently "1" and "2" are allowed
+SILHS_ENABLED=false
+use_subcol_microp_namelist_value=".false."
+
+# Note that we use `"$@"' to let each command-line parameter expand to a
+# separate word. The quotes around `$@' are essential!
+# We need TEMP as the `eval set --' would nuke the return value of getopt.
+# This also expects gnu-getopt as opposed to BSD getopt.
+# Make sure you have gnu-getopt installed and it is before BSD getopt in your PATH.
+TEMP=`getopt -o s --long silhs -n 'compile.bash' -- "$@"`
+
+if [ $? != 0 ] ; then echo "Run with -h for help." >&2 ; exit 1 ; fi
+
+# Note the quotes around `$TEMP': they are essential!
+eval set -- "$TEMP"
+
+while true ; do
+	case "$1" in
+		-s|--silhs) # Indicates we want to run with SILHS enabled
+
+      # Set silhs flag to true
+      SILHS_ENABLED=true
+
+      # Ensure use_subcol_microp is true in namelist, required for silhs
+      use_subcol_microp_namelist_value=".true."
+
+			shift ;;
+		--) shift ; break ;;
+		*) echo "Something bad happened!" ; exit 1 ;;
+	esac
+done
 
 # Obtain the CAM source directory. This solution is from Stack Overflow.
 # http://stackoverflow.com/questions/59895/can-a-bash-script-tell-what-directory-its-stored-in
@@ -40,8 +72,13 @@ cd "test_$CASE"
 
 # Compile configuration 
 echo "----- Compile Configuration -----"
-# To shut off SILHS, delete -psubcols $NUMSC and -DSILHS below:
-./xmlchange CAM_CONFIG_OPTS="-phys cam5 -clubb_sgs -rad rrtmg -chem trop_mam3 -silent -microphys mg$MGVER -cppdefs '-DUWM_MISC '"
+
+if [ "$SILHS_ENABLED" = true ] ; then
+  # Setup includes -silhs, -psubcols $NUMSC, and -DSILHS to enable SILHS
+  ./xmlchange CAM_CONFIG_OPTS="-phys cam5 -clubb_sgs -rad rrtmg -chem trop_mam3 -silhs -silent -microphys mg$MGVER -psubcols $NUMSC -cppdefs '-DUWM_MISC -DSILHS'"
+else
+  ./xmlchange CAM_CONFIG_OPTS="-phys cam5 -clubb_sgs -rad rrtmg -chem trop_mam3 -silent -microphys mg$MGVER -cppdefs '-DUWM_MISC'"
+fi
 
 #./xmlchange DEBUG="FALSE" # Set to TRUE for run-time debugging
 
@@ -81,7 +118,7 @@ eddy_scheme = 'CLUBB_SGS'
 shallow_scheme = 'CLUBB_SGS'
 deep_scheme = 'ZM'
 subcol_scheme = 'SILHS'
-use_subcol_microp = .false.
+use_subcol_microp = $use_subcol_microp_namelist_value
 microp_uniform = .false.
 history_amwg = .true.
 history_vdiag = .false.

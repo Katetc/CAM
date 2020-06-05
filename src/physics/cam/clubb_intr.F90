@@ -70,7 +70,9 @@ module clubb_intr
       grid_type    = 3, &               ! The 2 option specifies stretched thermodynamic levels
       hydromet_dim = 0                  ! The hydromet array in SAM-CLUBB is currently 0 elements
    
-  real(r8), parameter, dimension(0) :: &
+  ! Even though sclr_dim is set to 0, the dimension here is set to 1 to prevent compiler errors
+  ! See github ticket larson-group/cam#133 for details
+  real(r8), parameter, dimension(1) :: &
       sclr_tol = 1.e-8_r8               ! Total water in kg/kg
 
   character(len=6) :: saturation_equation

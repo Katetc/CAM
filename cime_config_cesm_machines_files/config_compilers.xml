@@ -1014,6 +1014,35 @@ using a fortran linker.
   </SLIBS>
 </compiler>
 
+<compiler MACH="mitch_gfortran">
+  <FFLAGS>
+    <append>-O0 -g -fbacktrace</append>
+  </FFLAGS>
+  <SCC> /usr/local/mpi/MPICH-3.3.1-gfortran/bin/mpicc </SCC>
+  <SFC> /usr/local/mpi/MPICH-3.3.1-gfortran/bin/mpif90 </SFC>
+  <MPICC> /usr/local/mpi/MPICH-3.3.1-gfortran/bin/mpicc  </MPICC>
+  <MPIFC> /usr/local/mpi/MPICH-3.3.1-gfortran/bin/mpif90 </MPIFC>
+  <SLIBS>
+   <base> -L/usr/local/NETCDF-Fortran-4.4.5-gfortran/lib -lnetcdff -L/usr/local/NETCDF-C-4.7.0-gfortran/lib -lnetcdf -L/usr/local/lapack-3.8.0 -llapack -lblas </base>
+  </SLIBS>
+</compiler>
+
+<compiler MACH="mitch_pgi">
+  <LDFLAGS>
+    <append>-acc -Mcuda</append>
+  </LDFLAGS>
+  <FFLAGS>
+    <append>-O0 -g -traceback -acc</append>
+  </FFLAGS>
+  <SCC> /usr/local/mpi/MPICH-3.3.1-pgi/bin/mpicc </SCC>
+  <SFC> /usr/local/mpi/MPICH-3.3.1-pgi/bin/mpif90 </SFC>
+  <MPICC> /usr/local/mpi/MPICH-3.3.1-pgi/bin/mpicc  </MPICC>
+  <MPIFC> /usr/local/mpi/MPICH-3.3.1-pgi/bin/mpif90 </MPIFC>
+  <SLIBS>
+   <base> -L/usr/local/NETCDF-Fortran-4.4.5-pgi/lib -lnetcdff -L/usr/local/NETCDF-C-4.7.0-pgi/lib -lnetcdf -L/usr/local/lapack-3.8.0 -llapack -lblas </base>
+  </SLIBS>
+</compiler>
+
  <!-- End of UWM larson-group configurations -->
 
 <compiler MACH="laramie">
