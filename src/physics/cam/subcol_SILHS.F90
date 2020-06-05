@@ -128,11 +128,14 @@ contains
    subroutine subcol_readnl_SILHS(nlfile)
 #ifdef CLUBB_SGS
 #ifdef SILHS
-      use namelist_utils,  only: find_group_name
-      use units,           only: getunit, freeunit
-      use spmd_utils,      only: masterproc, masterprocid, mpicom
-      use spmd_utils,      only: mpi_integer, mpi_logical, mpi_character, mpir8
-      use clubb_api_module,only: core_rknd
+      use namelist_utils,   only: find_group_name
+      use units,            only: getunit, freeunit
+      use spmd_utils,       only: masterproc, masterprocid, mpicom
+      use spmd_utils,       only: mpi_integer, mpi_logical, mpi_character, mpir8, iam
+      use clubb_api_module, only: core_rknd
+      use silhs_api_module, only: set_default_silhs_config_flags_api, &
+                                  initialize_silhs_config_flags_type_api, &
+                                  print_silhs_config_flags_api
 #endif
 #endif
       character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
@@ -158,6 +161,34 @@ contains
 !                                 subcol_SILHS_c8, subcol_SILHS_c11, subcol_SILHS_c11b, &
 !                                 subcol_SILHS_gamma_coef, subcol_SILHS_mult_coef, subcol_SILHS_mu
 
+     namelist /silhs_config_flags_nl/ l_lh_importance_sampling, &
+                                      l_Lscale_vert_avg, &
+                                      l_lh_straight_mc, &
+                                      l_lh_clustered_sampling, &
+                                      l_rcm_in_cloud_k_lh_start, &
+                                      l_random_k_lh_start, &
+                                      l_max_overlap_in_cloud, &
+                                      l_lh_instant_var_covar_src, &
+                                      l_lh_limit_weights, &
+                                      l_lh_var_frac, &
+                                      l_lh_normalize_weights
+
+      integer :: &
+          cluster_allocation_strategy
+
+      logical :: &
+          l_lh_importance_sampling, &
+          l_Lscale_vert_avg, &
+          l_lh_straight_mc, &
+          l_lh_clustered_sampling, &
+          l_rcm_in_cloud_k_lh_start, &
+          l_random_k_lh_start, &
+          l_max_overlap_in_cloud, &
+          l_lh_instant_var_covar_src, &
+          l_lh_limit_weights, &
+          l_lh_var_frac, &
+          l_lh_normalize_weights
+
       !-----------------------------------------------------------------------------
       ! Set defaults
 
@@ -178,6 +209,54 @@ contains
          close(unitn)
          call freeunit(unitn)
       end if
+
+      ! Set default silhs_config_flags entires
+      call set_default_silhs_config_flags_api( cluster_allocation_strategy, &
+                                               l_lh_importance_sampling, &
+                                               l_Lscale_vert_avg, &
+                                               l_lh_straight_mc, &
+                                               l_lh_clustered_sampling, &
+                                               l_rcm_in_cloud_k_lh_start, &
+                                               l_random_k_lh_start, &
+                                               l_max_overlap_in_cloud, &
+                                               l_lh_instant_var_covar_src, &
+                                               l_lh_limit_weights, &
+                                               l_lh_var_frac, &
+                                               l_lh_normalize_weights )
+
+      ! Get silhs_config_flags entries from namelist
+      if (masterproc) then
+        unitn = getunit()
+        open( unitn, file=trim(nlfile), status='old' )
+        call find_group_name(unitn, 'silhs_config_flags_nl', status=ierr)
+        if (ierr == 0) then
+          read(unitn, silhs_config_flags_nl, iostat=ierr)
+          if (ierr /= 0) then
+            call endrun('silhs_config_flags_nl: ERROR reading namelist')
+          end if
+        end if
+        close(unitn)
+        call freeunit(unitn)
+      end if
+
+      ! Save silhs_config_flags entries into module variable silhs_config_flags
+      call initialize_silhs_config_flags_type_api( cluster_allocation_strategy, &
+                                                   l_lh_importance_sampling, &
+                                                   l_Lscale_vert_avg, &
+                                                   l_lh_straight_mc, &
+                                                   l_lh_clustered_sampling, &
+                                                   l_rcm_in_cloud_k_lh_start, &
+                                                   l_random_k_lh_start, &
+                                                   l_max_overlap_in_cloud, &
+                                                   l_lh_instant_var_covar_src, &
+                                                   l_lh_limit_weights, &
+                                                   l_lh_var_frac, &
+                                                   l_lh_normalize_weights, &
+                                                   silhs_config_flags )
+
+      ! Print the SILHS configurable flags
+      write(iulog,'(a,i0,a)') " SILHS configurable flags set in thread ", iam, ":"
+      call print_silhs_config_flags_api( iulog, silhs_config_flags ) ! Intent(in)
 
 #ifdef SPMD
       ! Broadcast namelist variables
@@ -214,6 +293,17 @@ contains
 !      call mpi_bcast(subcol_SILHS_gamma_coef, 1, mpir8, masterprocid, mpicom, ierr)
 !      call mpi_bcast(subcol_SILHS_mult_coef, 1, mpir8, masterprocid, mpicom, ierr)
 !      call mpi_bcast(subcol_SILHS_mu, 1, mpir8, masterprocid, mpicom, ierr)
+      call mpi_bcast(l_lh_importance_sampling, 1, mpi_logical, masterprocid, mpicom, ierr)
+      call mpi_bcast(l_Lscale_vert_avg, 1, mpi_logical, masterprocid, mpicom, ierr)
+      call mpi_bcast(l_lh_straight_mc, 1, mpi_logical, masterprocid, mpicom, ierr)
+      call mpi_bcast(l_lh_clustered_sampling, 1, mpi_logical, masterprocid, mpicom, ierr)
+      call mpi_bcast(l_rcm_in_cloud_k_lh_start, 1, mpi_logical, masterprocid, mpicom, ierr)
+      call mpi_bcast(l_random_k_lh_start, 1, mpi_logical, masterprocid, mpicom, ierr)
+      call mpi_bcast(l_max_overlap_in_cloud, 1, mpi_logical, masterprocid, mpicom, ierr)
+      call mpi_bcast(l_lh_instant_var_covar_src, 1, mpi_logical, masterprocid, mpicom, ierr)
+      call mpi_bcast(l_lh_limit_weights, 1, mpi_logical, masterprocid, mpicom, ierr)
+      call mpi_bcast(l_lh_var_frac, 1, mpi_logical, masterprocid, mpicom, ierr)
+      call mpi_bcast(l_lh_normalize_weights, 1, mpi_logical, masterprocid, mpicom, ierr)
 
 ! SPMD
 #endif
@@ -243,12 +333,6 @@ contains
                                          init_pdf_hydromet_arrays_api, &
                                          Ncnp2_on_Ncnm2, &
                                          set_clubb_debug_level_api
-
-      use silhs_api_module,        only: set_default_silhs_config_flags_api, &
-                                         initialize_silhs_config_flags_type_api, &
-                                         print_silhs_config_flags_api
-
-      use spmd_utils,              only: iam
 
       use clubb_intr,              only: init_clubb_config_flags, &
                                          clubb_config_flags
@@ -280,23 +364,6 @@ contains
           iiNi,         & ! Hydrometeor array index for ice concentration, Ni
           iiNg            ! Hydrometeor array index for graupel concentration, Ng
 
-      integer :: &
-          cluster_allocation_strategy
-
-      logical :: &
-          l_lh_importance_sampling, &
-          l_Lscale_vert_avg, &
-          l_lh_straight_mc, &
-          l_lh_clustered_sampling, &
-          l_rcm_in_cloud_k_lh_start, &
-          l_random_k_lh_start, &
-          l_max_overlap_in_cloud, &
-          l_lh_instant_var_covar_src, &
-          l_lh_limit_weights, &
-          l_lh_var_frac, &
-          l_lh_normalize_weights
-
-
       ! Set CLUBB's debug level
       ! This is called in module clubb_intr; no need to do it here.
 !      call set_clubb_debug_level_api( 0 )
@@ -304,45 +371,14 @@ contains
       !-------------------------------
       ! CLUBB-SILHS Parameters (global module variables)
       !-------------------------------
-      call set_default_silhs_config_flags_api( cluster_allocation_strategy, &
-                                               l_lh_importance_sampling, &
-                                               l_Lscale_vert_avg, &
-                                               l_lh_straight_mc, &
-                                               l_lh_clustered_sampling, &
-                                               l_rcm_in_cloud_k_lh_start, &
-                                               l_random_k_lh_start, &
-                                               l_max_overlap_in_cloud, &
-                                               l_lh_instant_var_covar_src, &
-                                               l_lh_limit_weights, &
-                                               l_lh_var_frac, &
-                                               l_lh_normalize_weights )
 
       call init_clubb_config_flags( clubb_config_flags ) ! In/Out
       clubb_config_flags%l_fix_w_chi_eta_correlations = .true.
-      l_lh_importance_sampling = .true.
       clubb_config_flags%l_diagnose_correlations = .false.
       clubb_config_flags%l_calc_w_corr = .false.
 !      l_prescribed_avg_deltaz = .false.
       clubb_config_flags%l_use_cloud_cover = .false.
       clubb_config_flags%l_const_Nc_in_cloud = .true.
-
-      call initialize_silhs_config_flags_type_api( cluster_allocation_strategy, &
-                                                   l_lh_importance_sampling, &
-                                                   l_Lscale_vert_avg, &
-                                                   l_lh_straight_mc, &
-                                                   l_lh_clustered_sampling, &
-                                                   l_rcm_in_cloud_k_lh_start, &
-                                                   l_random_k_lh_start, &
-                                                   l_max_overlap_in_cloud, &
-                                                   l_lh_instant_var_covar_src, &
-                                                   l_lh_limit_weights, &
-                                                   l_lh_var_frac, &
-                                                   l_lh_normalize_weights, &
-                                                   silhs_config_flags )
-
-      ! Print the SILHS configurable flags
-      write(iulog,'(a,i0,a)') " SILHS configurable flags set in thread ", iam, ":"
-      call print_silhs_config_flags_api( iulog, silhs_config_flags ) ! Intent(in)
 
       ! Values from the namelist
       docldfracscaling = subcol_SILHS_use_clear_col
