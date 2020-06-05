@@ -1108,6 +1108,11 @@ contains
          lh_seed = int( 1.0e4_r8 * rtm(i,pver), kind = genrand_intg )
          call genrand_init_api( put=lh_seed )
 
+         !$acc data copyout( X_mixt_comp_all_levs, X_nl_all_levs, lh_sample_point_weights, &
+         !$acc&              lh_rt_clipped, lh_thl_clipped, lh_rc_clipped, lh_rv_clipped, &
+         !$acc&              lh_Nc_clipped ) &
+         !$acc& async(1)
+
          ! Let's generate some subcolumns!!!!!
          call generate_silhs_sample_api &
               ( iter, pdf_dim, num_subcols, sequence_length, pverp-top_lev+1, & ! In
@@ -1133,6 +1138,8 @@ contains
                                                lh_rt_clipped, lh_thl_clipped, & ! Out
                                                lh_rc_clipped, lh_rv_clipped, & ! Out
                                                lh_Nc_clipped ) ! Out
+         !$acc end data
+         !$acc wait
 
          ! Test subcolumns by comparing to an estimate of kessler autoconversion
          call est_kessler_microphys_api &
