@@ -21,7 +21,9 @@ WALL_TIME="00:15:00" # H:MM:SS
 NUMSC=4
 MGVER=2 # Currently "1" and "2" are allowed
 SILHS_ENABLED=false
+subcol_scheme_namelist_value="off"
 use_subcol_microp_namelist_value=".false."
+microp_uniform_namelist_value=".false."
 
 # Note that we use `"$@"' to let each command-line parameter expand to a
 # separate word. The quotes around `$@' are essential!
@@ -42,8 +44,12 @@ while true ; do
       # Set silhs flag to true
       SILHS_ENABLED=true
 
-      # Ensure use_subcol_microp is true in namelist, required for silhs
+      # Ensure use_subcol_microp and microp_uniform true in namelist, required for silhs
       use_subcol_microp_namelist_value=".true."
+      microp_uniform_namelist_value=".true."
+      
+      # Set subcol_scheme in the namelist to SILHS
+      subcol_scheme_namelist_value="SILHS"
 
 			shift ;;
 		--) shift ; break ;;
@@ -117,9 +123,9 @@ macrop_scheme = 'CLUBB_SGS'
 eddy_scheme = 'CLUBB_SGS'
 shallow_scheme = 'CLUBB_SGS'
 deep_scheme = 'ZM'
-subcol_scheme = 'SILHS'
+subcol_scheme = '$subcol_scheme_namelist_value'
 use_subcol_microp = $use_subcol_microp_namelist_value
-microp_uniform = .false.
+microp_uniform = $microp_uniform_namelist_value
 history_amwg = .true.
 history_vdiag = .false.
 clubb_do_adv = .false.
