@@ -1052,6 +1052,7 @@ contains
                                         ice_supersat_frac_in, hydromet, wphydrometp, &     ! In
                                         corr_array_n_cloud, corr_array_n_below, &          ! In
                                         pdf_params_chnk(i,lchnk), l_stats_samp, &          ! In
+                                        clubb_config_flags%iiPDF_type, &                   ! In
                                         clubb_config_flags%l_use_precip_frac, &            ! In
                                         clubb_config_flags%l_predict_upwp_vpwp, &          ! In
                                         clubb_config_flags%l_diagnose_correlations, &      ! In
