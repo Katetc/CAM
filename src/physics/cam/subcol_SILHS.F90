@@ -1076,36 +1076,31 @@ contains
       !$acc&              lh_Nc_clipped ) &
       !$acc& async(1)
       
-      do i = 1, ngrdcol
+      ! Let's generate some subcolumns!!!!!
+      call generate_silhs_sample_api &
+            ( iter, pdf_dim, num_subcols, sequence_length, pverp-top_lev+1, ngrdcol, & ! In
+              l_calc_weights_all_levs_itime, &                   ! In 
+              pdf_params_chnk(:,lchnk), delta_zm, rcm_in, Lscale, & ! In
+              rho_ds_zt, mu_x_1, mu_x_2, sigma_x_1, sigma_x_2, & ! In 
+              corr_cholesky_mtx_1, corr_cholesky_mtx_2, &        ! In
+              hydromet_pdf_params, silhs_config_flags, &         ! In
+              clubb_config_flags%l_uv_nudge, &                   ! In
+              clubb_config_flags%l_tke_aniso, &                  ! In
+              clubb_config_flags%l_standard_term_ta, &           ! In
+              clubb_config_flags%l_single_C2_Skw, &              ! In
+              X_nl_all_levs, X_mixt_comp_all_levs, &             ! Out
+              lh_sample_point_weights)                           ! Out
 
-         ! Let's generate some subcolumns!!!!!
-         call generate_silhs_sample_api &
-              ( iter, pdf_dim, num_subcols, sequence_length, pverp-top_lev+1, & ! In
-                l_calc_weights_all_levs_itime, &                   ! In 
-                pdf_params_chnk(i,lchnk), delta_zm(i,:), rcm_in(i,:), Lscale(i,:), & ! In
-                rho_ds_zt(i,:), mu_x_1(i,:,:), mu_x_2(i,:,:), sigma_x_1(i,:,:), sigma_x_2(i,:,:), & ! In 
-                corr_cholesky_mtx_1(i,:,:,:), corr_cholesky_mtx_2(i,:,:,:), &        ! In
-                hydromet_pdf_params(i,:), silhs_config_flags, &         ! In
-                clubb_config_flags%l_uv_nudge, &                   ! In
-                clubb_config_flags%l_tke_aniso, &                  ! In
-                clubb_config_flags%l_standard_term_ta, &           ! In
-                clubb_config_flags%l_single_C2_Skw, &              ! In
-                X_nl_all_levs(i,:,:,:), X_mixt_comp_all_levs(i,:,:), &             ! Out
-                lh_sample_point_weights(i,:,:))                           ! Out
-
-         ! Extract clipped variables from subcolumns
-         call clip_transform_silhs_output_api( pverp-top_lev+1, num_subcols, &   ! In
-                                               pdf_dim, hydromet_dim, & ! In
-                                               X_mixt_comp_all_levs(i,:,:), & ! In
-                                               X_nl_all_levs(i,:,:,:), &        ! In
-                                               pdf_params_chnk(i,lchnk), & ! In
-                                               l_use_Ncn_to_Nc, & ! In
-                                               lh_rt_clipped(i,:,:), lh_thl_clipped(i,:,:), & ! Out
-                                               lh_rc_clipped(i,:,:), lh_rv_clipped(i,:,:), & ! Out
-                                               lh_Nc_clipped(i,:,:) ) ! Out
-         
-     end do
-     
+      ! Extract clipped variables from subcolumns
+      call clip_transform_silhs_output_api( pverp-top_lev+1, ngrdcol, num_subcols, &   ! In
+                                            pdf_dim, hydromet_dim, & ! In
+                                            X_mixt_comp_all_levs, & ! In
+                                            X_nl_all_levs, &        ! In
+                                            pdf_params_chnk(:,lchnk), & ! In
+                                            l_use_Ncn_to_Nc, & ! In
+                                            lh_rt_clipped, lh_thl_clipped, & ! Out
+                                            lh_rc_clipped, lh_rv_clipped, & ! Out
+                                            lh_Nc_clipped ) ! Out
      !$acc wait
      !$acc end data
        
