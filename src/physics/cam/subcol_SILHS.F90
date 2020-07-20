@@ -1087,7 +1087,7 @@ contains
 
          ! Let's generate some subcolumns!!!!!
          call generate_silhs_sample_api &
-              ( iter, pdf_dim, num_subcols, sequence_length, pverp-top_lev+1, 1, & ! In
+              ( iter, pdf_dim, num_subcols, sequence_length, pverp-top_lev+1, & ! In
                 l_calc_weights_all_levs_itime, &                   ! In 
                 pdf_params_chnk(i,lchnk), delta_zm(i,:), rcm_in(i,:), Lscale(i,:), & ! In
                 rho_ds_zt(i,:), mu_x_1(i,:,:), mu_x_2(i,:,:), sigma_x_1(i,:,:), sigma_x_2(i,:,:), & ! In 
@@ -1101,7 +1101,7 @@ contains
                 lh_sample_point_weights(i,:,:))                           ! Out
 
          ! Extract clipped variables from subcolumns
-         call clip_transform_silhs_output_api( pverp-top_lev+1, 1, num_subcols, &   ! In
+         call clip_transform_silhs_output_api( pverp-top_lev+1, num_subcols, &   ! In
                                                pdf_dim, hydromet_dim, & ! In
                                                X_mixt_comp_all_levs(i,:,:), & ! In
                                                X_nl_all_levs(i,:,:,:), &        ! In
