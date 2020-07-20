@@ -1058,15 +1058,15 @@ contains
        Lscale_zm(i,:) = khzm(i,:) / ( c_K * sqrt( max( tke(i,:), em_min ) ) )
 
        
-       !Lscale(i,1) = Lscale_zm(i,1) + ( Lscale_zm(i,2) - Lscale_zm(i,1) ) &
-      !                              * ( zt_g(i,1) - zi_g(i,1) ) / ( zi_g(i,2) - zi_g(i,1) )
+       Lscale(i,1) = Lscale_zm(i,1) + ( Lscale_zm(i,2) - Lscale_zm(i,1) ) &
+                                    * ( zt_g(i,1) - zi_g(i,1) ) / ( zi_g(i,2) - zi_g(i,1) )
        
-       !do k = 2, pverp-top_lev+1
-      !   Lscale(i,k) = Lscale_zm(i,k-1) + ( Lscale_zm(i,k) - Lscale_zm(i,k-1) ) &
-      !                                  * ( zt_g(i,k) - zi_g(i,k-1) ) / ( zi_g(i,k) - zi_g(i,k-1) )
-       !end do
+       do k = 2, pverp-top_lev+1
+         Lscale(i,k) = Lscale_zm(i,k-1) + ( Lscale_zm(i,k) - Lscale_zm(i,k-1) ) &
+                                        * ( zt_g(i,k) - zi_g(i,k-1) ) / ( zi_g(i,k) - zi_g(i,k-1) )
+       end do
        
-       !Lscale(i,:) = max( Lscale(i,:), 0.01_r8 )
+       Lscale(i,:) = max( Lscale(i,:), 0.01_r8 )
         
       end do
         
@@ -1077,13 +1077,6 @@ contains
       !$acc& async(1)
       
       do i = 1, ngrdcol
-        
-        call setup_grid_heights_api( l_implemented, grid_type, &
-                                     zi_g(i,2), zi_g(i,1), zi_g(i,1:pverp-top_lev+1), &
-                                     zt_g(i,1:pverp-top_lev+1) )
-         
-        ! Interpolate Lscale_zm back to thermodynamic grid levels.
-        Lscale(i,:) = max( zm2zt_api( Lscale_zm(i,:) ), 0.01_r8 )
 
          ! Let's generate some subcolumns!!!!!
          call generate_silhs_sample_api &
