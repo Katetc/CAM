@@ -751,7 +751,6 @@ module advance_clubb_core_module
        invrs_tau_wp2_zm,             & ! One divided by tau_wp2                       [s^-1]
        invrs_tau_wpxp_zm,            & ! One divided by tau_wpxp                      [s^-1]
        invrs_tau_wp3_zm,             & ! One divided by tau_wp3                       [s^-1]
-       invrs_tau_N2_zm,              & ! One divided by tau with stability effects    [s^-1]
        invrs_tau_no_N2_zm,           & ! One divided by tau (without N2) on zm levels [s^-1] 
        ustar,                        & ! Friction velocity  [m/s]
        tau_no_N2_zm,                 & ! Tau without Brunt Freq
@@ -798,6 +797,12 @@ module advance_clubb_core_module
     integer, intent(out) :: &
       err_code_out  ! Error code indicator
 
+    ! Stop Wunused-dummy-argument warning without editing input parameters
+    ! Added by IsenfireLDC
+    
+    if ( size(hydromet) > zero ) then
+        continue
+    end if
 
     !----- Begin Code -----
     
@@ -836,7 +841,8 @@ module advance_clubb_core_module
              thv_ds_zm, thv_ds_zt, wpthlp_sfc, wprtp_sfc, upwp_sfc,             & ! intent(in)
              vpwp_sfc, um, upwp, vm, vpwp, up2, vp2,                            & ! intent(in)
              rtm, wprtp, thlm, wpthlp, wp2, wp3,                                & ! intent(in)
-             rtp2, thlp2, rtpthlp, rcm,                                         & ! intent(in)
+             rtp2, thlp2, rtpthlp,                                              & ! intent(in)
+!            rcm,                                                               &
              "beginning of ",                                                   & ! intent(in)
              wpsclrp_sfc, wpedsclrp_sfc, sclrm, wpsclrp, sclrp2,                & ! intent(in)
              sclrprtp, sclrpthlp, sclrm_forcing, edsclrm, edsclrm_forcing )       ! intent(in)
@@ -967,7 +973,8 @@ module advance_clubb_core_module
                                 vm, vp2, vpwp, vp3,                          & ! Intent(in)
                                 p_in_Pa, exner,                              & ! Intent(in)
                                 thv_ds_zm, thv_ds_zt, rtm_ref,               & ! Intent(in)
-                                rfrzm, hydromet, wphydrometp,                & ! Intent(in)
+!                               rfrzm, hydromet,                             &
+                                wphydrometp,                                 & ! Intent(in)
                                 wp2hmp, rtphmp_zt, thlphmp_zt,               & ! Intent(in)
                                 sclrm, wpsclrp, sclrp2,                      & ! Intent(in)
                                 sclrprtp, sclrpthlp, sclrp3,                 & ! Intent(in)
@@ -1896,7 +1903,8 @@ module advance_clubb_core_module
                                 vm, vp2, vpwp, vp3,                          & ! Intent(in)
                                 p_in_Pa, exner,                              & ! Intent(in)
                                 thv_ds_zm, thv_ds_zt, rtm_ref,               & ! Intent(in)
-                                rfrzm, hydromet, wphydrometp,                & ! Intent(in)
+!                               rfrzm, hydromet,                             &
+                                wphydrometp,                                 & ! Intent(in)
                                 wp2hmp, rtphmp_zt, thlphmp_zt,               & ! Intent(in)
                                 sclrm, wpsclrp, sclrp2,                      & ! Intent(in)
                                 sclrprtp, sclrpthlp, sclrp3,                 & ! Intent(in)
@@ -2044,7 +2052,8 @@ module advance_clubb_core_module
              thv_ds_zm, thv_ds_zt, wpthlp_sfc, wprtp_sfc, upwp_sfc,             & ! intent(in)
              vpwp_sfc, um, upwp, vm, vpwp, up2, vp2,                            & ! intent(in)
              rtm, wprtp, thlm, wpthlp, wp2, wp3,                                & ! intent(in)
-             rtp2, thlp2, rtpthlp, rcm,                                         & ! intent(in)
+             rtp2, thlp2, rtpthlp,                                              & ! intent(in)
+!            rcm,                                                               &
             "end of ",                                                          & ! intent(in)
              wpsclrp_sfc, wpedsclrp_sfc, sclrm, wpsclrp, sclrp2,                & ! intent(in)
              sclrprtp, sclrpthlp, sclrm_forcing, edsclrm, edsclrm_forcing       ) ! intent(in)
@@ -2135,7 +2144,8 @@ module advance_clubb_core_module
                                  vm, vp2, vpwp, vp3,            & ! Intent(in)
                                  p_in_Pa, exner,                & ! Intent(in)
                                  thv_ds_zm, thv_ds_zt, rtm_ref, & ! Intent(in)
-                                 rfrzm, hydromet, wphydrometp,  & ! Intent(in)
+!                                rfrzm, hydromet,               &
+                                 wphydrometp,                   & ! Intent(in)
                                  wp2hmp, rtphmp_zt, thlphmp_zt, & ! Intent(in)
                                  sclrm, wpsclrp, sclrp2,        & ! Intent(in)
                                  sclrprtp, sclrpthlp, sclrp3,   & ! Intent(in)
@@ -2310,8 +2320,8 @@ module advance_clubb_core_module
       exner,     & ! Exner function (thermodynamic levels)          [-]
       thv_ds_zm, & ! Dry, base-state theta_v on momentum levs.      [K]
       thv_ds_zt, & ! Dry, base-state theta_v on thermo. levs.       [K]
-      rtm_ref,   & ! Initial total water mixing ratio               [kg/kg]
-      rfrzm        ! Total ice-phase water mixing ratio             [kg/kg]
+      rtm_ref!,  & ! Initial total water mixing ratio               [kg/kg]
+!     rfrzm        ! Total ice-phase water mixing ratio             [kg/kg]
 
     real( kind = core_rknd ), dimension(gr%nz), intent(in) ::  &
       um,          & ! Grid-mean eastward wind     [m/s]
@@ -2324,8 +2334,8 @@ module advance_clubb_core_module
       vp3            ! v'^3                        [(m/s)^3]
 
     ! Hydrometeor variables
-    real( kind = core_rknd ), dimension(gr%nz,hydromet_dim), intent(in) :: &
-      hydromet       ! Mean of hydrometeor fields               [units vary]
+!   real( kind = core_rknd ), dimension(gr%nz,hydromet_dim), intent(in) :: &
+!     hydromet       ! Mean of hydrometeor fields               [units vary]
 
     real( kind = core_rknd ), dimension(gr%nz, hydromet_dim), intent(in) :: &
       wphydrometp, & ! Covariance of w and a hydrometeor      [(m/s) <hm units>]
@@ -2571,7 +2581,6 @@ module advance_clubb_core_module
       rcm_refined             ! rcm gridbox mean on refined grid
 
     real( kind = core_rknd ), dimension(gr%nz) :: &
-      rrm,              & ! Rain water mixing ratio
       rsat,             & ! Saturation mixing ratio from mean rt and thl.
       rel_humidity        ! Relative humidity after PDF closure [-]
 
