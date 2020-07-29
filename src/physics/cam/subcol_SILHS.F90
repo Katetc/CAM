@@ -1076,20 +1076,26 @@ contains
       !$acc&              lh_Nc_clipped ) &
       !$acc& async(1)
       
+      ! Set the seed to the random number generator based on a quantity that
+      ! will be reproducible for restarts.
+      lh_seed = int( 1.0e4_r8 * rtm(i,pver), kind = genrand_intg )
+      
       ! Let's generate some subcolumns!!!!!
       call generate_silhs_sample_api &
             ( iter, pdf_dim, num_subcols, sequence_length, pverp-top_lev+1, ngrdcol, & ! In
-              l_calc_weights_all_levs_itime, &                   ! In 
+              l_calc_weights_all_levs_itime, &                      ! In 
               pdf_params_chnk(:,lchnk), delta_zm, rcm_in, Lscale, & ! In
-              rho_ds_zt, mu_x_1, mu_x_2, sigma_x_1, sigma_x_2, & ! In 
-              corr_cholesky_mtx_1, corr_cholesky_mtx_2, &        ! In
-              hydromet_pdf_params, silhs_config_flags, &         ! In
-              clubb_config_flags%l_uv_nudge, &                   ! In
-              clubb_config_flags%l_tke_aniso, &                  ! In
-              clubb_config_flags%l_standard_term_ta, &           ! In
-              clubb_config_flags%l_single_C2_Skw, &              ! In
-              X_nl_all_levs, X_mixt_comp_all_levs, &             ! Out
-              lh_sample_point_weights)                           ! Out
+              lh_seed, &                                            ! In
+              rho_ds_zt, &                                          ! In 
+              mu_x_1, mu_x_2, sigma_x_1, sigma_x_2, &               ! In 
+              corr_cholesky_mtx_1, corr_cholesky_mtx_2, &           ! In
+              hydromet_pdf_params, silhs_config_flags, &            ! In
+              clubb_config_flags%l_uv_nudge, &                      ! In
+              clubb_config_flags%l_tke_aniso, &                     ! In
+              clubb_config_flags%l_standard_term_ta, &              ! In
+              clubb_config_flags%l_single_C2_Skw, &                 ! In
+              X_nl_all_levs, X_mixt_comp_all_levs, &                ! Out
+              lh_sample_point_weights)                              ! Out
 
       ! Extract clipped variables from subcolumns
       call clip_transform_silhs_output_api( pverp-top_lev+1, ngrdcol, num_subcols, &   ! In
