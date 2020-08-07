@@ -1021,7 +1021,7 @@ module parameters_tunable
     use namelist_utils,  only: find_group_name
     use units,           only: getunit, freeunit
     use cam_abortutils,  only: endrun
-    use mpishorthand
+    use mpishorthand, only: mpicom, mpir8
 
     implicit none
 
