@@ -39,6 +39,7 @@ module subcol_SILHS
    public :: subcol_SILHS_var_covar_driver
    public :: subcol_SILHS_fill_holes_conserv
    public :: subcol_SILHS_hydromet_conc_tend_lim
+   public :: init_state_subcol
    private :: fill_holes_sedimentation
    private :: fill_holes_same_phase_vert
 #ifdef SILHS
@@ -562,6 +563,27 @@ contains
 #endif
    end subroutine subcol_init_SILHS
    
+   subroutine init_state_subcol(state, tend, state_sc, tend_sc)
+     
+     use ppgrid,                 only : pver, pverp, pcols
+     
+     use subcol_utils,           only : subcol_set_subcols
+     
+     implicit none
+     
+     type(physics_state), intent(inout) :: state
+     type(physics_tend),  intent(inout) :: tend
+     type(physics_state), intent(inout) :: state_sc        ! sub-column state
+     type(physics_tend),  intent(inout) :: tend_sc         ! sub-column tend
+     
+     integer, dimension(pcols) :: numsubcol_arr ! To set up the state struct
+     
+     numsubcol_arr(:) = 0  ! Start over each chunk
+     numsubcol_arr(:state%ngrdcol) = subcol_SILHS_numsubcol ! Only set for valid grid columns
+     call subcol_set_subcols(state, tend, numsubcol_arr, state_sc, tend_sc)
+     
+   end subroutine init_state_subcol
+   
    subroutine subcol_gen_SILHS(state, tend, state_sc, tend_sc, pbuf)
       !-------------------------------
       ! This is where the subcolumns are created, and the call to
@@ -690,7 +712,6 @@ contains
       !----------------
       integer :: iter                            ! CLUBB iteration 
       integer :: num_subcols                     ! Number of subcolumns
-      integer, dimension(pcols) :: numsubcol_arr ! To set up the state struct
       integer, parameter :: sequence_length = 1  ! Number of timesteps btn subcol calls
       
       real(r8), dimension(state%ngrdcol,pverp-top_lev+1) :: rho_ds_zt    ! Dry static density (kg/m^3) on thermo levs
@@ -899,9 +920,6 @@ contains
       ! Copy state and populate numbers and values of sub-columns
       !----------------
       ztodt = ztodt_ptr(1)
-      numsubcol_arr(:) = 0  ! Start over each chunk
-      numsubcol_arr(:ngrdcol) = subcol_SILHS_numsubcol ! Only set for valid grid columns
-      call subcol_set_subcols(state, tend, numsubcol_arr, state_sc, tend_sc)
       num_subcols = subcol_SILHS_numsubcol
 
       ! The number of vertical grid levels used in CLUBB is pverp, which is originally
@@ -1107,9 +1125,7 @@ contains
       !$acc&             NICE_lh_out, RVM_lh_out, THL_lh_out, RAIN_lh_out, &
       !$acc&             NRAIN_lh_out, SNOW_lh_out, NSNOW_lh_out, WM_lh_out, &
       !$acc&             OMEGA_lh_out ) &
-      !$acc&     copyin( state_sc, state, state%zm, state%phis, & 
-      !$acc&             rho_ds_zt, invs_exner ) &
-      !$acc&     copyout( state_sc%t, state_sc%s, state_sc%omega, state_sc%q ) &
+      !$acc&     copyin( state, state%zm, state%phis, rho_ds_zt, invs_exner ) &
       !$acc& async(1)
       
       ! Set the seed to the random number generator based on a quantity that
