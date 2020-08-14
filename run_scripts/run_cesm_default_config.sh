@@ -22,10 +22,13 @@ CAM_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 # Set up case
 echo "----- Case Setup -----"
 cd "$CAM_DIR/cime/scripts"
-./create_newcase --case "$CASEROOT" --mach "$MACH" --compset "$COMPSET" --res "$RES" --run-unsupported || {
+./create_newcase --case "$CASEROOT" --mach "$MACH" --compset "$COMPSET" --res "$RES" --run-unsupported 
+if [ $? -gt 0 ]
+then 
     echo "Error creating new case" > /dev/stderr
     exit 1
-}
+fi
+
 cd "$CASEROOT"
 
 #-----------------------------------------
@@ -34,20 +37,35 @@ cd "$CASEROOT"
 for component in ATM LND ICE OCN CPL GLC ROF WAV
 do
   #./xmlchange NTASKS_$component=864 || exit 1
-  ./xmlchange NTASKS_$component=720 || exit 1
+  ./xmlchange NTASKS_$component=720 
+if [ $? -gt 0 ]
+then
+    echo "Failed at the xmlchange step" > /dev/stderr
+    exit 1
+fi
 done
 
 ./xmlchange JOB_QUEUE="$QUEUE"
 ./xmlchange JOB_WALLCLOCK_TIME="$WALL_TIME"
 
-./case.setup || exit 1
+./case.setup
+if [ $? -gt 0 ]
+then 
+   echo "Failed at the case.setup step" > /dev/stderr
+   exit 1
+fi
 
 # Compile configuration
 echo "----- Compile Configuration -----"
 
 # Compile
 echo "----- Compile -----"
-./case.build || { echo "Error building CAM" > /dev/stderr; exit 1; }
+./case.build 
+if [ $? -gt 0 ]
+then
+   echo "Error building CAM" > /dev/stderr
+   exit 1
+fi
 
 # Run configuration
 echo "----- Run configuration -----"
@@ -74,7 +92,12 @@ EOF
 
 # Run submission
 echo "----- Run Submission -----"
-./case.submit || { echo "Error submitting run" > /dev/stderr ; exit 1; }
+./case.submit 
+if [ $? -gt 0 ]
+then
+    echo "Error submitting run" > /dev/stderr
+    exit 1
+fi
 
 # Success?!
 echo "Success"'!'
