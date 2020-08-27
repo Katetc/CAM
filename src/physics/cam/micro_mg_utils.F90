@@ -50,6 +50,7 @@ public :: &
      size_dist_param_basic, &
      size_dist_param_basic_2D, &
      avg_diameter, &
+     avg_diameter_2D, &
      rising_factorial, &
      ice_deposition_sublimation, &
      ice_deposition_sublimation_2D, &
@@ -775,7 +776,6 @@ subroutine size_dist_param_basic_2D(mgncol, nlev, props, qic, nic, lam, n0)
   integer :: i, k
   
   
-  
   ! add upper limit to in-cloud number concentration to prevent
   ! numerical error
   if (limiter_is_on(props%min_mean_mass)) then
@@ -814,9 +814,7 @@ subroutine size_dist_param_basic_2D(mgncol, nlev, props, qic, nic, lam, n0)
   end do
   
   
-
   if (present(n0)) then
-    
     do k = 1, nlev
       do i = 1, mgncol
         n0(i,k) = nic(i,k) * lam(i,k)
@@ -839,6 +837,32 @@ real(r8) elemental function avg_diameter(q, n, rho_air, rho_sub)
   avg_diameter = (pi * rho_sub * n/(q*rho_air))**(-1._r8/3._r8)
 
 end function avg_diameter
+
+function avg_diameter_2D(mgncol, nlev, q, n, rho_air, rho_sub) result(res)
+  ! Finds the average diameter of particles given their density, and
+  ! mass/number concentrations in the air.
+  ! Assumes that diameter follows an exponential distribution.
+  integer, intent(in) :: mgncol, nlev
+  real(r8), intent(in), dimension(mgncol,nlev) :: q         ! mass mixing ratio
+  real(r8), intent(in), dimension(mgncol,nlev) :: n         ! number concentration (per volume)
+  real(r8), intent(in), dimension(mgncol,nlev) :: rho_air   ! local density of the air
+  real(r8), intent(in) :: rho_sub   ! density of the particle substance
+  real(r8), dimension(mgncol,nlev) :: res   ! local density of the air
+  
+
+  integer :: i, k
+
+  do k = 1, nlev
+    do i = 1, mgncol
+      if ( (q(i,k) * rho_air(i,k)) > 0._r8 ) then
+        res(i,k) = (pi * rho_sub * n(i,k)/(q(i,k)*rho_air(i,k)))**(-1._r8/3._r8)
+      else
+        res(i,k) = 0._r8
+      end if
+    end do
+  end do
+
+end function avg_diameter_2D
 
 elemental function var_coef_r8(relvar, a) result(res)
   ! Finds a coefficient for process rates based on the relative variance

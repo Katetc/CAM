@@ -460,7 +460,8 @@ subroutine micro_mg_tend ( &
        size_dist_param_liq_2D, &
        size_dist_param_basic, &
        size_dist_param_basic_2D, &
-       avg_diameter
+       avg_diameter, &
+       avg_diameter_2D
 
   ! Microphysical processes.
   use micro_mg_utils, only: &
@@ -1154,167 +1155,59 @@ subroutine micro_mg_tend ( &
   !===============================================
 
   ! set mtime here to avoid answer-changing
-  mtime=deltat
+  mtime = deltat
 
-  ! initialize microphysics output
-  qcsevap=0._r8
-  qisevap=0._r8
-  qvres  =0._r8
-  cmeitot =0._r8
-  vtrmc =0._r8
-  vtrmi =0._r8
-  qcsedten =0._r8
-  qisedten =0._r8
-  qrsedten =0._r8
-  qssedten =0._r8
-  qgsedten =0._r8
+  do k = 1, nlev
+    do i = 1, mgncol
+      ! initialize microphysics output
+      qcsevap(i,k) = 0._r8
+      qisevap(i,k) = 0._r8
+      qvres(i,k) = 0._r8
+      vtrmc(i,k) = 0._r8
+      vtrmi(i,k) = 0._r8
+      qcsedten(i,k) = 0._r8
+      qisedten(i,k) = 0._r8
+      qrsedten(i,k) = 0._r8
+      qssedten(i,k) = 0._r8
+      qgsedten(i,k) = 0._r8
+      melttot(i,k) = 0._r8
+      homotot(i,k) = 0._r8
+      qcrestot(i,k) = 0._r8
+      qirestot(i,k) = 0._r8
 
-  pratot=0._r8
-  prctot=0._r8
-  mnuccctot=0._r8
-  mnuccttot=0._r8
-  msacwitot=0._r8
-  psacwstot=0._r8
-  bergstot=0._r8
-  bergtot=0._r8
-  melttot=0._r8
-  homotot=0._r8
-  qcrestot=0._r8
-  prcitot=0._r8
-  praitot=0._r8
-  qirestot=0._r8
-  mnuccrtot=0._r8
-  mnuccritot=0._r8
-  pracstot=0._r8
-  meltsdttot=0._r8
-  frzrdttot=0._r8
-  mnuccdtot=0._r8
-  psacrtot=0._r8
-  pracgtot=0._r8
-  psacwgtot=0._r8
-  pgsacwtot=0._r8
-  pgracstot=0._r8
-  prdgtot=0._r8
-  qmultgtot=0._r8
-  qmultrgtot=0._r8
-  npracgtot =0._r8
-  nscngtot =0._r8
-  ngracstot=0._r8
-  nmultgtot=0._r8
-  nmultrgtot=0._r8
-  npsacwgtot=0._r8
+      rflx(i,k) = 0._r8
+      sflx(i,k) = 0._r8
+      lflx(i,k) = 0._r8
+      iflx(i,k) = 0._r8
+      gflx(i,k) = 0._r8
 
-  rflx=0._r8
-  sflx=0._r8
-  lflx=0._r8
-  iflx=0._r8
-  gflx=0._r8
+      ! for refl calc
+      rainrt(i,k) = 0._r8
 
-  ! for refl calc
-  rainrt = 0._r8
+      ! initialize rain size
+      rercld(i,k) = 0._r8
 
-  ! initialize rain size
-  rercld=0._r8
-
-  qcsinksum_rate1ord = 0._r8
-
-  ! initialize variables for trop_mozart
-  nevapr = 0._r8
-  prer_evap = 0._r8
-  evapsnow = 0._r8
-  am_evp_st = 0._r8
-  prain = 0._r8
-  prodsnow = 0._r8
-  cmeout = 0._r8
-
-  precip_frac = mincld
-  lamc=0._r8
-  lamg=0._r8
-  bgtmp=0._r8
-  rhogtmp=0._r8
-
-  ! initialize microphysical tendencies
-
-  tlat=0._r8
-  qvlat=0._r8
-  qctend=0._r8
-  qitend=0._r8
-  qstend = 0._r8
-  qrtend = 0._r8
-  nctend=0._r8
-  nitend=0._r8
-  nrtend = 0._r8
-  nstend = 0._r8
-  qgtend = 0._r8
-  ngtend = 0._r8
-
-  ! initialize in-cloud and in-precip quantities to zero
-  qcic  = 0._r8
-  qiic  = 0._r8
-  qsic  = 0._r8
-  qric  = 0._r8
-  qgic  = 0._r8
-
-  ncic  = 0._r8
-  niic  = 0._r8
-  nsic  = 0._r8
-  nric  = 0._r8
-  ngic  = 0._r8
-
-  ! initialize precip at surface
-  prect = 0._r8
-  preci = 0._r8
-
-  ! initialize precip fallspeeds to zero
-  ums = 0._r8
-  uns = 0._r8
-  umr = 0._r8
-  unr = 0._r8
-  umg = 0._r8
-  ung = 0._r8
-
-  ! initialize limiter for output
-  qcrat = 1._r8
-
-  ! Many outputs have to be initialized here at the top to work around
-  ! ifort problems, even if they are always overwritten later.
-  effc = 10._r8
-  lamcrad = 0._r8
-  pgamrad = 0._r8
-  effc_fn = 10._r8
-  effi = 25._r8
-  sadice = 0._r8
-  sadsnow = 0._r8
-  deffi = 50._r8
-
-  qrout2 = 0._r8
-  nrout2 = 0._r8
-  drout2 = 0._r8
-  qsout2 = 0._r8
-  nsout2 = 0._r8
-  dsout = 0._r8
-  dsout2 = 0._r8
-  qgout2 = 0._r8
-  ngout2 = 0._r8
-  freqg = 0._r8
-  freqr = 0._r8
-  freqs = 0._r8
-
-  reff_rain = 0._r8
-  reff_snow = 0._r8
-  reff_grau = 0._r8
-
-  refl = -9999._r8
-  arefl = 0._r8
-  areflz = 0._r8
-  frefl = 0._r8
-  csrfl = 0._r8
-  acsrfl = 0._r8
-  fcsrfl = 0._r8
-
-  ncal = 0._r8
-  ncai = 0._r8
-  nfice = 0._r8
+      ! initialize microphysical tendencies
+      tlat(i,k) = 0._r8
+      qvlat(i,k) = 0._r8
+      qctend(i,k) = 0._r8
+      qitend(i,k) = 0._r8
+      qstend(i,k) = 0._r8
+      qrtend(i,k) = 0._r8
+      nctend(i,k) = 0._r8
+      nitend(i,k) = 0._r8
+      nrtend(i,k) = 0._r8
+      nstend(i,k) = 0._r8
+      qgtend(i,k) = 0._r8
+      ngtend(i,k) = 0._r8
+    end do
+  end do
+  
+  do i = 1, mgncol
+    ! initialize precip at surface
+    prect(i) = 0._r8
+    preci(i) = 0._r8
+  end do
 
   !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   ! droplet activation
@@ -1795,13 +1688,14 @@ subroutine micro_mg_tend ( &
    !       graupel/hail density set (Hail = 400, Graupel = 500 from M2005)
       
    if (do_hail) then 
-      bgtmp = bh 
-      rhogtmp = rhoh
-   end if
-   
-   if (do_graupel) then 
-      bgtmp = bg
-      rhogtmp = rhog
+     bgtmp = bh 
+     rhogtmp = rhoh
+   else if (do_graupel) then 
+     bgtmp = bg
+     rhogtmp = rhog
+   else
+     bgtmp = 0._r8
+     rhogtmp = 0._r8
    end if
 
    !  graupel/hail size distributions and properties
@@ -3892,7 +3786,11 @@ subroutine micro_mg_tend ( &
            !======================================
            ! assume constant number of 10^8 kg-1
 
-           dumnc(i,k)=1.e8_r8
+           dumnc(i,k) = 1.e8_r8
+        else 
+           effc(i,k) = 10._r8
+           lamcrad(i,k) = 0._r8
+           pgamrad(i,k) = 0._r8
         end if
     end do
   end do
@@ -3966,6 +3864,8 @@ subroutine micro_mg_tend ( &
 
            sadsnow(i,k) = 2._r8*pi*(lams(i,k)**(-3))*dumns0*rho(i,k)*1.e-2_r8  ! m2/m3 -> cm2/cm3
 
+        else 
+           sadsnow(i,k) = 0._r8
         end if
      end do ! vertical k loop
   enddo
@@ -4042,41 +3942,57 @@ subroutine micro_mg_tend ( &
       if (qrout(i,k) .gt. 1.e-7_r8 .and. nrout(i,k) .gt. 0._r8) then
          qrout2(i,k) = qrout(i,k) * precip_frac(i,k)
          nrout2(i,k) = nrout(i,k) * precip_frac(i,k)
-         ! The avg_diameter call does the actual calculation; other diameter
-         ! outputs are just drout2 times constants.
-         drout2(i,k) = avg_diameter(qrout(i,k), nrout(i,k), rho(i,k), rhow)
          freqr(i,k) = precip_frac(i,k)
-
-         reff_rain(i,k) = 1.5_r8 * drout2(i,k) * 1.e6_r8
       else
          qrout2(i,k) = 0._r8
          nrout2(i,k) = 0._r8
-         drout2(i,k) = 0._r8
          freqr(i,k) = 0._r8
+      end if
+    end do
+  end do
+  
+  ! The avg_diameter call does the actual calculation; other diameter
+  ! outputs are just dsout2 times constants.
+  drout2(:,:) = avg_diameter_2D(mgncol, nlev, qrout(:,:), nrout(:,:), rho(:,:), rhow)
+  
+  do k=1,nlev
+    do i=1,mgncol
+      if (qrout(i,k) .gt. 1.e-7_r8 .and. nrout(i,k) .gt. 0._r8) then
+         reff_rain(i,k) = 1.5_r8 * drout2(i,k) * 1.e6_r8
+      else
+         drout2(i,k) = 0._r8
          reff_rain(i,k) = 0._r8
       end if
     end do
   end do
-
+  
+  
   do k=1,nlev
     do i=1,mgncol
       if (qsout(i,k) .gt. 1.e-7_r8 .and. nsout(i,k) .gt. 0._r8) then
          qsout2(i,k) = qsout(i,k) * precip_frac(i,k)
          nsout2(i,k) = nsout(i,k) * precip_frac(i,k)
-         ! The avg_diameter call does the actual calculation; other diameter
-         ! outputs are just dsout2 times constants.
-         dsout2(i,k) = avg_diameter(qsout(i,k), nsout(i,k), rho(i,k), rhosn)
          freqs(i,k) = precip_frac(i,k)
-
+      else
+         qsout2(i,k) = 0._r8
+         nsout2(i,k) = 0._r8
+         freqs(i,k)  = 0._r8
+      end if
+    end do
+  end do
+  
+  ! The avg_diameter call does the actual calculation; other diameter
+  ! outputs are just dsout2 times constants.
+  dsout2(:,:) = avg_diameter_2D(mgncol, nlev, qsout(:,:), nsout(:,:), rho(:,:), rhosn)
+  
+  do k=1,nlev
+    do i=1,mgncol
+      if (qsout(i,k) .gt. 1.e-7_r8 .and. nsout(i,k) .gt. 0._r8) then
          dsout(i,k) = 3._r8 * rhosn / rhows * dsout2(i,k)
-
          reff_snow(i,k) = 1.5_r8 * dsout2(i,k) * 1.e6_r8
       else
          dsout(i,k)  = 0._r8
-         qsout2(i,k) = 0._r8
-         nsout2(i,k) = 0._r8
          dsout2(i,k) = 0._r8
-         freqs(i,k)  = 0._r8
          reff_snow(i,k) =0._r8
       end if
     end do
@@ -4087,20 +4003,27 @@ subroutine micro_mg_tend ( &
       if (qgout(i,k) .gt. 1.e-7_r8 .and. ngout(i,k) .gt. 0._r8) then
          qgout2(i,k) = qgout(i,k) * precip_frac(i,k)
          ngout2(i,k) = ngout(i,k) * precip_frac(i,k)
-         ! The avg_diameter call does the actual calculation; other diameter
-         ! outputs are just dsout2 times constants.
-         dgout2(i,k) = avg_diameter(qgout(i,k), ngout(i,k), rho(i,k), rhogtmp)
          freqg(i,k) = precip_frac(i,k)
-
+      else
+         qgout2(i,k) = 0._r8
+         ngout2(i,k) = 0._r8
+         freqg(i,k)  = 0._r8
+      end if
+    end do
+  end do
+  
+  ! The avg_diameter call does the actual calculation; other diameter
+  ! outputs are just dsout2 times constants.
+  dgout2(:,:) = avg_diameter_2D(mgncol, nlev, qgout(:,:), ngout(:,:), rho(:,:), rhogtmp)
+  
+  do k=1,nlev
+    do i=1,mgncol
+      if (qgout(i,k) .gt. 1.e-7_r8 .and. ngout(i,k) .gt. 0._r8) then
          dgout(i,k) = 3._r8 * rhogtmp / rhows * dgout2(i,k)
-
          reff_grau(i,k) = 1.5_r8 * dgout2(i,k) * 1.e6_r8
       else
          dgout(i,k)  = 0._r8
-         qgout2(i,k) = 0._r8
-         ngout2(i,k) = 0._r8
          dgout2(i,k) = 0._r8
-         freqg(i,k)  = 0._r8
          reff_grau(i,k) = 0._r8
       end if
     end do
