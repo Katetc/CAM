@@ -3,7 +3,7 @@
 # Variables
 CASE="subcol_SILHS_UWM_debug_f10_f10_mg37"
 CASEROOT="/glade/scratch/$USER/$CASE"
-MACH="mitch_pgi"
+MACH="cheyenne"
 COMPSET="F2000climo"
 RES="f10_f10_mg37"
 QUEUE="regular"  
@@ -11,7 +11,7 @@ WALL_TIME="03:00:00" # H:MM:SS
 
 # Configuration parameters
 NUMSC=4
-MGVER=3 # Currently "1" and "2" are allowed
+MGVER=2 # Currently "1" and "2" are allowed
 
 # Obtain the CAM source directory. This solution is from Stack Overflow.
 # http://stackoverflow.com/questions/59895/can-a-bash-script-tell-what-directory-its-stored-in
@@ -31,7 +31,7 @@ cd "$CASEROOT"
 #-----------------------------------------
 for component in ATM LND ICE OCN CPL GLC ROF WAV
 do
-  ./xmlchange NTASKS_$component=1 || exit 1
+  ./xmlchange NTASKS_$component=2 || exit 1
   ./xmlchange NTHRDS_$component=1 || exit 1
 done
 
@@ -112,9 +112,6 @@ fincl1 = 'U:A','PS:A','T:A','V:A','OMEGA:A','Z3:A','PRECT:A',
 'SILHS_CLUBB_ICE_SS_FRAC'
 fincl2 = 'CLDTOT', 'CLDST','CDNUMC','CLDLIQ','CLDICE','FLUT',
 'LWCF','SWCF','PRECT'
-l_lh_straight_mc = .true.
-subcol_SILHS_numsubcol = $NUMSC
-subcol_SILHS_weight = .false.
 
 ! CLUBB history!!!
 clubb_history = .true.
@@ -125,7 +122,7 @@ EOF
 
 # Run submission
 echo "----- Run Submission -----"
-time ./case.submit || { echo "Error submitting run" >> /dev/stderr ; exit 1; }
+./case.submit || { echo "Error submitting run" >> /dev/stderr ; exit 1; }
 
 # Success?!
 echo "Success"'!'

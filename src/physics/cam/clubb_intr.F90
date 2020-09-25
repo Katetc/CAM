@@ -976,7 +976,7 @@ end subroutine clubb_init_cnst
     clubb_params(iC8) = clubb_C8
     clubb_params(iC11) = clubb_c11
     clubb_params(iC11b) = clubb_c11b
-    clubb_params(iC14) = clubb_c1
+    clubb_params(iC14) = clubb_c14
     clubb_params(ic_K10) = clubb_c_K10
     clubb_params(imult_coef) = clubb_mult_coef
     clubb_params(iSkw_denom_coef) = clubb_Skw_denom_coef
@@ -1016,7 +1016,7 @@ end subroutine clubb_init_cnst
     clubb_config_flags%l_trapezoidal_rule_zm = clubb_l_trapezoidal_rule_zm
     clubb_config_flags%l_call_pdf_closure_twice = clubb_l_call_pdf_closure_twice
     clubb_config_flags%l_use_cloud_cover = clubb_l_use_cloud_cover
-    clubb_config_flags%l_stability_correct_tau_zm = .false.
+    clubb_config_flags%l_stability_correct_tau_zm = clubb_l_stability_correct_tau_zm
     clubb_config_flags%l_do_expldiff_rtm_thlm = do_expldiff
     clubb_config_flags%l_Lscale_plume_centered = clubb_l_lscale_plume_centered
     clubb_config_flags%l_diag_Lscale_from_tau = clubb_l_diag_Lscale_from_tau
