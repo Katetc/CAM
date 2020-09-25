@@ -11,15 +11,15 @@
 # Variables
 CASE="scam_${@: -1}"
 CASEROOT="/home/$USER/projects/scratch/$CASE"
-MACH="nelson"
+MACH="mitch_pgi"
 COMPSET="FSCAM"
 RES="T42_T42"
 QUEUE="regular"  
 WALL_TIME="00:15:00" # H:MM:SS
 
 # Configuration parameters
-NUMSC=4
-MGVER=2 # Currently "1" and "2" are allowed
+NUMSC=20
+MGVER=3 # Currently "1" and "2" are allowed
 SILHS_ENABLED=false
 subcol_scheme_namelist_value="off"
 use_subcol_microp_namelist_value=".false."
@@ -154,11 +154,11 @@ fincl1 = 'U:A','PS:A','T:A','V:A','OMEGA:A','Z3:A','PRECT:A',
 'QCRAT:A', $clubb_vars_zt_list,$clubb_vars_zm_list,
 'SL', 'Q', 'RHW', 'QRS', 'QRL', 'HR', 'FDL'
 !, 'SILHS_CLUBB_PRECIP_FRAC','SILHS_CLUBB_ICE_SS_FRAC'
-ncdata='/home/pub/cam_inputdata/atm/cam/inic/gaus/cami_0000-09-01_64x128_L30_c031210.nc' 
+ncdata='/home/huebler/cam_inputdata/atm/cam/inic/gaus/cami_0000-09-01_64x128_L30_c031210.nc' 
 fincl2 = 'CLDTOT', 'CLDST','CDNUMC','CLDLIQ','CLDICE','FLUT',
 'LWCF','SWCF','PRECT'
 end_restart = .true.
-subcol_SILHS_weight = .true.
+subcol_SILHS_weight = .false.
 subcol_SILHS_numsubcol = $NUMSC
 subcol_SILHS_corr_file_name = 'arm_97'
 subcol_silhs_q_to_micro = .true. ! if .false. gridbox means are used instead of sample points
@@ -180,7 +180,7 @@ subcol_silhs_hmp2_ip_on_hmm2_ip_slope%ri = 0.0,
 subcol_silhs_hmp2_ip_on_hmm2_ip_slope%Ni = 0.0
 l_lh_importance_sampling = .true.
 l_Lscale_vert_avg = .false.
-l_lh_straight_mc = .false.
+l_lh_straight_mc = .true.
 l_lh_clustered_sampling = .true.
 l_rcm_in_cloud_k_lh_start = .true.
 l_random_k_lh_start = .false.
@@ -203,7 +203,7 @@ EOF
 
 # Run submission
 echo "----- Run Submission -----"
-./case.submit --no-batch 2>&1 | tee -a log
+time ./case.submit --no-batch 2>&1 | tee -a log
 
 if [[ $(grep -c "ERROR" log) -eq 0 ]]; then
   rm log

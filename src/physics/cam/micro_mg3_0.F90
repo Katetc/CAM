@@ -913,15 +913,15 @@ subroutine micro_mg_tend ( &
   real(r8) :: fs(mgncol,nlev)
   real(r8) :: fns(mgncol,nlev)
 
-  real(r8) :: faloutc(nlev)
-  real(r8) :: faloutnc(nlev)
-  real(r8) :: falouti(nlev)
-  real(r8) :: faloutni(nlev)
+  real(r8) :: faloutc(mgncol,nlev)
+  real(r8) :: faloutnc(mgncol,nlev)
+  real(r8) :: falouti(mgncol,nlev)
+  real(r8) :: faloutni(mgncol,nlev)
 
-  real(r8) :: faloutr(nlev)
-  real(r8) :: faloutnr(nlev)
-  real(r8) :: falouts(nlev)
-  real(r8) :: faloutns(nlev)
+  real(r8) :: faloutr(mgncol,nlev)
+  real(r8) :: faloutnr(mgncol,nlev)
+  real(r8) :: falouts(mgncol,nlev)
+  real(r8) :: faloutns(mgncol,nlev)
 
   real(r8) :: faltndc
   real(r8) :: faltndnc
@@ -935,8 +935,8 @@ subroutine micro_mg_tend ( &
   real(r8) :: faltnds
   real(r8) :: faltndns
 
-  real(r8) :: faloutg(nlev)
-  real(r8) :: faloutng(nlev)
+  real(r8) :: faloutg(mgncol,nlev)
+  real(r8) :: faloutng(mgncol,nlev)
   real(r8) :: faltndg
   real(r8) :: faltndng
 
@@ -980,7 +980,8 @@ subroutine micro_mg_tend ( &
   integer i, k, n
 
   ! number of sub-steps for loops over "n" (for sedimentation)
-  integer nstep(mgncol)
+  integer :: nstep(mgncol)
+  integer :: nstep_max
   integer mdust
 
   ! Varaibles to scale fall velocity between small and regular ice regimes.
@@ -998,41 +999,43 @@ subroutine micro_mg_tend ( &
   deltat = deltatin
   
   !$acc data create( mi0l ) &
-  !$acc&     copyin( qcn, ncn, qin, nin, qrn, nrn, qsn, nsn, qgr, ngr, &
-  !$acc&             cldn, liqcldf, icecldf, qsatfac, p, t, q, npccn, naai, &
-  !$acc&             ni, relvar, tnd_qsnow, frzdep, rndst, frzimm, frzcnt, &
-  !$acc&             accre_enhan ) &
+  !$acc&     copyin(  qcn, ncn, qin, nin, qrn, nrn, qsn, nsn, qgr, ngr, &
+  !$acc&              qsatfac, p, t , q, npccn, naai, tnd_qsnow, rndst, nacon, &
+  !$acc&              frzimm, frzcnt, frzdep, accre_enhan, pdel, &
+  !$acc&              falouti, faloutni, faloutc, faloutnc, faloutr, faloutnr, &
+  !$acc&              falouts, faloutns, faloutg, faloutng ) &
   !$acc&     copyout( qc, nc, qi, ni, qr, nr, qs, ns, qg, ng, &
-  !$acc&              lcldm, icldm, cldm, qsfm, sc, rho, dv, mu, &
-  !$acc&              rhof, arn, asn, agn, acn, ain, ajn, &
-  !$acc&              esl, qvl, esi, qvi, relhum, nc, ncal, ncai, &
-  !$acc&              nnuccd, nimax, mnuccd, minstsm, ninstsm, &
-  !$acc&              tlat, meltsdttot, minstgm, ninstgm, &
-  !$acc&              minstrf, ninstrf, frzrdttot, qcic, ncic, qiic, niic, &
-  !$acc&              precip_frac, pgam, lamc, prc, nprc, nprc1, &
-  !$acc&              qric, nric, lami, n0i, prci, nprci, qsic, nsic, &
-  !$acc&              qgic, ngic, lamr, n0r, unr, umr, lams, n0s, &
-  !$acc&              ums, uns, lamg, n0g, umg, ung, nacon, &
-  !$acc&              mnuccc, nnuccc, mnucct, nnucct, mnudep, nnudep, &
-  !$acc&              nsagg, psacws, npsacws, msacwi, nsacwi, pracs, npracs, &
-  !$acc&              mnuccr, nnuccr, pra, npra, nragg, prai, nprai, bergs, berg, &
-  !$acc&              vap_dep, ice_sublim, nsubi, nsubc, pre, prds, am_evp_st, &
-  !$acc&              pgracs, prdg, ngracs, qmultg, nmultg, qmultrg, nmultrg, &
-  !$acc&              psacr, psacwg, npsacwg, pgsacw, nscng, pracg, npracg, qcrat, &
-  !$acc&              nsubr, nnuccri, mnuccri, nsubs, ttmp, qtmp, esn, qvn, &
-  !$acc&              dum_2D, dum1_2D, dum2_2D, dum3_2D, qcsevap, qisevap, &
-  !$acc&              qvres, vtrmc, vtrmi, qcsedten, qisedten, qrsedten, qssedten, &
-  !$acc&              qgsedten, melttot, homotot, qcrestot, qirestot, rflx, sflx, &
-  !$acc&              lflx, iflx, gflx, rainrt, rercld, qvlat, qctend, qitend, &
-  !$acc&              qstend, qrtend, nctend, nitend, nrtend, nstend, qgtend, &
-  !$acc&              ngtend, prect, preci, qvn_tmp_liq, qvn_tmp_ice, qtmp_ice_pre, &
-  !$acc&              cmeout, cmeitot, evapsnow, nevapr, prer_evap, prain, &
-  !$acc&              prodsnow, qcsinksum_rate1ord, pratot, prctot, mnuccctot, &
-  !$acc&              mnuccttot, msacwitot, psacwstot, bergstot, bergtot, prcitot, &
-  !$acc&              praitot, mnuccdtot, pracstot, mnuccrtot, mnuccritot, psacrtot, &
-  !$acc&              pracgtot, psacwgtot, pgsacwtot, pgracstot, prdgtot, qmultgtot, &
-  !$acc&              qmultrgtot, npracgtot, nscngtot, ngracstot, nmultgtot, &
-  !$acc&              nmultrgtot, npsacwgtot )
+  !$acc&              lcldm, icldm, cldm, qsfm, rho, dv, mu, sc, rhof, arn, &
+  !$acc&              asn, agn, acn, ain, ajn, esl, qvl, esi, qvi, relhum, &
+  !$acc&              qcsevap, qisevap, qvres, vtrmc, vtrmi, qcsedten, qisedten, &
+  !$acc&              qrsedten, qssedten, qgsedten, melttot, homotot, qcrestot, &
+  !$acc&              qirestot, rflx, sflx, lflx, iflx, gflx, rainrt, rercld, &
+  !$acc&              tlat, qvlat, qctend, qitend, qstend, qrtend, nctend, nitend, &
+  !$acc&              nrtend, nstend, qgtend, ngtend, prect, preci, ncal, ncai, &
+  !$acc&              nnuccd, nimax, mnuccd, meltsdttot, frzrdttot, precip_frac, &
+  !$acc&              qiic, niic, qcic, ncic, minstrf, ninstrf, minstgm, ninstgm, &
+  !$acc&              minstsm, ninstsm, pgam, lamc, relvar, prc, nprc, nprc1, &
+  !$acc&              qric, nric, lami, n0i, ngic, qgic, nsic, qsic, prci, nprci, &
+  !$acc&              lami, n0i, lamr, n0r, lams, n0s, lamg, n0g, ums, uns, unr, umr, &
+  !$acc&              mnuccc, nnuccc, nacon, mnucct, nnucct, mnudep, nnudep, mi0l, &
+  !$acc&              umg, ung, nsacwi, msacwi, nsagg, psacws, npsacws, pracs, npracs, &
+  !$acc&              mnuccr, nnuccr, pra, npra, nragg, prai, nprai, bergs, vap_dep, &
+  !$acc&              ice_sublim, nsubi, nsubc, berg, pgracs, prdg, ngracs, qmultg, &
+  !$acc&              nmultg, qmultrg, nmultrg, psacr, psacwg, npsacwg, pgsacw, &
+  !$acc&              nscng, pracg, npracg, am_evp_st, pre, prds, qtmp, ttmp, nsubs, &
+  !$acc&              nsubr, nnuccri, mnuccri, qcrat, npsacwgtot, nmultrgtot, &
+  !$acc&              nmultgtot, ngracstot, nscngtot, npracgtot, qmultrgtot, qmultgtot, &
+  !$acc&              prdgtot, pgracstot, pgsacwtot, psacwgtot, pracgtot, psacrtot, &
+  !$acc&              mnuccritot, mnuccrtot, pracstot, mnuccdtot, praitot, prcitot, &
+  !$acc&              bergtot, bergstot, psacwstot, msacwitot, mnuccttot, mnuccctot, &
+  !$acc&              prctot, pratot, qcsinksum_rate1ord, prodsnow, prain, prer_evap, &
+  !$acc&              nevapr, evapsnow, cmeitot, cmeout, dum_2D, dum1_2D, dum2_2D, &
+  !$acc&              dum3_2D, qvn_tmp_liq, qvn_tmp_ice, qtmp_ice_pre, esn, qvn, &
+  !$acc&              dumni, dumnc, dumng, dumg, dumns, dums, dumnr, dumr, dumc, dumi, &
+  !$acc&              qrout, nrout, qsout, nsout, qgout, ngout, &
+  !$acc&              fc, fnc, fi, fni, fs, fns, fr, fnr, fg, fng, pdel_inv, &
+  !$acc&              nstep, nstep_max )
+  
 
   ! Copies of input concentrations that may be changed internally.
   !$acc parallel loop collapse(2) default(present)
@@ -1060,7 +1063,6 @@ subroutine micro_mg_tend ( &
      ! if cloud water or ice is present, if not present
      ! set to mincld (mincld used instead of zero, to prevent
      ! possible division by zero errors).
-
      !$acc parallel loop collapse(2) default(present)
      do k = 1, nlev
        do i = 1, mgncol
@@ -1089,7 +1091,7 @@ subroutine micro_mg_tend ( &
          cldm(i,k) = max(icldm(i,k), lcldm(i,k))
        end do
      end do
-     
+
      !$acc parallel loop collapse(2) default(present)
      do k = 1, nlev
        do i = 1, mgncol
@@ -1173,8 +1175,8 @@ subroutine micro_mg_tend ( &
                       
   call qsat_ice_all( mgncol, nlev, t(:,:), p(:,:), &
                      esi(:,:), qvi(:,:) )
-                
-  !$acc parallel loop collapse(2) default(present)                     
+  
+  !$acc parallel loop collapse(2) default(present)
   do k = 1, nlev
      do i = 1, mgncol
 
@@ -1230,12 +1232,6 @@ subroutine micro_mg_tend ( &
       qcrestot(i,k) = 0._r8
       qirestot(i,k) = 0._r8
 
-      rflx(i,k) = 0._r8
-      sflx(i,k) = 0._r8
-      lflx(i,k) = 0._r8
-      iflx(i,k) = 0._r8
-      gflx(i,k) = 0._r8
-
       ! for refl calc
       rainrt(i,k) = 0._r8
 
@@ -1255,6 +1251,17 @@ subroutine micro_mg_tend ( &
       nstend(i,k) = 0._r8
       qgtend(i,k) = 0._r8
       ngtend(i,k) = 0._r8
+    end do
+  end do
+  
+  !$acc parallel loop collapse(2) default(present)
+  do k = 1, nlev+1
+    do i = 1, mgncol
+      rflx(i,k) = 0._r8
+      sflx(i,k) = 0._r8
+      lflx(i,k) = 0._r8
+      iflx(i,k) = 0._r8
+      gflx(i,k) = 0._r8
     end do
   end do
   
@@ -1518,7 +1525,6 @@ subroutine micro_mg_tend ( &
   ! for sub-columns cldm has already been set to 1 if cloud
   ! water or ice is present, so precip_frac will be correctly set below
   ! and nothing extra needs to be done here
-
   !$acc parallel loop collapse(2) default(present)
   do k = 1, nlev
     do i = 1, mgncol
@@ -1526,9 +1532,7 @@ subroutine micro_mg_tend ( &
     end do
   end do
       
-    
   if (trim(micro_mg_precip_frac_method) == 'in_cloud') then
-
     !$acc parallel loop default(present)
     do i = 1, mgncol
       do k = 2, nlev
@@ -1691,7 +1695,7 @@ subroutine micro_mg_tend ( &
        ngic(i,k) = ng(i,k)/precip_frac(i,k)
      end do
    end do
-   
+
    !$acc parallel loop collapse(2) default(present)
    do k = 1, nlev
      do i = 1, mgncol
@@ -1726,7 +1730,7 @@ subroutine micro_mg_tend ( &
    ! rain
    call size_dist_param_basic_2D( mgncol, nlev, mg_rain_props, qric(:,:), nric(:,:), &
                                   lamr(:,:), n0=n0r(:,:))
-
+   
    !$acc parallel loop collapse(2) default(present)
    do k = 1, nlev
      do i = 1, mgncol
@@ -1791,6 +1795,7 @@ subroutine micro_mg_tend ( &
       call size_dist_param_basic_2D( mgncol, nlev, mg_graupel_props, qgic(:,:), ngic(:,:), &
                                      lamg(:,:), n0=n0g(:,:))
    end if
+
       
    !$acc parallel loop collapse(2) default(present)
    do k = 1, nlev
@@ -1817,7 +1822,7 @@ subroutine micro_mg_tend ( &
 
        call immersion_freezing_2D(mgncol, nlev, microp_uniform, t(:,:), pgam(:,:), lamc(:,:), &
                                   qcic(:,:), ncic(:,:), relvar(:,:), mnuccc(:,:), nnuccc(:,:))
-
+                                  
        !$acc parallel loop collapse(2) default(present)
        do k = 1, nlev
          do i = 1, mgncol
@@ -1966,8 +1971,8 @@ subroutine micro_mg_tend ( &
    
    call bergeron_process_snow_2D(mgncol, nlev, t(:,:), rho(:,:), dv(:,:), mu(:,:), sc(:,:), &
         qvl(:,:), qvi(:,:), asn(:,:), qcic(:,:), qsic(:,:), lams(:,:), n0s(:,:), bergs(:,:) )
-    
-   !$acc parallel loop collapse(2) default(present)    
+        
+   !$acc parallel loop collapse(2) default(present)
    do k = 1, nlev
      do i = 1, mgncol
        bergs(i,k) = bergs(i,k) * micro_mg_berg_eff_factor
@@ -2050,6 +2055,7 @@ subroutine micro_mg_tend ( &
   else
      
     !need to zero these out to be totally switchable (for conservation)
+    !$acc parallel loop collapse(2) default(present)
     do k = 1, nlev 
       do i = 1, mgncol
         pgracs(i,k) = 0._r8
@@ -2275,6 +2281,7 @@ subroutine micro_mg_tend ( &
   end do
    
   if (do_cldice) then
+
     !$acc parallel loop collapse(2) default(present)
     do k = 1, nlev 
       do i=1,mgncol
@@ -2445,9 +2452,9 @@ subroutine micro_mg_tend ( &
       !-------------------------------------------------------------------
   end if
 
-   !$acc parallel loop collapse(2) default(present)
-   do k = 1, nlev
-     do i = 1, mgncol
+  !$acc parallel loop collapse(2) default(present)
+  do k = 1, nlev
+    do i = 1, mgncol
 
       ! next limit ice and snow sublimation and rain evaporation
       ! get estimate of q and t at end of time step
@@ -2495,10 +2502,8 @@ subroutine micro_mg_tend ( &
    ! do separately using RHI for prds and ice_sublim
    call qsat_ice_all( mgncol, nlev, ttmp(:,:), p(:,:), &
                       esn(:,:), qvn_tmp_ice(:,:) )
-                      
-   !$acc end data
 
-   !!$acc parallel loop collapse(2) default(present)
+   !$acc parallel loop collapse(2) default(present)
    do k = 1, nlev
      do i = 1, mgncol
       
@@ -2536,7 +2541,7 @@ subroutine micro_mg_tend ( &
 
    ! Big "administration" loop enforces conservation, updates variables
    ! that accumulate over substeps, and sets output variables.
-   !!$acc parallel loop collapse(2) default(present)
+   !$acc parallel loop collapse(2) default(present)
    do k = 1, nlev
      do i = 1, mgncol
 
@@ -2569,22 +2574,21 @@ subroutine micro_mg_tend ( &
      end do
    end do
 
+   if (do_cldice) then
+     !$acc parallel loop collapse(2) default(present)
+     do k = 1, nlev
+       do i = 1, mgncol
+         qitend(i,k) = qitend(i,k)+ &
+            (mnuccc(i,k)+mnucct(i,k)+mnudep(i,k)+msacwi(i,k)+qmultg(i,k))*lcldm(i,k)+(-prci(i,k)- &
+            prai(i,k))*icldm(i,k)+vap_dep(i,k)+berg(i,k)+ice_sublim(i,k)+ &
+            mnuccd(i,k)+(mnuccri(i,k)+qmultrg(i,k))*precip_frac(i,k)
+       end do
+     end do
+   end if
 
-    if (do_cldice) then
-      !!$acc parallel loop collapse(2) default(present)
-      do k = 1, nlev
-        do i = 1, mgncol
-           qitend(i,k) = qitend(i,k)+ &
-              (mnuccc(i,k)+mnucct(i,k)+mnudep(i,k)+msacwi(i,k)+qmultg(i,k))*lcldm(i,k)+(-prci(i,k)- &
-              prai(i,k))*icldm(i,k)+vap_dep(i,k)+berg(i,k)+ice_sublim(i,k)+ &
-              mnuccd(i,k)+(mnuccri(i,k)+qmultrg(i,k))*precip_frac(i,k)
-        end do
-      end do
-    end if
-
-    !!$acc parallel loop collapse(2) default(present)
-    do k = 1, nlev
-      do i = 1, mgncol
+   !$acc parallel loop collapse(2) default(present)
+   do k = 1, nlev
+     do i = 1, mgncol
         qrtend(i,k) = qrtend(i,k)+ &
              (pra(i,k)+prc(i,k))*lcldm(i,k)+(pre(i,k)-pracs(i,k)- &
              mnuccr(i,k)-mnuccri(i,k)-qmultrg(i,k)-pracg(i,k)-pgracs(i,k))*precip_frac(i,k)
@@ -2592,7 +2596,7 @@ subroutine micro_mg_tend ( &
    end do
 
    if (do_hail.or.do_graupel) then
-     !!$acc parallel loop collapse(2) default(present)
+     !$acc parallel loop collapse(2) default(present)
      do k = 1, nlev
        do i = 1, mgncol
          qgtend(i,k) = qgtend(i,k) + (pracg(i,k)+pgracs(i,k)+prdg(i,k)+psacr(i,k)+mnuccr(i,k))*precip_frac(i,k) &
@@ -2605,7 +2609,7 @@ subroutine micro_mg_tend ( &
       end do
     else
       !necessary since mnuccr moved to graupel
-      !!$acc parallel loop collapse(2) default(present)
+      !$acc parallel loop collapse(2) default(present)
       do k = 1, nlev
         do i = 1, mgncol
           qstend(i,k) = qstend(i,k)+ &
@@ -2615,7 +2619,7 @@ subroutine micro_mg_tend ( &
       end do
     end if
     
-    !!$acc parallel loop collapse(2) default(present)
+    !$acc parallel loop collapse(2) default(present)
     do k = 1, nlev
       do i = 1, mgncol
 
@@ -2640,7 +2644,7 @@ subroutine micro_mg_tend ( &
    end do
              
    if (do_hail .or. do_graupel) then
-     !!$acc parallel loop collapse(2) default(present)
+     !$acc parallel loop collapse(2) default(present)
      do k = 1, nlev
        do i = 1, mgncol
          prodsnow(i,k) = (prai(i,k)+prci(i,k))*icldm(i,k)+(psacws(i,k)+bergs(i,k))*lcldm(i,k)+(&
@@ -2648,7 +2652,7 @@ subroutine micro_mg_tend ( &
        end do
      end do
    else
-     !!$acc parallel loop collapse(2) default(present)
+     !$acc parallel loop collapse(2) default(present)
      do k = 1, nlev
        do i = 1, mgncol
          prodsnow(i,k) = (prai(i,k)+prci(i,k))*icldm(i,k)+(psacws(i,k)+bergs(i,k))*lcldm(i,k)+(&
@@ -2663,7 +2667,7 @@ subroutine micro_mg_tend ( &
    !    used to calculate pra, prc, ... in this routine
    ! qcsinksum_rate1ord = { rate of direct transfer of cloud water to rain & snow }
    !                      (no cloud ice or bergeron terms)
-   !!$acc parallel loop collapse(2) default(present)
+   !$acc parallel loop collapse(2) default(present)
    do k = 1, nlev
      do i = 1, mgncol
         qcsinksum_rate1ord(i,k) = (pra(i,k)+prc(i,k)+psacws(i,k)+psacwg(i,k)+pgsacw(i,k))*lcldm(i,k) 
@@ -2673,7 +2677,7 @@ subroutine micro_mg_tend ( &
      end do
    end do
    
-   !!$acc parallel loop collapse(2) default(present)
+   !$acc parallel loop collapse(2) default(present)
    do k = 1, nlev
      do i = 1, mgncol
         ! microphysics output, note this is grid-averaged
@@ -2714,6 +2718,7 @@ subroutine micro_mg_tend ( &
      end do
    end do
 
+   !$acc parallel loop collapse(2) default(present)
    do k = 1, nlev
      do i = 1, mgncol
       
@@ -2733,6 +2738,7 @@ subroutine micro_mg_tend ( &
 
     
   if(do_graupel.or.do_hail) then
+    !$acc parallel loop collapse(2) default(present)
     do k = 1, nlev
       do i = 1, mgncol
         nstend(i,k) = nstend(i,k)+(nsubs(i,k)+ &
@@ -2742,6 +2748,7 @@ subroutine micro_mg_tend ( &
     end do
   else
      !necessary since mnuccr moved to graupel
+     !$acc parallel loop collapse(2) default(present)
      do k = 1, nlev
        do i = 1, mgncol
          nstend(i,k) = nstend(i,k)+(nsubs(i,k)+ &
@@ -2750,6 +2757,7 @@ subroutine micro_mg_tend ( &
     end do
   end if
 
+  !$acc parallel loop collapse(2) default(present)
   do k = 1, nlev
     do i = 1, mgncol
       nrtend(i,k) = nrtend(i,k)+ &
@@ -2762,7 +2770,7 @@ subroutine micro_mg_tend ( &
   ! maximum (existing N + source terms*dt), which is possible if mtime < deltat
   ! note that currently mtime = deltat
   !================================================================
-
+  !$acc parallel loop collapse(2) default(present)
   do k = 1, nlev
     do i = 1, mgncol
       if (do_cldice .and. nitend(i,k).gt.0._r8.and.ni(i,k)+nitend(i,k)*deltat.gt.nimax(i,k)) then
@@ -2774,6 +2782,7 @@ subroutine micro_mg_tend ( &
   !-----------------------------------------------------
   ! convert rain/snow q and N for output to history, note,
   ! output is for gridbox average
+  !$acc parallel loop collapse(2) default(present)
   do k = 1, nlev
     do i = 1, mgncol
       qrout(i,k) = qr(i,k)
@@ -2790,13 +2799,8 @@ subroutine micro_mg_tend ( &
   ! divide by precip fraction to get in-precip (local) values of
   ! rain mass and number, divide by rhow to get rain number in kg^-1
 
-  !call size_dist_param_basic_2D( mgncol, nlev, mg_rain_props, qric(:,:), nric(:,:), &
-  !                               lamr(:,:), n0=n0r(:,:))
-  do k=1,nlev
-
-     call size_dist_param_basic(mg_rain_props, qric(:,k), nric(:,k), lamr(:,k), mgncol, n0=n0r(:,k))
-
-  enddo
+  call size_dist_param_basic_2D( mgncol, nlev, mg_rain_props, qric(:,:), nric(:,:), &
+                                 lamr(:,:), n0=n0r(:,:))
         
   ! Calculate rercld                
   ! calculate mean size of combined rain and cloud water         
@@ -2814,6 +2818,7 @@ subroutine micro_mg_tend ( &
   !================================================================================
 
   ! Re-apply droplet activation tendency
+  !$acc parallel loop collapse(2) default(present)
   do k = 1, nlev
     do i = 1, mgncol
       nc(i,k) = ncn(i,k)
@@ -2822,6 +2827,7 @@ subroutine micro_mg_tend ( &
   end do
 
   ! Re-apply rain freezing and snow melting.
+  !$acc parallel loop collapse(2) default(present)
   do k = 1, nlev
     do i = 1, mgncol
       qstend(i,k) = qstend(i,k) + (qs(i,k)-qsn(i,k))/deltat
@@ -2829,6 +2835,7 @@ subroutine micro_mg_tend ( &
     end do
   end do
 
+  !$acc parallel loop collapse(2) default(present)
   do k = 1, nlev
     do i = 1, mgncol
       nstend(i,k) = nstend(i,k) + (ns(i,k)-nsn(i,k))/deltat
@@ -2836,6 +2843,7 @@ subroutine micro_mg_tend ( &
     end do
   end do
 
+  !$acc parallel loop collapse(2) default(present)
   do k = 1, nlev
     do i = 1, mgncol
       qrtend(i,k) = qrtend(i,k) + (qr(i,k)-qrn(i,k))/deltat
@@ -2843,6 +2851,7 @@ subroutine micro_mg_tend ( &
     end do
   end do
 
+  !$acc parallel loop collapse(2) default(present)
   do k = 1, nlev
     do i = 1, mgncol
       nrtend(i,k) = nrtend(i,k) + (nr(i,k)-nrn(i,k))/deltat
@@ -2851,6 +2860,7 @@ subroutine micro_mg_tend ( &
   end do
 
 ! Re-apply graupel freezing/melting
+  !$acc parallel loop collapse(2) default(present)
   do k = 1, nlev
     do i = 1, mgncol
       qgtend(i,k) = qgtend(i,k) + (qg(i,k)-qgr(i,k))/deltat
@@ -2858,6 +2868,7 @@ subroutine micro_mg_tend ( &
     end do
   end do
 
+  !$acc parallel loop collapse(2) default(present)
   do k = 1, nlev
     do i = 1, mgncol
       ngtend(i,k) = ngtend(i,k) + (ng(i,k)-ngr(i,k))/deltat
@@ -2869,6 +2880,7 @@ subroutine micro_mg_tend ( &
   !================================================================================
 
   ! modify to include snow. in prain & evap (diagnostic here: for wet dep)
+  !$acc parallel loop collapse(2) default(present)
   do k = 1, nlev
     do i = 1, mgncol
       nevapr(i,k) = nevapr(i,k) + evapsnow(i,k)
@@ -2876,7 +2888,7 @@ subroutine micro_mg_tend ( &
     end do
   end do
 
-
+  !$acc parallel loop collapse(2) default(present)
   do k=1,nlev
      do i=1,mgncol
 
@@ -2903,12 +2915,14 @@ subroutine micro_mg_tend ( &
   
   ! switch for specification of droplet and crystal number
   if (ngcons) then
+    !$acc parallel loop collapse(2) default(present)
     do k=1,nlev
       do i=1,mgncol
         dumng(i,k)=ngnst/rho(i,k)
       end do
     end do
   else  
+    !$acc parallel loop collapse(2) default(present)
     do k=1,nlev
       do i=1,mgncol
         dumng(i,k) = max((ng(i,k)+ngtend(i,k)*deltat)/precip_frac(i,k),0._r8)
@@ -2918,12 +2932,14 @@ subroutine micro_mg_tend ( &
 
   ! switch for specification of droplet and crystal number
   if (nccons) then
+    !$acc parallel loop collapse(2) default(present)
     do k=1,nlev
       do i=1,mgncol
         dumnc(i,k)=ncnst/rho(i,k)
       end do
     end do
   else
+    !$acc parallel loop collapse(2) default(present)
     do k=1,nlev
       do i=1,mgncol
         dumnc(i,k) = max((nc(i,k)+nctend(i,k)*deltat)/lcldm(i,k),0._r8)
@@ -2933,12 +2949,14 @@ subroutine micro_mg_tend ( &
 
   ! switch for specification of cloud ice number
   if (nicons) then
+    !$acc parallel loop collapse(2) default(present)
     do k=1,nlev
       do i=1,mgncol
         dumni(i,k)=ninst/rho(i,k)
       end do
     end do
   else 
+    !$acc parallel loop collapse(2) default(present)
     do k=1,nlev
       do i=1,mgncol
         dumni(i,k) = max((ni(i,k)+nitend(i,k)*deltat)/icldm(i,k),0._r8)
@@ -2947,19 +2965,13 @@ subroutine micro_mg_tend ( &
   end if
   
   ! obtain new slope parameter to avoid possible singularity
-  !call size_dist_param_basic_2D( mgncol, nlev, mg_ice_props, dumi(:,:), dumni(:,:), &
-  !                               lami(:,:) )
+  call size_dist_param_basic_2D( mgncol, nlev, mg_ice_props, dumi(:,:), dumni(:,:), &
+                                 lami(:,:) )
                                  
-  !call size_dist_param_liq_2D( mgncol, nlev,  mg_liq_props, dumc(:,:), dumnc(:,:), & 
-  !                             rho(:,:), pgam(:,:), lamc(:,:) )
-   do k=1,nlev
-     ! obtain new slope parameter to avoid possible singularity
-     call size_dist_param_basic(mg_ice_props, dumi(:,k), dumni(:,k), &
-          lami(:,k), mgncol)
-     call size_dist_param_liq(mg_liq_props, dumc(:,k), dumnc(:,k), rho(:,k), &
-          pgam(:,k), lamc(:,k), mgncol)
-  enddo
+  call size_dist_param_liq_2D( mgncol, nlev,  mg_liq_props, dumc(:,:), dumnc(:,:), & 
+                               rho(:,:), pgam(:,:), lamc(:,:) )
 
+  !$acc parallel loop collapse(2) default(present)
   do k=1,nlev
      do i=1,mgncol
 
@@ -3017,13 +3029,10 @@ subroutine micro_mg_tend ( &
   enddo
   
   ! fallspeed for rain
-  !call size_dist_param_basic_2D( mgncol, nlev, mg_rain_props, dumr(:,:), dumnr(:,:), &
-  !                               lamr(:,:) )
-  do k=1,nlev
-        call size_dist_param_basic(mg_rain_props, dumr(:,k), dumnr(:,k), &
-             lamr(:,k), mgncol)
-  enddo
+  call size_dist_param_basic_2D( mgncol, nlev, mg_rain_props, dumr(:,:), dumnr(:,:), &
+                                 lamr(:,:) )
 
+  !$acc parallel loop collapse(2) default(present)
   do k=1,nlev
      do i=1,mgncol
        if (lamr(i,k).ge.qsmall) then
@@ -3042,15 +3051,12 @@ subroutine micro_mg_tend ( &
      end do
    end do
     
+   
+  ! fallspeed for snow
+  call size_dist_param_basic_2D( mgncol, nlev, mg_snow_props, dums(:,:), dumns(:,:), &
+                                 lams(:,:) )
 
-   ! fallspeed for snow
-   !call size_dist_param_basic_2D( mgncol, nlev, mg_snow_props, dums(:,:), dumns(:,:), &
-  !                                lams(:,:) )
-  do k=1,nlev
-        call size_dist_param_basic(mg_snow_props, dums(:,k), dumns(:,k), &
-             lams(:,k), mgncol)
-  enddo
-
+   !$acc parallel loop collapse(2) default(present)
    do k=1,nlev
       do i=1,mgncol
         if (lams(i,k).ge.qsmall) then
@@ -3070,29 +3076,17 @@ subroutine micro_mg_tend ( &
     end do
 
     ! fallspeed for graupel
-    !if (do_hail) then
-    !  call size_dist_param_basic_2D( mgncol, nlev, mg_hail_props, dumg(:,:), dumng(:,:), &
-    !                                 lamg(:,:) )
-    !end if
+    if (do_hail) then
+      call size_dist_param_basic_2D( mgncol, nlev, mg_hail_props, dumg(:,:), dumng(:,:), &
+                                     lamg(:,:) )
+    end if
     
-    !if (do_graupel) then
-    !  call size_dist_param_basic_2D( mgncol, nlev, mg_graupel_props, dumg(:,:), dumng(:,:), &
-    !                                 lamg(:,:) )
-    !end if
-    
-    do k=1,nlev
-       do i=1,mgncol
-         if (do_hail) then
-           call size_dist_param_basic(mg_hail_props, dumg(i,k), dumng(i,k), &
-             lamg(i,k))
-        end if
-        if (do_graupel) then
-           call size_dist_param_basic(mg_graupel_props, dumg(i,k), dumng(i,k), &
-             lamg(i,k))
-        end if
-      end do
-    end do
-
+    if (do_graupel) then
+      call size_dist_param_basic_2D( mgncol, nlev, mg_graupel_props, dumg(:,:), dumng(:,:), &
+                                     lamg(:,:) )
+    end if
+  
+    !$acc parallel loop collapse(2) default(present)
     do k=1,nlev
        do i=1,mgncol
         if (lamg(i,k).ge.qsmall) then
@@ -3111,6 +3105,7 @@ subroutine micro_mg_tend ( &
       end do
    end do
    
+   !$acc parallel loop collapse(2) default(present)
    do k=1,nlev
       do i=1,mgncol
 
@@ -3136,105 +3131,139 @@ subroutine micro_mg_tend ( &
 
      end do
   end do
-
+  
+  !$acc parallel loop collapse(2) default(present)
   do k=1,nlev
      do i=1,mgncol
        pdel_inv(i,k) = 1._r8/pdel(i,k)
      enddo
   enddo
-
   
-  ! calculate number of split time steps to ensure courant stability criteria
-  ! for sedimentation calculations
-  !-------------------------------------------------------------------
+  ! Begin sedimentaion calculations 
+  
+  nstep_max = 0
+  !$acc parallel loop seq default(present) copyout(nstep_max)
   do i=1,mgncol
-     nstep(i) = 1 + int(max( &
+    ! calculate number of split time steps to ensure courant stability criteria
+    ! for sedimentation calculations
+    !-------------------------------------------------------------------
+    nstep(i) = 1 + int(max( &
           maxval( fi(i,:)*pdel_inv(i,:)), &
           maxval(fni(i,:)*pdel_inv(i,:))) &
           * deltat)
+    if( nstep(i) > nstep_max ) nstep_max = nstep(i)
   end do
 
-  do i=1,mgncol
+  ! loop over sedimentation sub-time step to ensure stability
+  !==============================================================
+  do n = 1,nstep_max
+    
+    if (do_cldice) then
+      !$acc parallel loop collapse(2) default(present)
+      do k = 1, nlev
+        do i=1,mgncol
+          if( n <= nstep(i) ) then 
+            falouti(i,k)  = fi(i,k)  * dumi(i,k)
+            faloutni(i,k) = fni(i,k) * dumni(i,k)
+          end if
+        end do
+      end do
+    else
+      !$acc parallel loop collapse(2) default(present)
+      do k = 1, nlev
+        do i=1,mgncol
+          if( n <= nstep(i) ) then 
+            falouti(i,k)  = 0._r8
+            faloutni(i,k) = 0._r8
+          end if
+        end do
+      end do
+    end if
 
-     ! loop over sedimentation sub-time step to ensure stability
-     !==============================================================
-     do n = 1,nstep(i)
-
-        if (do_cldice) then
-           falouti  = fi(i,:)  * dumi(i,:)
-           faloutni = fni(i,:) * dumni(i,:)
-        else
-           falouti  = 0._r8
-           faloutni = 0._r8
-        end if
-
-        ! top of model
-
-        k = 1
-
+    ! top of model
+    !$acc parallel loop default(present)
+    do i=1,mgncol
+      if( n <= nstep(i) ) then
         ! add fallout terms to microphysical tendencies
-        faltndi = falouti(k)/pdel(i,k)
-        faltndni = faloutni(k)/pdel(i,k)
-        qitend(i,k) = qitend(i,k)-faltndi/nstep(i)
-        nitend(i,k) = nitend(i,k)-faltndni/nstep(i)
+        faltndi = falouti(i,1)/pdel(i,1)
+        faltndni = faloutni(i,1)/pdel(i,1)
+        qitend(i,1) = qitend(i,1)-faltndi/nstep(i)
+        nitend(i,1) = nitend(i,1)-faltndni/nstep(i)
 
         ! sedimentation tendency for output
-        qisedten(i,k)=qisedten(i,k)-faltndi/nstep(i)
+        qisedten(i,1)=qisedten(i,1)-faltndi/nstep(i)
 
-        dumi(i,k) = dumi(i,k)-faltndi*deltat/nstep(i)
-        dumni(i,k) = dumni(i,k)-faltndni*deltat/nstep(i)
+        dumi(i,1) = dumi(i,1)-faltndi*deltat/nstep(i)
+        dumni(i,1) = dumni(i,1)-faltndni*deltat/nstep(i)
+      end if
+    end do
 
-        do k = 2,nlev
+    !$acc parallel loop collapse(2) default(present)
+    do k = 2, nlev
+      do i = 1, mgncol
+        if( n <= nstep(i) ) then
 
-           ! for cloud liquid and ice, if cloud fraction increases with height
-           ! then add flux from above to both vapor and cloud water of current level
-           ! this means that flux entering clear portion of cell from above evaporates
-           ! instantly
+          ! for cloud liquid and ice, if cloud fraction increases with height
+          ! then add flux from above to both vapor and cloud water of current level
+          ! this means that flux entering clear portion of cell from above evaporates
+          ! instantly
 
-           ! note: this is not an issue with precip, since we assume max overlap
-           dum1=icldm(i,k)/icldm(i,k-1)
-           dum1=min(dum1,1._r8)
+          ! note: this is not an issue with precip, since we assume max overlap
+          dum1=icldm(i,k)/icldm(i,k-1)
+          dum1=min(dum1,1._r8)
 
-           faltndqie=(falouti(k)-falouti(k-1))/pdel(i,k)
-           faltndi=(falouti(k)-dum1*falouti(k-1))/pdel(i,k)
-           faltndni=(faloutni(k)-dum1*faloutni(k-1))/pdel(i,k)
+          faltndqie=(falouti(i,k)-falouti(i,k-1))/pdel(i,k)
+          faltndi=(falouti(i,k)-dum1*falouti(i,k-1))/pdel(i,k)
+          faltndni=(faloutni(i,k)-dum1*faloutni(i,k-1))/pdel(i,k)
 
-           ! add fallout terms to eulerian tendencies
+          ! add fallout terms to eulerian tendencies
 
-           qitend(i,k) = qitend(i,k)-faltndi/nstep(i)
-           nitend(i,k) = nitend(i,k)-faltndni/nstep(i)
+          qitend(i,k) = qitend(i,k)-faltndi/nstep(i)
+          nitend(i,k) = nitend(i,k)-faltndni/nstep(i)
 
-           ! sedimentation tendency for output
-           qisedten(i,k)=qisedten(i,k)-faltndi/nstep(i)
+          ! sedimentation tendency for output
+          qisedten(i,k)=qisedten(i,k)-faltndi/nstep(i)
 
-           ! add terms to to evap/sub of cloud water
+          ! add terms to to evap/sub of cloud water
 
-           qvlat(i,k)=qvlat(i,k)-(faltndqie-faltndi)/nstep(i)
-           ! for output
-           qisevap(i,k)=qisevap(i,k)-(faltndqie-faltndi)/nstep(i)
+          qvlat(i,k)=qvlat(i,k)-(faltndqie-faltndi)/nstep(i)
+          ! for output
+          qisevap(i,k)=qisevap(i,k)-(faltndqie-faltndi)/nstep(i)
 
-           tlat(i,k)=tlat(i,k)+(faltndqie-faltndi)*xxls/nstep(i)
+          tlat(i,k)=tlat(i,k)+(faltndqie-faltndi)*xxls/nstep(i)
 
-           dumi(i,k) = dumi(i,k)-faltndi*deltat/nstep(i)
-           dumni(i,k) = dumni(i,k)-faltndni*deltat/nstep(i)
+          dumi(i,k) = dumi(i,k)-faltndi*deltat/nstep(i)
+          dumni(i,k) = dumni(i,k)-faltndni*deltat/nstep(i)
+        end if
+      end do
+    end do
 
-        end do
+    ! Ice flux
+    !$acc parallel loop collapse(2) default(present)
+    do k = 1,nlev
+      do i=1,mgncol
+        if( n <= nstep(i) ) then
+          iflx(i,k+1) = iflx(i,k+1) + falouti(i,k) / g / real(nstep(i))
+        end if
+      end do
+    end do
 
-        ! Ice flux
-        do k = 1,nlev
-          iflx(i,k+1) = iflx(i,k+1) + falouti(k) / g / real(nstep(i))
-        end do
-
-        ! units below are m/s
-        ! sedimentation flux at surface is added to precip flux at surface
-        ! to get total precip (cloud + precip water) rate
-
-        prect(i) = prect(i)+falouti(nlev)/g/real(nstep(i))/1000._r8
-        preci(i) = preci(i)+falouti(nlev)/g/real(nstep(i))/1000._r8
-
-     end do
+    ! units below are m/s
+    ! sedimentation flux at surface is added to precip flux at surface
+    ! to get total precip (cloud + precip water) rate
+    !$acc parallel loop default(present)
+    do i=1,mgncol
+      if( n <= nstep(i) ) then
+        prect(i) = prect(i)+falouti(i,nlev)/g/real(nstep(i))/1000._r8
+        preci(i) = preci(i)+falouti(i,nlev)/g/real(nstep(i))/1000._r8
+      end if
+    end do
+   
    end do
    
+   
+   nstep_max = 0
+   !$acc parallel loop seq default(present) copyout(nstep_max)
    do i=1,mgncol
      ! calculate number of split time steps to ensure courant stability criteria
      ! for sedimentation calculations
@@ -3243,39 +3272,50 @@ subroutine micro_mg_tend ( &
          maxval( fc(i,:)*pdel_inv(i,:)), &
          maxval(fnc(i,:)*pdel_inv(i,:))) &
          * deltat)
+     if( nstep(i) > nstep_max ) nstep_max = nstep(i)
    end do
    
-   do i=1,mgncol
+   ! loop over sedimentation sub-time step to ensure stability
+   !==============================================================
+   do n = 1,nstep_max
 
-     ! loop over sedimentation sub-time step to ensure stability
-     !==============================================================
-     do n = 1,nstep(i)
+     !$acc parallel loop collapse(2) default(present)
+     do k = 1, nlev
+       do i=1,mgncol
+         if( n <= nstep(i) ) then 
+           faloutc(i,k)  = fc(i,k)  * dumc(i,k)
+           faloutnc(i,k) = fnc(i,k) * dumnc(i,k)
+         end if
+       end do
+     end do
 
-        faloutc  = fc(i,:)  * dumc(i,:)
-        faloutnc = fnc(i,:) * dumnc(i,:)
+     ! top of model
+     !$acc parallel loop default(present)
+     do i=1,mgncol
+       if( n <= nstep(i) ) then
+         ! add fallout terms to microphysical tendencies
+         faltndc = faloutc(i,1)/pdel(i,1)
+         faltndnc = faloutnc(i,1)/pdel(i,1)
+         qctend(i,1) = qctend(i,1)-faltndc/nstep(i)
+         nctend(i,1) = nctend(i,1)-faltndnc/nstep(i)
 
-        ! top of model
-        k = 1
+         ! sedimentation tendency for output
+         qcsedten(i,1)=qcsedten(i,1)-faltndc/nstep(i)
 
-        ! add fallout terms to microphysical tendencies
-        faltndc = faloutc(k)/pdel(i,k)
-        faltndnc = faloutnc(k)/pdel(i,k)
-        qctend(i,k) = qctend(i,k)-faltndc/nstep(i)
-        nctend(i,k) = nctend(i,k)-faltndnc/nstep(i)
+         dumc(i,1) = dumc(i,1)-faltndc*deltat/nstep(i)
+         dumnc(i,1) = dumnc(i,1)-faltndnc*deltat/nstep(i)
+       end if
+     end do
 
-        ! sedimentation tendency for output
-        qcsedten(i,k)=qcsedten(i,k)-faltndc/nstep(i)
-
-        dumc(i,k) = dumc(i,k)-faltndc*deltat/nstep(i)
-        dumnc(i,k) = dumnc(i,k)-faltndnc*deltat/nstep(i)
-
-        do k = 2,nlev
-
+     !$acc parallel loop collapse(2) default(present)
+     do k = 2,nlev
+       do i=1,mgncol
+         if( n <= nstep(i) ) then
            dum=lcldm(i,k)/lcldm(i,k-1)
            dum=min(dum,1._r8)
-           faltndqce=(faloutc(k)-faloutc(k-1))/pdel(i,k)
-           faltndc=(faloutc(k)-dum*faloutc(k-1))/pdel(i,k)
-           faltndnc=(faloutnc(k)-dum*faloutnc(k-1))/pdel(i,k)
+           faltndqce=(faloutc(i,k)-faloutc(i,k-1))/pdel(i,k)
+           faltndc=(faloutc(i,k)-dum*faloutc(i,k-1))/pdel(i,k)
+           faltndnc=(faloutnc(i,k)-dum*faloutnc(i,k-1))/pdel(i,k)
 
            ! add fallout terms to eulerian tendencies
            qctend(i,k) = qctend(i,k)-faltndc/nstep(i)
@@ -3293,57 +3333,82 @@ subroutine micro_mg_tend ( &
 
            dumc(i,k) = dumc(i,k)-faltndc*deltat/nstep(i)
            dumnc(i,k) = dumnc(i,k)-faltndnc*deltat/nstep(i)
+         end if
+       end do
+    end do
 
-        end do
+    !Liquid condensate flux here
+    !$acc parallel loop collapse(2) default(present)
+    do k = 1,nlev
+      do i=1,mgncol
+        if( n <= nstep(i) ) then
+           lflx(i,k+1) = lflx(i,k+1) + faloutc(i,k) / g / real(nstep(i))
+        end if
+      end do
+    end do
 
-        !Liquid condensate flux here
-        do k = 1,nlev
-           lflx(i,k+1) = lflx(i,k+1) + faloutc(k) / g / real(nstep(i))
-        end do
-
-        prect(i) = prect(i)+faloutc(nlev)/g/real(nstep(i))/1000._r8
-
-     end do
-   end do
-   
-   do i=1,mgncol
-     ! calculate number of split time steps to ensure courant stability criteria
-     ! for sedimentation calculations
-     !-------------------------------------------------------------------
-     nstep(i) = 1 + int(max( &
+    !$acc parallel loop default(present)
+    do i=1,mgncol
+      if( n <= nstep(i) ) then
+        prect(i) = prect(i)+faloutc(i,nlev)/g/real(nstep(i))/1000._r8
+      end if
+    end do
+    
+  end do
+  
+  
+  nstep_max = 0
+  !$acc parallel loop seq default(present) copyout(nstep_max)
+  do i=1,mgncol
+    ! calculate number of split time steps to ensure courant stability criteria
+    ! for sedimentation calculations
+    !-------------------------------------------------------------------
+    nstep(i) = 1 + int(max( &
           maxval( fr(i,:)*pdel_inv(i,:)), &
           maxval(fnr(i,:)*pdel_inv(i,:))) &
           * deltat)
-   end do
+    if( nstep(i) > nstep_max ) nstep_max = nstep(i)
+  end do
    
-   do i=1,mgncol
+  ! loop over sedimentation sub-time step to ensure stability
+  !==============================================================
+  do n = 1, nstep_max
+    
+    !$acc parallel loop collapse(2) default(present)
+    do k = 1, nlev
+      do i=1,mgncol
+        if( n <= nstep(i) ) then 
+          faloutr(i,k)  = fr(i,k)  * dumr(i,k)
+          faloutnr(i,k) = fnr(i,k) * dumnr(i,k)
+        end if
+      end do
+    end do
 
-     ! loop over sedimentation sub-time step to ensure stability
-     !==============================================================
-     do n = 1,nstep(i)
-
-        faloutr  = fr(i,:)  * dumr(i,:)
-        faloutnr = fnr(i,:) * dumnr(i,:)
-
-        ! top of model
-        k = 1
-
+    ! top of model
+    !$acc parallel loop default(present)
+    do i=1,mgncol
+      if( n <= nstep(i) ) then 
         ! add fallout terms to microphysical tendencies
-        faltndr = faloutr(k)/pdel(i,k)
-        faltndnr = faloutnr(k)/pdel(i,k)
-        qrtend(i,k) = qrtend(i,k)-faltndr/nstep(i)
-        nrtend(i,k) = nrtend(i,k)-faltndnr/nstep(i)
+        faltndr = faloutr(i,1)/pdel(i,1)
+        faltndnr = faloutnr(i,1)/pdel(i,1)
+        qrtend(i,1) = qrtend(i,1)-faltndr/nstep(i)
+        nrtend(i,1) = nrtend(i,1)-faltndnr/nstep(i)
 
         ! sedimentation tendency for output
-        qrsedten(i,k)=qrsedten(i,k)-faltndr/nstep(i)
+        qrsedten(i,1)=qrsedten(i,1)-faltndr/nstep(i)
 
-        dumr(i,k) = dumr(i,k)-faltndr*deltat/real(nstep(i))
-        dumnr(i,k) = dumnr(i,k)-faltndnr*deltat/real(nstep(i))
+        dumr(i,1) = dumr(i,1)-faltndr*deltat/real(nstep(i))
+        dumnr(i,1) = dumnr(i,1)-faltndnr*deltat/real(nstep(i))
+      end if
+    end do
+    
+    !$acc parallel loop collapse(2) default(present)
+    do k = 2,nlev
+      do i=1,mgncol
+        if( n <= nstep(i) ) then 
 
-        do k = 2,nlev
-
-           faltndr=(faloutr(k)-faloutr(k-1))/pdel(i,k)
-           faltndnr=(faloutnr(k)-faloutnr(k-1))/pdel(i,k)
+           faltndr=(faloutr(i,k)-faloutr(i,k-1))/pdel(i,k)
+           faltndnr=(faloutnr(i,k)-faloutnr(i,k-1))/pdel(i,k)
 
            ! add fallout terms to eulerian tendencies
            qrtend(i,k) = qrtend(i,k)-faltndr/nstep(i)
@@ -3354,19 +3419,32 @@ subroutine micro_mg_tend ( &
 
            dumr(i,k) = dumr(i,k)-faltndr*deltat/real(nstep(i))
            dumnr(i,k) = dumnr(i,k)-faltndnr*deltat/real(nstep(i))
-
-        end do
-
-        ! Rain Flux
-        do k = 1,nlev
-           rflx(i,k+1) = rflx(i,k+1) + faloutr(k) / g / real(nstep(i))
-        end do
-
-        prect(i) = prect(i)+faloutr(nlev)/g/real(nstep(i))/1000._r8
-
+         end if
+       end do
      end do
+
+     ! Rain Flux
+     !$acc parallel loop collapse(2) default(present)
+     do k = 2,nlev
+       do i = 1,mgncol
+         if( n <= nstep(i) ) then 
+           rflx(i,k+1) = rflx(i,k+1) + faloutr(i,k) / g / real(nstep(i))
+         end if
+       end do
+     end do
+
+     !$acc parallel loop default(present)
+     do i = 1,mgncol
+       if( n <= nstep(i) ) then
+         prect(i) = prect(i)+faloutr(i,nlev)/g/real(nstep(i))/1000._r8
+       end if
+     end do
+     
    end do
    
+   
+   nstep_max = 0
+   !$acc parallel loop seq default(present) copyout(nstep_max)
    do i=1,mgncol
 
      ! calculate number of split time steps to ensure courant stability criteria
@@ -3376,36 +3454,49 @@ subroutine micro_mg_tend ( &
           maxval( fs(i,:)*pdel_inv(i,:)), &
           maxval(fns(i,:)*pdel_inv(i,:))) &
           * deltat)
+     if( nstep(i) > nstep_max ) nstep_max = nstep(i)
    end do
    
-   do i=1,mgncol
+   ! loop over sedimentation sub-time step to ensure stability
+   !==============================================================
+   do n = 1, nstep_max
+     
+     !$acc parallel loop collapse(2) default(present)
+     do k = 1, nlev
+       do i=1,mgncol
+         if( n <= nstep(i) ) then
+           falouts(i,k)  = fs(i,k)  * dums(i,k)
+           faloutns(i,k) = fns(i,k) * dumns(i,k)
+         end if
+       end do 
+     end do
 
-     ! loop over sedimentation sub-time step to ensure stability
-     !==============================================================
-     do n = 1,nstep(i)
+     ! top of model
+     !$acc parallel loop default(present)
+     do i=1,mgncol
+       if( n <= nstep(i) ) then     
 
-        falouts  = fs(i,:)  * dums(i,:)
-        faloutns = fns(i,:) * dumns(i,:)
+         ! add fallout terms to microphysical tendencies
+         faltnds = falouts(i,1)/pdel(i,1)
+         faltndns = faloutns(i,1)/pdel(i,1)
+         qstend(i,1) = qstend(i,1)-faltnds/nstep(i)
+         nstend(i,1) = nstend(i,1)-faltndns/nstep(i)
 
-        ! top of model
-        k = 1
+         ! sedimentation tendency for output
+         qssedten(i,1)=qssedten(i,1)-faltnds/nstep(i)
 
-        ! add fallout terms to microphysical tendencies
-        faltnds = falouts(k)/pdel(i,k)
-        faltndns = faloutns(k)/pdel(i,k)
-        qstend(i,k) = qstend(i,k)-faltnds/nstep(i)
-        nstend(i,k) = nstend(i,k)-faltndns/nstep(i)
+         dums(i,1) = dums(i,1)-faltnds*deltat/real(nstep(i))
+         dumns(i,1) = dumns(i,1)-faltndns*deltat/real(nstep(i))
+       end if
+     end do
+     
+     !$acc parallel loop collapse(2) default(present)
+     do k = 2,nlev
+       do i=1,mgncol
+         if( n <= nstep(i) ) then 
 
-        ! sedimentation tendency for output
-        qssedten(i,k)=qssedten(i,k)-faltnds/nstep(i)
-
-           dums(i,k) = dums(i,k)-faltnds*deltat/real(nstep(i))
-           dumns(i,k) = dumns(i,k)-faltndns*deltat/real(nstep(i))
-
-        do k = 2,nlev
-
-           faltnds=(falouts(k)-falouts(k-1))/pdel(i,k)
-           faltndns=(faloutns(k)-faloutns(k-1))/pdel(i,k)
+           faltnds=(falouts(i,k)-falouts(i,k-1))/pdel(i,k)
+           faltndns=(faloutns(i,k)-faloutns(i,k-1))/pdel(i,k)
 
            ! add fallout terms to eulerian tendencies
            qstend(i,k) = qstend(i,k)-faltnds/nstep(i)
@@ -3416,20 +3507,33 @@ subroutine micro_mg_tend ( &
 
            dums(i,k) = dums(i,k)-faltnds*deltat/real(nstep(i))
            dumns(i,k) = dumns(i,k)-faltndns*deltat/real(nstep(i))
+         end if
+       end do
+     end do
 
-        end do   !! k loop
+     ! Snow Flux
+     !$acc parallel loop collapse(2) default(present)
+     do k = 2,nlev
+       do i = 1,mgncol
+         if( n <= nstep(i) ) then
+           sflx(i,k+1) = sflx(i,k+1) + falouts(i,k) / g / real(nstep(i))
+         end if
+       end do
+     end do
 
-        ! Snow Flux
-        do k = 1,nlev
-           sflx(i,k+1) = sflx(i,k+1) + falouts(k) / g / real(nstep(i))
-        end do
-
-        prect(i) = prect(i)+falouts(nlev)/g/real(nstep(i))/1000._r8
-        preci(i) = preci(i)+falouts(nlev)/g/real(nstep(i))/1000._r8
-
-     end do   !! nstep(i) loop
+     !$acc parallel loop default(present)
+     do i = 1,mgncol
+       if( n <= nstep(i) ) then
+         prect(i) = prect(i)+falouts(i,nlev)/g/real(nstep(i))/1000._r8
+         preci(i) = preci(i)+falouts(i,nlev)/g/real(nstep(i))/1000._r8
+       end if
+     end do
+     
    end do
    
+   
+   nstep_max = 0
+   !$acc parallel loop seq default(present) copyout(nstep_max)
    do i=1,mgncol
 
      ! Graupel Sedimentation
@@ -3440,35 +3544,48 @@ subroutine micro_mg_tend ( &
           maxval( fg(i,:)*pdel_inv(i,:)), &
           maxval(fng(i,:)*pdel_inv(i,:))) &
           * deltat)
+     if( nstep(i) > nstep_max ) nstep_max = nstep(i)
    end do
 
-   do i=1,mgncol
-     ! loop over sedimentation sub-time step to ensure stability
-     !==============================================================
-     do n = 1,nstep(i)
+   ! loop over sedimentation sub-time step to ensure stability
+   !==============================================================
+   do n = 1, nstep_max
+     
+     !$acc parallel loop collapse(2) default(present)
+     do k = 1, nlev
+       do i=1,mgncol
+         if( n <= nstep(i) ) then
+           faloutg(i,k)  = fg(i,k)  * dumg(i,k)
+           faloutng(i,k) = fng(i,k) * dumng(i,k)
+         end if
+       end do
+     end do
 
-        faloutg  = fg(i,:)  * dumg(i,:)
-        faloutng = fng(i,:) * dumng(i,:)
+     ! top of model
+     !$acc parallel loop default(present)
+     do i=1,mgncol
+       if( n <= nstep(i) ) then     
+         ! add fallout terms to microphysical tendencies
+         faltndg = faloutg(i,1)/pdel(i,1)
+         faltndng = faloutng(i,1)/pdel(i,1)
+         qgtend(i,1) = qgtend(i,1)-faltndg/nstep(i)
+         ngtend(i,1) = ngtend(i,1)-faltndng/nstep(i)
 
-        ! top of model
-        k = 1
+         ! sedimentation tendency for output
+         qgsedten(i,1)=qgsedten(i,1)-faltndg/nstep(i)
 
-        ! add fallout terms to microphysical tendencies
-        faltndg = faloutg(k)/pdel(i,k)
-        faltndng = faloutng(k)/pdel(i,k)
-        qgtend(i,k) = qgtend(i,k)-faltndg/nstep(i)
-        ngtend(i,k) = ngtend(i,k)-faltndng/nstep(i)
+         dumg(i,1) = dumg(i,1)-faltndg*deltat/real(nstep(i))
+         dumng(i,1) = dumng(i,1)-faltndng*deltat/real(nstep(i))
+       end if
+     end do
 
-        ! sedimentation tendency for output
-        qgsedten(i,k)=qgsedten(i,k)-faltndg/nstep(i)
+     !$acc parallel loop collapse(2) default(present)
+     do k = 2,nlev
+       do i=1,mgncol
+         if( n <= nstep(i) ) then 
 
-           dumg(i,k) = dumg(i,k)-faltndg*deltat/real(nstep(i))
-           dumng(i,k) = dumng(i,k)-faltndng*deltat/real(nstep(i))
-
-        do k = 2,nlev
-
-           faltndg=(faloutg(k)-faloutg(k-1))/pdel(i,k)
-           faltndng=(faloutng(k)-faloutng(k-1))/pdel(i,k)
+           faltndg=(faloutg(i,k)-faloutg(i,k-1))/pdel(i,k)
+           faltndng=(faloutng(i,k)-faloutng(i,k-1))/pdel(i,k)
 
            ! add fallout terms to eulerian tendencies
            qgtend(i,k) = qgtend(i,k)-faltndg/nstep(i)
@@ -3479,22 +3596,33 @@ subroutine micro_mg_tend ( &
 
            dumg(i,k) = dumg(i,k)-faltndg*deltat/real(nstep(i))
            dumng(i,k) = dumng(i,k)-faltndng*deltat/real(nstep(i))
+         end if
+       end do
+     end do
 
-        end do   !! k loop
+     ! Graupel Flux
+     !$acc parallel loop collapse(2) default(present)
+     do k = 2,nlev
+       do i = 1,mgncol
+         if( n <= nstep(i) ) then
+           gflx(i,k+1) = gflx(i,k+1) + faloutg(i,k) / g / real(nstep(i))
+         end if
+       end do 
+     end do
 
-        ! Graupel Flux
-        do k = 1,nlev
-           gflx(i,k+1) = gflx(i,k+1) + faloutg(k) / g / real(nstep(i))
-        end do
-
-        ! Add to snow flux at surface
-        prect(i) = prect(i)+faloutg(nlev)/g/real(nstep(i))/1000._r8
-        preci(i) = preci(i)+faloutg(nlev)/g/real(nstep(i))/1000._r8
-
-     end do              !! nstep(i) loop
+     ! Add to snow flux at surface
+     !$acc parallel loop default(present)
+     do i = 1,mgncol
+       if( n <= nstep(i) ) then
+         prect(i) = prect(i)+faloutg(i,nlev)/g/real(nstep(i))/1000._r8
+         preci(i) = preci(i)+faloutg(i,nlev)/g/real(nstep(i))/1000._r8
+       end if
+     end do
         
   enddo
   ! end sedimentation
+  
+  !$acc end data
 
   !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
@@ -3639,13 +3767,15 @@ subroutine micro_mg_tend ( &
    ! depending on mean rain size
    ! add to graupel if using that option....
    !call size_dist_param_basic_2D( mgncol, nlev, mg_rain_props, dumr(:,:), dumnr(:,:), &
-  !                                lamr(:,:) )
-  do k=1,nlev
-     do i=1,mgncol
+   !                              lamr(:,:) )
+                        
+   do k=1,nlev
+     do i=1,mgncol          
        call size_dist_param_basic(mg_rain_props, dumr(i,k), dumnr(i,k), &
-                   lamr(i,k))
+                                  lamr(i,k))
      end do
    end do
+        
          
    do k=1,nlev
       do i=1,mgncol
@@ -3767,10 +3897,11 @@ subroutine micro_mg_tend ( &
 
      ! use rhw to allow ice supersaturation
      !call qsat_water_all( mgncol, nlev, ttmp(:,:), p(:,:), &
-    !                      esn(:,:), qvn(:,:) )
+      !                    esn(:,:), qvn(:,:) )
+
     do k=1,nlev
        do i=1,mgncol
-           call qsat_water(ttmp(i,k), p(i,k), esn(i,k), qvn(i,k))
+         call qsat_water(ttmp(i,k), p(i,k), esn(i,k), qvn(i,k))
        end do
      end do
 
@@ -3867,14 +3998,15 @@ subroutine micro_mg_tend ( &
      end do
       
      !call size_dist_param_basic_2D( mgncol, nlev, mg_ice_props, dumi(:,:), dumni(:,:), &
-    !                                lamx_tmp(:,:), n0=dumni0(:,:))
-            
-    do k=1,nlev
-       do i=1,mgncol                        
-        call size_dist_param_basic(mg_ice_props, dumi(i,k), dumni(i,k), &
-                       lamx_tmp(i,k), n0=dumni0(i,k))
+      !                              lamx_tmp(:,:), n0=dumni0(:,:))
+              
+     do k=1,nlev
+       do i=1,mgncol                      
+         call size_dist_param_basic(mg_ice_props, dumi(i,k), dumni(i,k), &
+                         lamx_tmp(i,k), dumni0(i,k))
        end do
      end do
+                                    
     
      do k=1,nlev
         do i=1,mgncol
@@ -3921,13 +4053,14 @@ subroutine micro_mg_tend ( &
    
   !call size_dist_param_liq_2D( mgncol, nlev,  mg_liq_props, dumc(:,:), dumnc(:,:), & 
   !                             rho(:,:), pgam_tmp(:,:), lamc_tmp(:,:) )
+
   do k=1,nlev
      do i=1,mgncol
-           call size_dist_param_liq(mg_liq_props, dumc(i,k), dumnc(i,k), rho(i,k), &
-                pgam_tmp(i,k), lamc_tmp(i,k))
-      end do
+      call size_dist_param_liq(mg_liq_props, dumc(i,k), dumnc(i,k), rho(i,k), &
+                    pgam(i,k), lamc(i,k))
     end do
-    
+  end do
+
   do k=1,nlev
      do i=1,mgncol
         if (dumc(i,k).ge.qsmall) then
@@ -3964,25 +4097,17 @@ subroutine micro_mg_tend ( &
         end if
     end do
   end do
-  
-  do k = 1, nlev
-    do i = 1, mgncol
-      ! recalculate effective radius for constant number, in order to separate
-      ! first and second indirect effects
-      !======================================
-      ! assume constant number of 10^8 kg-1
-
-      dumnc(i,k) = 1.e8_r8
-    end do
-  end do
-        
-        
+          
   ! Pass in "false" adjust flag to prevent number from being changed within
   ! size distribution subroutine.
-  !$acc data copy(dumc, dumnc, rho, pgam_tmp, lamc_tmp )
-  call size_dist_param_liq_2D( mgncol, nlev,  mg_liq_props, dumc(:,:), dumnc(:,:), & 
-                               rho(:,:), pgam_tmp(:,:), lamc_tmp(:,:) )
-  !$acc end data
+  !call size_dist_param_liq_2D( mgncol, nlev,  mg_liq_props, dumc(:,:), dumnc(:,:), & 
+  !                             rho(:,:), pgam_tmp(:,:), lamc_tmp(:,:) )
+  do k=1,nlev
+   do i=1,mgncol
+     call size_dist_param_liq(mg_liq_props, dumc(i,k), dumnc(i,k), rho(i,k), &
+              pgam_tmp(i,k), lamc_tmp(i,k))
+    end do
+  end do
 
   do k=1,nlev
      do i=1,mgncol

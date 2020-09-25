@@ -205,6 +205,7 @@ function wv_sat_svp_to_qsat_all(mgncol, nlev, es, p) result(qs)
   integer :: i, k
 
   ! If pressure is less than SVP, set qs to maximum of 1.
+  !$acc parallel loop collapse(2) default(present) 
   do k = 1, nlev
     do i = 1, mgncol
       if ( (p(i,k) - es(i,k)) <= 0._r8 ) then
@@ -269,7 +270,7 @@ subroutine wv_sat_qsat_water_all( mgncol, nlev, t, p, es, &
   qs(:,:) = wv_sat_svp_to_qsat_all(mgncol, nlev, es(:,:), p(:,:))
 
   ! Ensures returned es is consistent with limiters on qs.
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) 
   do k = 1, nlev
     do i = 1, mgncol
       es(i,k) = min(es(i,k), p(i,k))
@@ -330,6 +331,7 @@ subroutine wv_sat_qsat_ice_all( mgncol, nlev, t, p, es, &
   qs(:,:) = wv_sat_svp_to_qsat_all( mgncol, nlev, es(:,:), p(:,:) )
 
   ! Ensures returned es is consistent with limiters on qs.
+  !$acc parallel loop collapse(2) default(present) 
   do k = 1, nlev
     do i = 1, mgncol
       es(i,k) = min(es(i,k), p(i,k))
@@ -549,7 +551,7 @@ function GoffGratch_svp_water_all( mgncol, nlev, t ) result(es)
   integer :: i, k
 
   ! uncertain below -70 C
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) 
   do k = 1, nlev
     do i = 1, mgncol
       es(i,k) = 10._r8**(-7.90298_r8*(tboil/t(i,k)-1._r8)+ &
@@ -584,6 +586,7 @@ function GoffGratch_svp_ice_all(mgncol, nlev, t) result(es)
   integer :: i, k
 
   ! good down to -100 C
+  !$acc parallel loop collapse(2) default(present) 
   do k = 1, nlev
     do i = 1, mgncol
       es(i,k) = 10._r8**(-9.09718_r8*(h2otrip/t(i,k)-1._r8)-3.56654_r8* &
@@ -619,7 +622,7 @@ function MurphyKoop_svp_water_all( mgncol, nlev, t) result(es)
   integer :: i, k
 
   ! (good for 123 < T < 332 K)
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) 
   do k = 1, nlev
     do i = 1, mgncol
       es(i,k) = exp(54.842763_r8 - (6763.22_r8 / t(i,k)) - (4.210_r8 * log(t(i,k))) + &
@@ -652,6 +655,7 @@ function MurphyKoop_svp_ice_all(mgncol, nlev, t) result(es)
   integer :: i, k
 
   ! (good down to 110 K)
+  !$acc parallel loop collapse(2) default(present) 
   do k = 1, nlev
     do i = 1, mgncol
       es(i,k) = exp(9.550426_r8 - (5723.265_r8 / t(i,k)) + (3.53068_r8 * log(t(i,k))) &
@@ -706,7 +710,7 @@ function OldGoffGratch_svp_water_all(mgncol, nlev, t) result(es)
   
   real(r8) :: ps, e1, e2, f1, f2, f3, f4, f5, f
 
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) 
   do k = 1, nlev
     do i = 1, mgncol
       ps = 1013.246_r8
@@ -749,6 +753,7 @@ function OldGoffGratch_svp_ice_all(mgncol, nlev, t) result(es)
   real(r8) :: term1, term2, term3
   integer :: i, k
 
+  !$acc parallel loop collapse(2) default(present) 
   do k = 1, nlev
     do i = 1, mgncol
       term1 = 2.01889049_r8/(tmelt/t(i,k))
@@ -796,7 +801,7 @@ function Bolton_svp_water_all(mgncol, nlev, t) result(es)
   
   integer :: i, k
   
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) 
   do k = 1, nlev
     do i = 1, mgncol
       es(i,k) = c1*exp( (c2*(t(i,k) - tmelt))/((t(i,k) - tmelt)+c3) )
