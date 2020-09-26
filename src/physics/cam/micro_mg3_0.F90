@@ -998,43 +998,43 @@ subroutine micro_mg_tend ( &
   ! assign variable deltat to deltatin
   deltat = deltatin
   
-  !$acc data create( mi0l ) &
-  !$acc&     copyin(  qcn, ncn, qin, nin, qrn, nrn, qsn, nsn, qgr, ngr, &
-  !$acc&              qsatfac, p, t , q, npccn, naai, tnd_qsnow, rndst, nacon, &
-  !$acc&              frzimm, frzcnt, frzdep, accre_enhan, pdel, &
-  !$acc&              falouti, faloutni, faloutc, faloutnc, faloutr, faloutnr, &
-  !$acc&              falouts, faloutns, faloutg, faloutng ) &
-  !$acc&     copyout( qc, nc, qi, ni, qr, nr, qs, ns, qg, ng, &
-  !$acc&              lcldm, icldm, cldm, qsfm, rho, dv, mu, sc, rhof, arn, &
+  !$acc data create(  mi0l, falouti, faloutni, faloutc, faloutnc, faloutr, faloutnr, &
+  !$acc&              falouts, faloutns, faloutg, faloutng, qc, nc, qi, ni, qr, nr, qs, ns, &
+  !$acc&              qg, ng, lcldm, icldm, cldm, qsfm, rho, dv, mu, sc, rhof, arn, rainrt, &
+  !$acc&              nnuccd, nimax, mnuccd, precip_frac, minstsm, ninstsm, pgam, lamc, prc, &
+  !$acc&              nprc, nprc1, qiic, niic, qcic, ncic, minstrf, ninstrf, minstgm, ninstgm, &
+  !$acc&              qric, nric, lami, n0i, ngic, qgic, nsic, qsic, prci, nprci, lami, n0i, &
+  !$acc&              lamr, n0r, lams, n0s, lamg, n0g, uns, unr, mnuccc, nnuccc, nnucct, &
   !$acc&              asn, agn, acn, ain, ajn, esl, qvl, esi, qvi, relhum, &
-  !$acc&              qcsevap, qisevap, qvres, vtrmc, vtrmi, qcsedten, qisedten, &
-  !$acc&              qrsedten, qssedten, qgsedten, melttot, homotot, qcrestot, &
-  !$acc&              qirestot, rflx, sflx, lflx, iflx, gflx, rainrt, rercld, &
-  !$acc&              tlat, qvlat, qctend, qitend, qstend, qrtend, nctend, nitend, &
-  !$acc&              nrtend, nstend, qgtend, ngtend, prect, preci, ncal, ncai, &
-  !$acc&              nnuccd, nimax, mnuccd, meltsdttot, frzrdttot, precip_frac, &
-  !$acc&              qiic, niic, qcic, ncic, minstrf, ninstrf, minstgm, ninstgm, &
-  !$acc&              minstsm, ninstsm, pgam, lamc, relvar, prc, nprc, nprc1, &
-  !$acc&              qric, nric, lami, n0i, ngic, qgic, nsic, qsic, prci, nprci, &
-  !$acc&              lami, n0i, lamr, n0r, lams, n0s, lamg, n0g, ums, uns, unr, umr, &
-  !$acc&              mnuccc, nnuccc, nacon, mnucct, nnucct, mnudep, nnudep, mi0l, &
-  !$acc&              umg, ung, nsacwi, msacwi, nsagg, psacws, npsacws, pracs, npracs, &
+  !$acc&              mnudep, nnudep, ung, nsacwi, msacwi, nsagg, psacws, npsacws, pracs, npracs, &
   !$acc&              mnuccr, nnuccr, pra, npra, nragg, prai, nprai, bergs, vap_dep, &
   !$acc&              ice_sublim, nsubi, nsubc, berg, pgracs, prdg, ngracs, qmultg, &
   !$acc&              nmultg, qmultrg, nmultrg, psacr, psacwg, npsacwg, pgsacw, &
-  !$acc&              nscng, pracg, npracg, am_evp_st, pre, prds, qtmp, ttmp, nsubs, &
-  !$acc&              nsubr, nnuccri, mnuccri, qcrat, npsacwgtot, nmultrgtot, &
-  !$acc&              nmultgtot, ngracstot, nscngtot, npracgtot, qmultrgtot, qmultgtot, &
-  !$acc&              prdgtot, pgracstot, pgsacwtot, psacwgtot, pracgtot, psacrtot, &
+  !$acc&              nscng, pracg, npracg, pre, prds, qtmp, ttmp, nsubs, nsubr, nnuccri, &
+  !$acc&              mnuccri, dum_2D, dum1_2D, dum2_2D, dum3_2D, qvn_tmp_liq, qvn_tmp_ice, &
+  !$acc&              qtmp_ice_pre, esn, qvn, dumni, dumnc, dumng, dumg, dumns, dums, dumnr, &
+  !$acc&              dumr, dumc, dumi, fc, fnc, fi, fni, fs, fns, fr, fnr, fg, fng, pdel_inv, &
+  !$acc&              nstep, nstep_max, lamx_tmp, dumni0, pgam_tmp, lamc_tmp, dumns0 ) &
+  !$acc&     copyin(  qcn, ncn, qin, nin, qrn, nrn, qsn, nsn, qgr, ngr, &
+  !$acc&              qsatfac, p, t , q, npccn, naai, tnd_qsnow, rndst, nacon, &
+  !$acc&              frzimm, frzcnt, frzdep, accre_enhan, pdel, re_ice, precip_frac ) &
+  !$acc&     copyout( qcsevap, qisevap, qvres, vtrmc, vtrmi, qcsedten, qisedten, &
+  !$acc&              qrsedten, qssedten, qgsedten, melttot, homotot, qcrestot, &
+  !$acc&              qirestot, rflx, sflx, lflx, iflx, gflx, rercld, &
+  !$acc&              tlat, qvlat, qctend, qitend, qstend, qrtend, nctend, nitend, &
+  !$acc&              nrtend, nstend, qgtend, ngtend, prect, preci, ncal, ncai, &
+  !$acc&              meltsdttot, frzrdttot, ums, umr, mnucct, umg, am_evp_st, qcrat, npsacwgtot, &
+  !$acc&              nmultrgtot, nmultgtot, ngracstot, nscngtot, npracgtot, qmultrgtot, &
+  !$acc&              qmultgtot, prdgtot, pgracstot, pgsacwtot, psacwgtot, pracgtot, psacrtot, &
   !$acc&              mnuccritot, mnuccrtot, pracstot, mnuccdtot, praitot, prcitot, &
   !$acc&              bergtot, bergstot, psacwstot, msacwitot, mnuccttot, mnuccctot, &
   !$acc&              prctot, pratot, qcsinksum_rate1ord, prodsnow, prain, prer_evap, &
-  !$acc&              nevapr, evapsnow, cmeitot, cmeout, dum_2D, dum1_2D, dum2_2D, &
-  !$acc&              dum3_2D, qvn_tmp_liq, qvn_tmp_ice, qtmp_ice_pre, esn, qvn, &
-  !$acc&              dumni, dumnc, dumng, dumg, dumns, dums, dumnr, dumr, dumc, dumi, &
-  !$acc&              qrout, nrout, qsout, nsout, qgout, ngout, &
-  !$acc&              fc, fnc, fi, fni, fs, fns, fr, fnr, fg, fng, pdel_inv, &
-  !$acc&              nstep, nstep_max )
+  !$acc&              nevapr, evapsnow, cmeitot, cmeout, qrout, nrout, qsout, nsout, qgout, &
+  !$acc&              ngout, effi, sadice, deffi, effc, lamcrad, pgamrad, effc_fn, sadsnow, &
+  !$acc&              qrout2, nrout2, freqr, reff_rain, qsout2, nsout2, freqs, &
+  !$acc&              drout2, dsout2, dgout2, qgout2, ngout2, freqg, dgout, reff_grau, &
+  !$acc&              refl, areflz, arefl, frefl, csrfl, acsrfl, fcsrfl, nfice, &
+  !$acc&              dsout, reff_snow )
   
 
   ! Copies of input concentrations that may be changed internally.
@@ -3621,14 +3621,12 @@ subroutine micro_mg_tend ( &
         
   enddo
   ! end sedimentation
-  
-  !$acc end data
 
   !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
   ! get new update for variables that includes sedimentation tendency
   ! note : here dum variables are grid-average, NOT in-cloud
-
+  !$acc parallel loop collapse(2) default(present)
   do k=1,nlev
      do i=1,mgncol
         dumc(i,k) = max(qc(i,k)+qctend(i,k)*deltat,0._r8)
@@ -3672,8 +3670,8 @@ subroutine micro_mg_tend ( &
   !====================================================================
 
   ! melting of snow at +2 C
+  !$acc parallel loop collapse(2) default(present)
   do k=1,nlev
-
      do i=1,mgncol
 
         if (t(i,k)+tlat(i,k)/cpp*deltat > snowmelt) then
@@ -3704,8 +3702,8 @@ subroutine micro_mg_tend ( &
   enddo
 
   ! melting of graupel at +2 C
+  !$acc parallel loop collapse(2) default(present)
   do k=1,nlev
-
      do i=1,mgncol
 
         if (t(i,k)+tlat(i,k)/cpp*deltat > snowmelt) then
@@ -3736,6 +3734,7 @@ subroutine micro_mg_tend ( &
      enddo
   enddo
 
+  !$acc parallel loop collapse(2) default(present)
    do k=1,nlev
       do i=1,mgncol
 
@@ -3766,17 +3765,10 @@ subroutine micro_mg_tend ( &
    ! get mean size of rain = 1/lamr, add frozen rain to either snow or cloud ice
    ! depending on mean rain size
    ! add to graupel if using that option....
-   !call size_dist_param_basic_2D( mgncol, nlev, mg_rain_props, dumr(:,:), dumnr(:,:), &
-   !                              lamr(:,:) )
-                        
-   do k=1,nlev
-     do i=1,mgncol          
-       call size_dist_param_basic(mg_rain_props, dumr(i,k), dumnr(i,k), &
-                                  lamr(i,k))
-     end do
-   end do
+   call size_dist_param_basic_2D( mgncol, nlev, mg_rain_props, dumr(:,:), dumnr(:,:), &
+                                 lamr(:,:) )
         
-         
+   !$acc parallel loop collapse(2) default(present)
    do k=1,nlev
       do i=1,mgncol
           
@@ -3812,6 +3804,7 @@ subroutine micro_mg_tend ( &
    enddo
 
    if (do_cldice) then
+      !$acc parallel loop collapse(2) default(present)
       do k=1,nlev
         do i=1,mgncol
            if (t(i,k)+tlat(i,k)/cpp*deltat > tmelt) then
@@ -3850,7 +3843,7 @@ subroutine micro_mg_tend ( &
 
      ! homogeneously freeze droplets at -40 C
      !-----------------------------------------------------------------
-
+     !$acc parallel loop collapse(2) default(present)
      do k=1,nlev
         do i=1,mgncol
            if (t(i,k)+tlat(i,k)/cpp*deltat < 233.15_r8) then
@@ -3887,6 +3880,7 @@ subroutine micro_mg_tend ( &
      ! together all microphysical processes
      !-----------------------------------------------------------------
      ! follow code similar to old CAM scheme
+     !$acc parallel loop collapse(2) default(present)
      do k=1,nlev
         do i=1,mgncol
 
@@ -3896,15 +3890,10 @@ subroutine micro_mg_tend ( &
      end do
 
      ! use rhw to allow ice supersaturation
-     !call qsat_water_all( mgncol, nlev, ttmp(:,:), p(:,:), &
-      !                    esn(:,:), qvn(:,:) )
+     call qsat_water_all( mgncol, nlev, ttmp(:,:), p(:,:), &
+                          esn(:,:), qvn(:,:) )
 
-    do k=1,nlev
-       do i=1,mgncol
-         call qsat_water(ttmp(i,k), p(i,k), esn(i,k), qvn(i,k))
-       end do
-     end do
-
+     !$acc parallel loop collapse(2) default(present)
      do k=1,nlev
         do i=1,mgncol
            if (qtmp(i,k) > qvn(i,k) .and. qvn(i,k) > 0 .and. allow_sed_supersat) then
@@ -3946,6 +3935,7 @@ subroutine micro_mg_tend ( &
 
   ! update cloud variables after instantaneous processes to get effective radius
   ! variables are in-cloud to calculate size dist parameters
+  !$acc parallel loop collapse(2) default(present)
   do k=1,nlev
      do i=1,mgncol
         dumc(i,k) = max(qc(i,k)+qctend(i,k)*deltat,0._r8)/lcldm(i,k)
@@ -3990,24 +3980,17 @@ subroutine micro_mg_tend ( &
   !-----------------------------------------------------------------
 
   if (do_cldice) then
-    
+     !$acc parallel loop collapse(2) default(present)
      do k=1,nlev
         do i=1,mgncol
           dum_2D(i,k) = dumni(i,k)
         end do
      end do
       
-     !call size_dist_param_basic_2D( mgncol, nlev, mg_ice_props, dumi(:,:), dumni(:,:), &
-      !                              lamx_tmp(:,:), n0=dumni0(:,:))
-              
-     do k=1,nlev
-       do i=1,mgncol                      
-         call size_dist_param_basic(mg_ice_props, dumi(i,k), dumni(i,k), &
-                         lamx_tmp(i,k), dumni0(i,k))
-       end do
-     end do
-                                    
+     call size_dist_param_basic_2D( mgncol, nlev, mg_ice_props, dumi(:,:), dumni(:,:), &
+                                    lamx_tmp(:,:), n0=dumni0(:,:))
     
+     !$acc parallel loop collapse(2) default(present)
      do k=1,nlev
         do i=1,mgncol
            if (dumi(i,k).ge.qsmall) then
@@ -4032,6 +4015,7 @@ subroutine micro_mg_tend ( &
         enddo
      enddo
   else
+     !$acc parallel loop collapse(2) default(present)
      do k=1,nlev
         do i=1,mgncol
            ! NOTE: If CARMA is doing the ice microphysics, then the ice effective
@@ -4045,22 +4029,17 @@ subroutine micro_mg_tend ( &
 
   ! cloud droplet effective radius
   !-----------------------------------------------------------------
+  !$acc parallel loop collapse(2) default(present)
   do k=1,nlev
      do i=1,mgncol
        dum_2D(i,k) = dumnc(i,k)
      end do
   end do
    
-  !call size_dist_param_liq_2D( mgncol, nlev,  mg_liq_props, dumc(:,:), dumnc(:,:), & 
-  !                             rho(:,:), pgam_tmp(:,:), lamc_tmp(:,:) )
+  call size_dist_param_liq_2D( mgncol, nlev,  mg_liq_props, dumc(:,:), dumnc(:,:), & 
+                               rho(:,:), pgam_tmp(:,:), lamc_tmp(:,:) )
 
-  do k=1,nlev
-     do i=1,mgncol
-      call size_dist_param_liq(mg_liq_props, dumc(i,k), dumnc(i,k), rho(i,k), &
-                    pgam(i,k), lamc(i,k))
-    end do
-  end do
-
+  !$acc parallel loop collapse(2) default(present)
   do k=1,nlev
      do i=1,mgncol
         if (dumc(i,k).ge.qsmall) then
@@ -4100,15 +4079,10 @@ subroutine micro_mg_tend ( &
           
   ! Pass in "false" adjust flag to prevent number from being changed within
   ! size distribution subroutine.
-  !call size_dist_param_liq_2D( mgncol, nlev,  mg_liq_props, dumc(:,:), dumnc(:,:), & 
-  !                             rho(:,:), pgam_tmp(:,:), lamc_tmp(:,:) )
-  do k=1,nlev
-   do i=1,mgncol
-     call size_dist_param_liq(mg_liq_props, dumc(i,k), dumnc(i,k), rho(i,k), &
-              pgam_tmp(i,k), lamc_tmp(i,k))
-    end do
-  end do
+  call size_dist_param_liq_2D( mgncol, nlev,  mg_liq_props, dumc(:,:), dumnc(:,:), & 
+                               rho(:,:), pgam_tmp(:,:), lamc_tmp(:,:) )
 
+  !$acc parallel loop collapse(2) default(present)
   do k=1,nlev
      do i=1,mgncol
         if (dumc(i,k).ge.qsmall) then
@@ -4121,21 +4095,17 @@ subroutine micro_mg_tend ( &
 
   ! recalculate 'final' rain size distribution parameters
   ! to ensure that rain size is in bounds, adjust rain number if needed
+  !$acc parallel loop collapse(2) default(present)
   do k=1,nlev
      do i=1,mgncol
        dum_2D(i,k) = dumnr(i,k)
      end do
   end do
    
-  !call size_dist_param_basic_2D( mgncol, nlev, mg_rain_props, dumr(:,:), dumnr(:,:), &
-  !                               lamx_tmp(:,:) )
-  do k=1,nlev
-     do i=1,mgncol
-       call size_dist_param_basic(mg_rain_props, dumr(i,k), dumnr(i,k), &
-                lamx_tmp(i,k))
-    end do
-  end do
+  call size_dist_param_basic_2D( mgncol, nlev, mg_rain_props, dumr(:,:), dumnr(:,:), &
+                                 lamx_tmp(:,:) )
 
+  !$acc parallel loop collapse(2) default(present)
   do k=1,nlev
      do i=1,mgncol
 
@@ -4154,21 +4124,17 @@ subroutine micro_mg_tend ( &
 
   ! recalculate 'final' snow size distribution parameters
   ! to ensure that snow size is in bounds, adjust snow number if needed
+  !$acc parallel loop collapse(2) default(present)
   do k=1,nlev
      do i=1,mgncol
        dum_2D(i,k) = dumns(i,k)
      end do
   end do
    
-  !call size_dist_param_basic_2D( mgncol, nlev, mg_snow_props, dums(:,:), dumns(:,:), &
-  !                               lamx_tmp(:,:), n0=dumns0 )
-  do k=1,nlev
-     do i=1,mgncol
-       call size_dist_param_basic(mg_snow_props, dums(i,k), dumns(i,k), &
-                lamx_tmp(i,k), n0=dumns0(i,k))
-      end do
-    end do
+  call size_dist_param_basic_2D( mgncol, nlev, mg_snow_props, dums(:,:), dumns(:,:), &
+                                 lamx_tmp(:,:), n0=dumns0 )
   
+  !$acc parallel loop collapse(2) default(present)
   do k=1,nlev
      do i=1,mgncol
         if (dums(i,k).ge.qsmall) then
@@ -4190,36 +4156,24 @@ subroutine micro_mg_tend ( &
 
   ! recalculate 'final' graupel size distribution parameters
   ! to ensure that  size is in bounds, addjust number if needed
+  !$acc parallel loop collapse(2) default(present)
   do k=1,nlev
      do i=1,mgncol
        dum_2D(i,k) = dumng(i,k)
      end do
   end do
 
-  !if (do_hail) then
-  !  call size_dist_param_basic_2D( mgncol, nlev, mg_hail_props, dumg(:,:), dumng(:,:), &
-  !                                 lamx_tmp(:,:) )
-  !end if
+  if (do_hail) then
+    call size_dist_param_basic_2D( mgncol, nlev, mg_hail_props, dumg(:,:), dumng(:,:), &
+                                   lamx_tmp(:,:) )
+  end if
   
-  !if (do_graupel) then
-  !  call size_dist_param_basic_2D( mgncol, nlev, mg_graupel_props, dumg(:,:), dumng(:,:), &
-  !                                 lamx_tmp(:,:) )
-  !end if
-  
-  do k=1,nlev
-     do i=1,mgncol
-       if (do_hail) then
-              call size_dist_param_basic(mg_hail_props, dumg(i,k), dumng(i,k), &
-                lamx_tmp(i,k))
-           end if
-           if (do_graupel) then
-              call size_dist_param_basic(mg_graupel_props, dumg(i,k), dumng(i,k), &
-                lamx_tmp(i,k))
-           end if
-     end do
-   end do
+  if (do_graupel) then
+    call size_dist_param_basic_2D( mgncol, nlev, mg_graupel_props, dumg(:,:), dumng(:,:), &
+                                   lamx_tmp(:,:) )
+  end if
    
-   
+  !$acc parallel loop collapse(2) default(present)
   do k=1,nlev
      do i=1,mgncol
 
@@ -4236,6 +4190,7 @@ subroutine micro_mg_tend ( &
      enddo
   enddo
 
+  !$acc parallel loop collapse(2) default(present)
   do k=1,nlev
      do i=1,mgncol
         ! if updated q (after microphysics) is zero, then ensure updated n is also zero
@@ -4253,6 +4208,7 @@ subroutine micro_mg_tend ( &
 
   ! qc and qi are only used for output calculations past here,
   ! so add qctend and qitend back in one more time
+  !$acc parallel loop collapse(2) default(present)
   do k=1,nlev
     do i=1,mgncol
       qc(i,k) = qc(i,k) + qctend(i,k) * deltat
@@ -4269,6 +4225,7 @@ subroutine micro_mg_tend ( &
   ! scaled diameter of snow (passed to radiation in CAM)
   ! reff_rain/reff_snow:
   ! calculate effective radius of rain and snow in microns for COSP using Eq. 9 of COSP v1.3 manual
+  !$acc parallel loop collapse(2) default(present)
   do k=1,nlev
     do i=1,mgncol
       if (qrout(i,k) .gt. 1.e-7_r8 .and. nrout(i,k) .gt. 0._r8) then
@@ -4287,6 +4244,7 @@ subroutine micro_mg_tend ( &
   ! outputs are just dsout2 times constants.
   drout2(:,:) = avg_diameter_2D(mgncol, nlev, qrout(:,:), nrout(:,:), rho(:,:), rhow)
   
+  !$acc parallel loop collapse(2) default(present)
   do k=1,nlev
     do i=1,mgncol
       if (qrout(i,k) .gt. 1.e-7_r8 .and. nrout(i,k) .gt. 0._r8) then
@@ -4298,7 +4256,7 @@ subroutine micro_mg_tend ( &
     end do
   end do
   
-  
+  !$acc parallel loop collapse(2) default(present)
   do k=1,nlev
     do i=1,mgncol
       if (qsout(i,k) .gt. 1.e-7_r8 .and. nsout(i,k) .gt. 0._r8) then
@@ -4317,6 +4275,7 @@ subroutine micro_mg_tend ( &
   ! outputs are just dsout2 times constants.
   dsout2(:,:) = avg_diameter_2D(mgncol, nlev, qsout(:,:), nsout(:,:), rho(:,:), rhosn)
   
+  !$acc parallel loop collapse(2) default(present)
   do k=1,nlev
     do i=1,mgncol
       if (qsout(i,k) .gt. 1.e-7_r8 .and. nsout(i,k) .gt. 0._r8) then
@@ -4330,6 +4289,7 @@ subroutine micro_mg_tend ( &
     end do
   end do
 
+  !$acc parallel loop collapse(2) default(present)
   do k=1,nlev
     do i=1,mgncol
       if (qgout(i,k) .gt. 1.e-7_r8 .and. ngout(i,k) .gt. 0._r8) then
@@ -4348,6 +4308,7 @@ subroutine micro_mg_tend ( &
   ! outputs are just dsout2 times constants.
   dgout2(:,:) = avg_diameter_2D(mgncol, nlev, qgout(:,:), ngout(:,:), rho(:,:), rhogtmp)
   
+  !$acc parallel loop collapse(2) default(present)
   do k=1,nlev
     do i=1,mgncol
       if (qgout(i,k) .gt. 1.e-7_r8 .and. ngout(i,k) .gt. 0._r8) then
@@ -4366,7 +4327,7 @@ subroutine micro_mg_tend ( &
   ! formulas from Matthew Shupe, NOAA/CERES
   ! *****note: radar reflectivity is local (in-precip average)
   ! units of mm^6/m^3
-
+  !$acc parallel loop collapse(2) default(present)
   do i = 1,mgncol
      do k=1,nlev
         if (qc(i,k).ge.qsmall .and. (nc(i,k)+nctend(i,k)*deltat).gt.10._r8) then
@@ -4378,6 +4339,7 @@ subroutine micro_mg_tend ( &
      end do
   end do
         
+  !$acc parallel loop collapse(2) default(present)
   do i = 1,mgncol
      do k=1,nlev
         if (qi(i,k).ge.qsmall) then
@@ -4388,6 +4350,7 @@ subroutine micro_mg_tend ( &
      end do
   end do
 
+  !$acc parallel loop collapse(2) default(present)
   do i = 1,mgncol
      do k=1,nlev
         if (qsout(i,k).ge.qsmall) then
@@ -4396,6 +4359,7 @@ subroutine micro_mg_tend ( &
      end do
   end do
 
+  !$acc parallel loop collapse(2) default(present)
   do i = 1,mgncol
      do k=1,nlev
         refl(i,k)=dum_2D(i,k)+dum1_2D(i,k)
@@ -4407,6 +4371,7 @@ subroutine micro_mg_tend ( &
   ! formula approximated from data of Matrasov (2007)
   ! rainrt is the rain rate in mm/hr
   ! reflectivity (dum) is in DBz
+  !$acc parallel loop collapse(2) default(present)
   do i = 1,mgncol
      do k=1,nlev
         if (rainrt(i,k).ge.0.001_r8) then
@@ -4422,6 +4387,7 @@ subroutine micro_mg_tend ( &
      end do
    end do
 
+   !$acc parallel loop collapse(2) default(present)
    do i = 1,mgncol
       do k=1,nlev
         ! add to refl
@@ -4432,6 +4398,7 @@ subroutine micro_mg_tend ( &
      end do
    end do
 
+   !$acc parallel loop collapse(2) default(present)
    do i = 1,mgncol
       do k=1,nlev
         ! convert back to DBz
@@ -4443,6 +4410,7 @@ subroutine micro_mg_tend ( &
      end do
    end do
 
+   !$acc parallel loop collapse(2) default(present)
    do i = 1,mgncol
       do k=1,nlev
         !set averaging flag
@@ -4457,6 +4425,7 @@ subroutine micro_mg_tend ( &
      end do
    end do
 
+   !$acc parallel loop collapse(2) default(present)
    do i = 1,mgncol
       do k=1,nlev
         ! bound cloudsat reflectivity
@@ -4464,6 +4433,7 @@ subroutine micro_mg_tend ( &
      end do
    end do
 
+   !$acc parallel loop collapse(2) default(present)
    do i = 1,mgncol
       do k=1,nlev
         !set averaging flag
@@ -4479,6 +4449,7 @@ subroutine micro_mg_tend ( &
   end do
 
   !redefine fice here....
+  !$acc parallel loop collapse(2) default(present)
   do i = 1,mgncol
     do k=1,nlev
       dum_2D(i,k) = qsout(i,k) + qrout(i,k) + qc(i,k) + qi(i,k)
@@ -4486,6 +4457,7 @@ subroutine micro_mg_tend ( &
     end do
   end do
   
+  !$acc parallel loop collapse(2) default(present)
   do i = 1,mgncol
     do k=1,nlev
       if (dumi(i,k) .gt. qsmall .and. dum_2D(i,k) .gt. qsmall) then
@@ -4495,6 +4467,8 @@ subroutine micro_mg_tend ( &
       end if
     end do
   end do
+  
+  !$acc end data
 
 end subroutine micro_mg_tend
 

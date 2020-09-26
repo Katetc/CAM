@@ -863,6 +863,7 @@ function avg_diameter_2D(mgncol, nlev, q, n, rho_air, rho_sub) result(res)
 
   integer :: i, k
 
+  !$acc parallel loop collapse(2) default(present)
   do k = 1, nlev
     do i = 1, mgncol
       if ( (q(i,k) * rho_air(i,k)) > 0._r8 ) then
