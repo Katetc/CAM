@@ -3209,7 +3209,7 @@ end subroutine clubb_init_cnst
       
       do i=1,stats_zt%num_output_fields
    
-         temp1 = trim(stats_zt%file%var(i)%name)
+         temp1 = trim(stats_zt%file%grid_avg_var(i)%name)
          sub   = temp1
          if (len(temp1) >  16) sub = temp1(1:16)
    
@@ -3218,7 +3218,7 @@ end subroutine clubb_init_cnst
    
       do i=1,stats_zm%num_output_fields
    
-         temp1 = trim(stats_zm%file%var(i)%name)
+         temp1 = trim(stats_zm%file%grid_avg_var(i)%name)
          sub   = temp1
          if (len(temp1) > 16) sub = temp1(1:16)
    
@@ -3227,16 +3227,16 @@ end subroutine clubb_init_cnst
 
       if (l_output_rad_files) then  
          do i=1,stats_rad_zt%num_output_fields
-            call outfld(trim(stats_rad_zt%file%var(i)%name), out_radzt(:,:,i), pcols, lchnk)
+            call outfld(trim(stats_rad_zt%file%grid_avg_var(i)%name), out_radzt(:,:,i), pcols, lchnk)
          enddo
    
          do i=1,stats_rad_zm%num_output_fields
-            call outfld(trim(stats_rad_zm%file%var(i)%name), out_radzm(:,:,i), pcols, lchnk)
+            call outfld(trim(stats_rad_zm%file%grid_avg_var(i)%name), out_radzm(:,:,i), pcols, lchnk)
          enddo
       endif
    
       do i=1,stats_sfc%num_output_fields
-         call outfld(trim(stats_sfc%file%var(i)%name), out_sfc(:,:,i), pcols, lchnk)
+         call outfld(trim(stats_sfc%file%grid_avg_var(i)%name), out_sfc(:,:,i), pcols, lchnk)
       enddo
    
    endif
@@ -3602,7 +3602,7 @@ end function diag_ustar
     call stats_zero( stats_zt%kk, stats_zt%num_output_fields, stats_zt%accum_field_values, &
                      stats_zt%accum_num_samples, stats_zt%l_in_update )
 
-    allocate( stats_zt%file%var( stats_zt%num_output_fields ) )
+    allocate( stats_zt%file%grid_avg_var( stats_zt%num_output_fields ) )
     allocate( stats_zt%file%z( stats_zt%kk ) )
 
     !  Allocate scratch space
@@ -3684,7 +3684,7 @@ end function diag_ustar
     call stats_zero( stats_zm%kk, stats_zm%num_output_fields, stats_zm%accum_field_values, &
                      stats_zm%accum_num_samples, stats_zm%l_in_update )
 
-    allocate( stats_zm%file%var( stats_zm%num_output_fields ) )
+    allocate( stats_zm%file%grid_avg_var( stats_zm%num_output_fields ) )
     allocate( stats_zm%file%z( stats_zm%kk ) )
 
     !  Allocate scratch space
@@ -3759,7 +3759,7 @@ end function diag_ustar
       call stats_zero( stats_rad_zt%kk, stats_rad_zt%num_output_fields, stats_rad_zt%accum_field_values, &
                      stats_rad_zt%accum_num_samples, stats_rad_zt%l_in_update )
 
-      allocate( stats_rad_zt%file%var( stats_rad_zt%num_output_fields ) )
+      allocate( stats_rad_zt%file%grid_avg_var( stats_rad_zt%num_output_fields ) )
       allocate( stats_rad_zt%file%z( stats_rad_zt%kk ) )
 
        call stats_init_rad_zt_api( clubb_vars_rad_zt, l_error )
@@ -3794,7 +3794,7 @@ end function diag_ustar
        call stats_zero( stats_rad_zm%kk, stats_rad_zm%num_output_fields, stats_rad_zm%accum_field_values, &
                      stats_rad_zm%accum_num_samples, stats_rad_zm%l_in_update )
 
-       allocate( stats_rad_zm%file%var( stats_rad_zm%num_output_fields ) )
+       allocate( stats_rad_zm%file%grid_avg_var( stats_rad_zm%num_output_fields ) )
        allocate( stats_rad_zm%file%z( stats_rad_zm%kk ) )
    
        call stats_init_rad_zm_api( clubb_vars_rad_zm, l_error )
@@ -3831,7 +3831,7 @@ end function diag_ustar
     call stats_zero( stats_sfc%kk, stats_sfc%num_output_fields, stats_sfc%accum_field_values, &
                      stats_sfc%accum_num_samples, stats_sfc%l_in_update )
 
-    allocate( stats_sfc%file%var( stats_sfc%num_output_fields ) )
+    allocate( stats_sfc%file%grid_avg_var( stats_sfc%num_output_fields ) )
     allocate( stats_sfc%file%z( stats_sfc%kk ) )
 
     call stats_init_sfc_api( clubb_vars_sfc, l_error )
@@ -3845,42 +3845,42 @@ end function diag_ustar
 !   Now call add fields
     do i = 1, stats_zt%num_output_fields
     
-      temp1 = trim(stats_zt%file%var(i)%name)
+      temp1 = trim(stats_zt%file%grid_avg_var(i)%name)
       sub   = temp1
       if (len(temp1) > 16) sub = temp1(1:16)
      
 !!XXgoldyXX: Probably need a hist coord for nnzp for the vertical
         call addfld(trim(sub),(/ 'ilev' /),&
-             'A',trim(stats_zt%file%var(i)%units),trim(stats_zt%file%var(i)%description))
+             'A',trim(stats_zt%file%grid_avg_var(i)%units),trim(stats_zt%file%grid_avg_var(i)%description))
     enddo
     
     do i = 1, stats_zm%num_output_fields
     
-      temp1 = trim(stats_zm%file%var(i)%name)
+      temp1 = trim(stats_zm%file%grid_avg_var(i)%name)
       sub   = temp1
       if (len(temp1) > 16) sub = temp1(1:16)
     
 !!XXgoldyXX: Probably need a hist coord for nnzp for the vertical
        call addfld(trim(sub),(/ 'ilev' /),&
-            'A',trim(stats_zm%file%var(i)%units),trim(stats_zm%file%var(i)%description))
+            'A',trim(stats_zm%file%grid_avg_var(i)%units),trim(stats_zm%file%grid_avg_var(i)%description))
     enddo
 
     if (l_output_rad_files) then     
 !!XXgoldyXX: Probably need a hist coord for nnzp for the vertical
        do i = 1, stats_rad_zt%num_output_fields
-          call addfld(trim(stats_rad_zt%file%var(i)%name),(/ 'ilev' /),&
-             'A',trim(stats_rad_zt%file%var(i)%units),trim(stats_rad_zt%file%var(i)%description))
+          call addfld(trim(stats_rad_zt%file%grid_avg_var(i)%name),(/ 'ilev' /),&
+             'A',trim(stats_rad_zt%file%grid_avg_var(i)%units),trim(stats_rad_zt%file%grid_avg_var(i)%description))
        enddo
     
        do i = 1, stats_rad_zm%num_output_fields
-          call addfld(trim(stats_rad_zm%file%var(i)%name),(/ 'ilev' /),&
-             'A',trim(stats_rad_zm%file%var(i)%units),trim(stats_rad_zm%file%var(i)%description))
+          call addfld(trim(stats_rad_zm%file%grid_avg_var(i)%name),(/ 'ilev' /),&
+             'A',trim(stats_rad_zm%file%grid_avg_var(i)%units),trim(stats_rad_zm%file%grid_avg_var(i)%description))
        enddo
     endif 
     
     do i = 1, stats_sfc%num_output_fields
-       call addfld(trim(stats_sfc%file%var(i)%name),horiz_only,&
-            'A',trim(stats_sfc%file%var(i)%units),trim(stats_sfc%file%var(i)%description))
+       call addfld(trim(stats_sfc%file%grid_avg_var(i)%name),horiz_only,&
+            'A',trim(stats_sfc%file%grid_avg_var(i)%units),trim(stats_sfc%file%grid_avg_var(i)%description))
     enddo
 
     return
