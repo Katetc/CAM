@@ -281,7 +281,9 @@ real(r8) :: gamma_2bs_plus2
 
 interface rising_factorial
    module procedure rising_factorial_r8
+   module procedure rising_factorial_2D_r8
    module procedure rising_factorial_integer
+   module procedure rising_factorial_2D_integer
 end interface rising_factorial
 
 interface var_coef
@@ -407,6 +409,24 @@ pure function rising_factorial_r8(x, n) result(res)
 
 end function rising_factorial_r8
 
+! General rising factorial for 2 dimensions 
+pure function rising_factorial_2D_r8(mgncol, nlev, x, n) result(res)
+  integer, intent(in) :: mgncol, nlev
+  real(r8), dimension(mgncol,nlev), intent(in) :: x
+  real(r8), intent(in) :: n
+  real(r8), dimension(mgncol,nlev) :: res
+  
+  integer :: i, k
+
+  !$acc parallel loop collapse(2) default(present) 
+  do k = 1, nlev
+    do i = 1, mgncol
+      res(i,k) = gamma(x(i,k)+n)/gamma(x(i,k))
+    end do
+  end do
+
+end function rising_factorial_2D_r8
+
 ! Rising factorial can be performed much cheaper if n is a small integer.
 pure function rising_factorial_integer(x, n) result(res)
   real(r8), intent(in) :: x
@@ -425,6 +445,31 @@ pure function rising_factorial_integer(x, n) result(res)
   end do
 
 end function rising_factorial_integer
+
+! Rising factorial can be performed much cheaper if n is a small integer.
+pure function rising_factorial_2D_integer(mgncol, nlev, x, n) result(res)
+  integer, intent(in) :: mgncol, nlev
+  real(r8), dimension(mgncol,nlev), intent(in) :: x
+  integer, intent(in) :: n
+  real(r8), dimension(mgncol,nlev) :: res
+
+  integer :: i, k, m
+  real(r8) :: factor
+
+  !$acc parallel loop collapse(2) default(present) 
+  do k = 1, nlev
+    do i = 1, mgncol
+      res(i,k) = 1._r8
+      factor = x(i,k)
+
+      do m = 1, n
+         res(i,k) = res(i,k) * factor
+         factor = factor + 1._r8
+      end do
+    end do
+  end do
+
+end function rising_factorial_2D_integer
 
 ! Calculate correction due to latent heat for evaporation/sublimation
 elemental function calc_ab(t, qv, xxl) result(ab)
@@ -588,11 +633,14 @@ subroutine size_dist_param_liq_2D(mgncol, nlev, props, qcic, ncic, rho, &
               
   real(r8), dimension(mgncol,nlev) :: lower_bound, &
                                       upper_bound, &
-                                      shape_coef
+                                      shape_coef, &
+                                      pgam_tmp, &
+                                      rising_factorial_term
   
   integer :: i, k
   
-  !$acc data create(lower_bound, upper_bound, shape_coef) copyin(props) 
+  !$acc data create(lower_bound, upper_bound, shape_coef, pgam_tmp, rising_factorial_term) &
+  !$acc&     copyin(props) 
   
   !$acc parallel loop collapse(2) default(present) 
   do k = 1, nlev
@@ -606,26 +654,27 @@ subroutine size_dist_param_liq_2D(mgncol, nlev, props, qcic, ncic, rho, &
     end do
   end do
   
+  !$acc parallel loop collapse(2) default(present) 
+  do k = 1, nlev
+    do i = 1, mgncol
+      pgam_tmp(i,k) = pgam(i,k) + 1.0_r8
+    end do
+  end do
+  
   ! Set coefficient for use in size_dist_param_basic.
   ! The 3D case is so common and optimizable that we specialize it
   if (props%eff_dim == 3._r8) then
-    !$acc parallel loop collapse(2) default(present) 
-    do k = 1, nlev
-      do i = 1, mgncol
-        shape_coef(i,k) = (pgam(i,k)+1._r8) * (pgam(i,k)+2._r8) * (pgam(i,k)+3._r8)
-        shape_coef(i,k) = pi / 6._r8 * props%rho * shape_coef(i,k)
-      end do
-    end do
+    rising_factorial_term(:,:) = rising_factorial(mgncol, nlev, pgam_tmp, 3)
   else
-    !$acc update host( pgam )
-    do k = 1, nlev
-      do i = 1, mgncol
-        shape_coef(i,k) = pi / 6._r8 * props%rho * shape_coef(i,k) &
-                          * rising_factorial(pgam(i,k)+1._r8, props%eff_dim)
-      end do
-    end do
-    !$acc update device( shape_coef )   
+    rising_factorial_term(:,:) = rising_factorial(mgncol, nlev, pgam_tmp, props%eff_dim)
   end if
+  
+  !$acc parallel loop collapse(2) default(present) 
+  do k = 1, nlev
+    do i = 1, mgncol
+      shape_coef(i,k) = pi / 6._r8 * props%rho * rising_factorial_term(i,k)
+    end do
+  end do
   
   !$acc parallel loop collapse(2) default(present) 
   do k = 1, nlev
@@ -791,7 +840,9 @@ subroutine size_dist_param_basic_2D(mgncol, nlev, props, qic, nic, lam, n0)
     !$acc parallel loop collapse(2) default(present) 
     do k = 1, nlev
       do i = 1, mgncol
-        nic(i,k) = min(nic(i,k), qic(i,k) / props%min_mean_mass)
+        if (qic(i,k) > qsmall) then
+          nic(i,k) = min(nic(i,k), qic(i,k) / props%min_mean_mass)
+        end if
       end do
     end do
   end if
@@ -1498,11 +1549,11 @@ subroutine immersion_freezing_2D(mgncol, nlev, microp_uniform, t, pgam, lamc, &
   real(r8), dimension(mgncol,nlev), intent(out) :: nnuccc ! Number
 
   ! Coefficients that will be omitted for sub-columns
-  real(r8), dimension(mgncol,nlev) :: dum
+  real(r8), dimension(mgncol,nlev) :: dum, rising_factorial_term, pgam_tmp
   
   integer :: i, k
 
-  !$acc data create(dum) 
+  !$acc data create(dum, rising_factorial_term, pgam_tmp) 
 
   if (.not. microp_uniform) then
     !$acc update host(relvar)
@@ -1524,11 +1575,20 @@ subroutine immersion_freezing_2D(mgncol, nlev, microp_uniform, t, pgam, lamc, &
   !$acc parallel loop collapse(2) default(present) 
   do k = 1, nlev
     do i = 1, mgncol
+      pgam_tmp(i,k) = pgam(i,k) + 1.0_r8
+    end do
+  end do
+  
+  rising_factorial_term(:,:) = rising_factorial(mgncol, nlev, pgam_tmp, 3)
+  
+  !$acc parallel loop collapse(2) default(present) 
+  do k = 1, nlev
+    do i = 1, mgncol
 
       if (qcic(i,k) >= qsmall .and. t(i,k) < 269.15_r8) then
 
         nnuccc(i,k) = &
-             pi/6._r8*ncic(i,k)* (pgam(i,k)+1._r8)*(pgam(i,k)+2._r8)*(pgam(i,k)+3._r8)* &
+             pi/6._r8*ncic(i,k)* rising_factorial_term(i,k) * &
              bimm*(exp(aimm*(tmelt - t(i,k)))-1._r8)/lamc(i,k)**3
 
       else
@@ -1540,11 +1600,20 @@ subroutine immersion_freezing_2D(mgncol, nlev, microp_uniform, t, pgam, lamc, &
   !$acc parallel loop collapse(2) default(present) 
   do k = 1, nlev
     do i = 1, mgncol
+      pgam_tmp(i,k) = pgam(i,k) + 4.0_r8
+    end do
+  end do
+  
+  rising_factorial_term(:,:) = rising_factorial(mgncol, nlev, pgam_tmp, 3)
+  
+  !$acc parallel loop collapse(2) default(present) 
+  do k = 1, nlev
+    do i = 1, mgncol
 
       if (qcic(i,k) >= qsmall .and. t(i,k) < 269.15_r8) then
         mnuccc(i,k) = dum(i,k) * nnuccc(i,k) * &
              pi/6._r8*rhow* &
-             (pgam(i,k)+4._r8)*(pgam(i,k)+5._r8)*(pgam(i,k)+6._r8)/lamc(i,k)**3
+             rising_factorial_term(i,k)/lamc(i,k)**3
 
       else
         mnuccc(i,k) = 0._r8
@@ -1680,14 +1749,16 @@ subroutine contact_freezing_2D(mgncol, nlev, mdust, microp_uniform, t, p, rndst,
   real(r8), dimension(mgncol,nlev, mdust) :: ndfaer ! aerosol diffusivities (m^2/sec)
 
   ! Coefficients not used for subcolumns
-  real(r8), dimension(mgncol,nlev) :: dum, dum1, dot_product_factor
+  real(r8), dimension(mgncol,nlev) :: dum, dum1, dot_product_factor, &
+                                      rising_factorial_term, pgam_tmp
 
   ! Common factor between mass and number.
   real(r8) :: contact_factor
 
   integer  :: i, k, m
   
-  !$acc data create(dum, dum1, dot_product_factor, tcnt, viscosity, mfp, ndfaer) 
+  !$acc data create(dum, dum1, dot_product_factor, tcnt, viscosity, mfp, ndfaer, &
+  !$acc&            rising_factorial_term, pgam_tmp) 
   
   if (.not. microp_uniform) then
     !$acc update host(relvar)
@@ -1747,6 +1818,15 @@ subroutine contact_freezing_2D(mgncol, nlev, mdust, microp_uniform, t, p, rndst,
       end do
     end do
   end do
+  
+  !$acc parallel loop collapse(2) default(present) 
+  do k = 1, nlev
+    do i = 1, mgncol
+      pgam_tmp(i,k) = pgam(i,k) + 2.0_r8
+    end do
+  end do
+  
+  rising_factorial_term(:,:) = rising_factorial(mgncol, nlev, pgam_tmp, 3)
 
   !$acc parallel loop collapse(2) default(present) 
   do k = 1, nlev
@@ -1754,7 +1834,7 @@ subroutine contact_freezing_2D(mgncol, nlev, mdust, microp_uniform, t, p, rndst,
       contact_factor = dot_product_factor(i,k) * pi * ncic(i,k) * (pgam(i,k) + 1._r8) / lamc(i,k)
 
       mnucct(i,k) = dum(i,k) * contact_factor * pi/3._r8 * rhow &
-                    * (pgam(i,k)+2._r8) * (pgam(i,k)+3._r8) * (pgam(i,k)+4._r8) / lamc(i,k)**3
+                    * rising_factorial_term(i,k) / lamc(i,k)**3
 
       nnucct(i,k) =  dum1(i,k) * 2._r8 * contact_factor
     end do
