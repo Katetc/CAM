@@ -3141,18 +3141,23 @@ subroutine micro_mg_tend ( &
   
   ! Begin sedimentaion calculations 
   
+  !$acc parallel loop collapse(2) default(present)
+  do k = 1, nlev
+    do i = 1, mgncol
+      dum_2D(i,k) = max( fi(i,k)*pdel_inv(i,k), fni(i,k)*pdel_inv(i,k) )
+    end do
+  end do
+  
   nstep_max = 0
-  !$acc parallel loop seq default(present) copyout(nstep_max)
+  !$acc kernels copyout(nstep_max) 
   do i=1,mgncol
     ! calculate number of split time steps to ensure courant stability criteria
     ! for sedimentation calculations
     !-------------------------------------------------------------------
-    nstep(i) = 1 + int(max( &
-          maxval( fi(i,:)*pdel_inv(i,:)), &
-          maxval(fni(i,:)*pdel_inv(i,:))) &
-          * deltat)
-    if( nstep(i) > nstep_max ) nstep_max = nstep(i)
+    nstep(i) = 1 + int(maxval( dum_2D(i,:) )* deltat)
   end do
+  nstep_max = maxval(nstep(:))
+  !$acc end kernels
 
   ! loop over sedimentation sub-time step to ensure stability
   !==============================================================
@@ -3261,19 +3266,23 @@ subroutine micro_mg_tend ( &
    
    end do
    
+   !$acc parallel loop collapse(2) default(present)
+   do k = 1, nlev
+     do i = 1, mgncol
+       dum_2D(i,k) = max( fc(i,k)*pdel_inv(i,k), fnc(i,k)*pdel_inv(i,k) )
+     end do
+   end do
    
    nstep_max = 0
-   !$acc parallel loop seq default(present) copyout(nstep_max)
+   !$acc kernels copyout(nstep_max) 
    do i=1,mgncol
      ! calculate number of split time steps to ensure courant stability criteria
      ! for sedimentation calculations
      !-------------------------------------------------------------------
-     nstep(i) = 1 + int(max( &
-         maxval( fc(i,:)*pdel_inv(i,:)), &
-         maxval(fnc(i,:)*pdel_inv(i,:))) &
-         * deltat)
-     if( nstep(i) > nstep_max ) nstep_max = nstep(i)
+     nstep(i) = 1 + int(maxval( dum_2D(i,:) ) * deltat)
    end do
+   nstep_max = maxval(nstep(:))
+   !$acc end kernels
    
    ! loop over sedimentation sub-time step to ensure stability
    !==============================================================
@@ -3356,19 +3365,23 @@ subroutine micro_mg_tend ( &
     
   end do
   
+  !$acc parallel loop collapse(2) default(present)
+  do k = 1, nlev
+    do i = 1, mgncol
+      dum_2D(i,k) = max( fr(i,k)*pdel_inv(i,k), fnr(i,k)*pdel_inv(i,k) )
+    end do
+  end do
   
   nstep_max = 0
-  !$acc parallel loop seq default(present) copyout(nstep_max)
+  !$acc kernels copyout(nstep_max) 
   do i=1,mgncol
     ! calculate number of split time steps to ensure courant stability criteria
     ! for sedimentation calculations
     !-------------------------------------------------------------------
-    nstep(i) = 1 + int(max( &
-          maxval( fr(i,:)*pdel_inv(i,:)), &
-          maxval(fnr(i,:)*pdel_inv(i,:))) &
-          * deltat)
-    if( nstep(i) > nstep_max ) nstep_max = nstep(i)
+    nstep(i) = 1 + int(maxval( dum_2D(i,:) )* deltat)
   end do
+  nstep_max = maxval(nstep(:))
+  !$acc end kernels
    
   ! loop over sedimentation sub-time step to ensure stability
   !==============================================================
@@ -3442,20 +3455,24 @@ subroutine micro_mg_tend ( &
      
    end do
    
+   !$acc parallel loop collapse(2) default(present)
+   do k = 1, nlev
+     do i = 1, mgncol
+       dum_2D(i,k) = max( fs(i,k)*pdel_inv(i,k), fns(i,k)*pdel_inv(i,k) )
+     end do
+   end do
    
    nstep_max = 0
-   !$acc parallel loop seq default(present) copyout(nstep_max)
+   !$acc kernels copyout(nstep_max) 
    do i=1,mgncol
 
      ! calculate number of split time steps to ensure courant stability criteria
      ! for sedimentation calculations
      !-------------------------------------------------------------------
-     nstep(i) = 1 + int(max( &
-          maxval( fs(i,:)*pdel_inv(i,:)), &
-          maxval(fns(i,:)*pdel_inv(i,:))) &
-          * deltat)
-     if( nstep(i) > nstep_max ) nstep_max = nstep(i)
+     nstep(i) = 1 + int(maxval( dum_2D(i,:) )* deltat)
    end do
+   nstep_max = maxval(nstep(:))
+   !$acc end kernels
    
    ! loop over sedimentation sub-time step to ensure stability
    !==============================================================
@@ -3531,21 +3548,25 @@ subroutine micro_mg_tend ( &
      
    end do
    
+   !$acc parallel loop collapse(2) default(present)
+   do k = 1, nlev
+     do i = 1, mgncol
+       dum_2D(i,k) = max( fg(i,k)*pdel_inv(i,k), fng(i,k)*pdel_inv(i,k) )
+     end do
+   end do
    
    nstep_max = 0
-   !$acc parallel loop seq default(present) copyout(nstep_max)
+   !$acc kernels copyout(nstep_max) 
    do i=1,mgncol
 
      ! Graupel Sedimentation
      ! calculate number of split time steps to ensure courant stability criteria
      ! for sedimentation calculations
      !-------------------------------------------------------------------
-     nstep(i) = 1 + int(max( &
-          maxval( fg(i,:)*pdel_inv(i,:)), &
-          maxval(fng(i,:)*pdel_inv(i,:))) &
-          * deltat)
-     if( nstep(i) > nstep_max ) nstep_max = nstep(i)
+     nstep(i) = 1 + int(maxval( dum_2D(i,:) )* deltat)
    end do
+   nstep_max = maxval(nstep(:))
+   !$acc end kernels
 
    ! loop over sedimentation sub-time step to ensure stability
    !==============================================================
