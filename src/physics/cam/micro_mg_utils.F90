@@ -418,7 +418,7 @@ pure function rising_factorial_2D_r8(mgncol, nlev, x, n) result(res)
   
   integer :: i, k
 
-  !$acc parallel loop collapse(2) default(present) 
+  !$acc parallel loop collapse(2) default(present) async(1) 
   do k = 1, nlev
     do i = 1, mgncol
       res(i,k) = gamma(x(i,k)+n)/gamma(x(i,k))
@@ -456,7 +456,7 @@ pure function rising_factorial_2D_integer(mgncol, nlev, x, n) result(res)
   integer :: i, k, m
   real(r8) :: factor
 
-  !$acc parallel loop collapse(2) default(present) 
+  !$acc parallel loop collapse(2) default(present) async(1) 
   do k = 1, nlev
     do i = 1, mgncol
       res(i,k) = 1._r8
@@ -500,7 +500,7 @@ function calc_ab_2D(mgncol, nlev, t, qv, xxl) result(ab)
   real(r8) :: dqsdt
   integer :: i, k
 
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i = 1, mgncol
       dqsdt = xxl*qv(i,k) / (rv * t(i,k)**2)
@@ -640,9 +640,9 @@ subroutine size_dist_param_liq_2D(mgncol, nlev, props, qcic, ncic, rho, &
   integer :: i, k
   
   !$acc data create(lower_bound, upper_bound, shape_coef, pgam_tmp, rising_factorial_term) &
-  !$acc&     copyin(props) 
+  !$acc&     copyin(props) async(1)
   
-  !$acc parallel loop collapse(2) default(present) 
+  !$acc parallel loop collapse(2) default(present) async(1) 
   do k = 1, nlev
     do i = 1, mgncol
       if (qcic(i,k) > qsmall) then
@@ -654,7 +654,7 @@ subroutine size_dist_param_liq_2D(mgncol, nlev, props, qcic, ncic, rho, &
     end do
   end do
   
-  !$acc parallel loop collapse(2) default(present) 
+  !$acc parallel loop collapse(2) default(present) async(1) 
   do k = 1, nlev
     do i = 1, mgncol
       pgam_tmp(i,k) = pgam(i,k) + 1.0_r8
@@ -669,14 +669,14 @@ subroutine size_dist_param_liq_2D(mgncol, nlev, props, qcic, ncic, rho, &
     rising_factorial_term(:,:) = rising_factorial(mgncol, nlev, pgam_tmp, props%eff_dim)
   end if
   
-  !$acc parallel loop collapse(2) default(present) 
+  !$acc parallel loop collapse(2) default(present) async(1) 
   do k = 1, nlev
     do i = 1, mgncol
       shape_coef(i,k) = pi / 6._r8 * props%rho * rising_factorial_term(i,k)
     end do
   end do
   
-  !$acc parallel loop collapse(2) default(present) 
+  !$acc parallel loop collapse(2) default(present) async(1) 
   do k = 1, nlev
     do i = 1, mgncol
       ! Limit to between 2 and 50 microns mean size.
@@ -688,7 +688,7 @@ subroutine size_dist_param_liq_2D(mgncol, nlev, props, qcic, ncic, rho, &
   ! add upper limit to in-cloud number concentration to prevent
   ! numerical error
   if (limiter_is_on(props%min_mean_mass)) then
-    !$acc parallel loop collapse(2) default(present) 
+    !$acc parallel loop collapse(2) default(present) async(1) 
     do k = 1, nlev
       do i = 1, mgncol
        ncic(i,k) = min(ncic(i,k), qcic(i,k) / props%min_mean_mass)
@@ -696,7 +696,7 @@ subroutine size_dist_param_liq_2D(mgncol, nlev, props, qcic, ncic, rho, &
     end do
   end if
 
-  !$acc parallel loop collapse(2) default(present) 
+  !$acc parallel loop collapse(2) default(present) async(1) 
   do k = 1, nlev
     do i = 1, mgncol
       if (qcic(i,k) > qsmall) then
@@ -706,7 +706,7 @@ subroutine size_dist_param_liq_2D(mgncol, nlev, props, qcic, ncic, rho, &
     end do
   end do
 
-  !$acc parallel loop collapse(2) default(present) 
+  !$acc parallel loop collapse(2) default(present) async(1) 
   do k = 1, nlev
     do i = 1, mgncol
       ! check for slope
@@ -721,7 +721,7 @@ subroutine size_dist_param_liq_2D(mgncol, nlev, props, qcic, ncic, rho, &
     end do
   end do
   
-  !$acc parallel loop collapse(2) default(present) 
+  !$acc parallel loop collapse(2) default(present) async(1) 
   do k = 1, nlev
     do i = 1, mgncol
       if (qcic(i,k) <= qsmall) then
@@ -832,12 +832,12 @@ subroutine size_dist_param_basic_2D(mgncol, nlev, props, qic, nic, lam, n0)
   
   integer :: i, k
   
-  !$acc data copyin(props)
+  !$acc data copyin(props) async(1)
   
   ! add upper limit to in-cloud number concentration to prevent
   ! numerical error
   if (limiter_is_on(props%min_mean_mass)) then
-    !$acc parallel loop collapse(2) default(present) 
+    !$acc parallel loop collapse(2) default(present) async(1) 
     do k = 1, nlev
       do i = 1, mgncol
         if (qic(i,k) > qsmall) then
@@ -847,7 +847,7 @@ subroutine size_dist_param_basic_2D(mgncol, nlev, props, qic, nic, lam, n0)
     end do
   end if
   
-  !$acc parallel loop collapse(2) default(present) 
+  !$acc parallel loop collapse(2) default(present) async(1) 
   do k = 1, nlev
     do i = 1, mgncol
 
@@ -876,7 +876,7 @@ subroutine size_dist_param_basic_2D(mgncol, nlev, props, qic, nic, lam, n0)
   !$acc end data
   
   if (present(n0)) then
-    !$acc parallel loop collapse(2) default(present) 
+    !$acc parallel loop collapse(2) default(present) async(1) 
     do k = 1, nlev
       do i = 1, mgncol
         n0(i,k) = nic(i,k) * lam(i,k)
@@ -914,7 +914,7 @@ function avg_diameter_2D(mgncol, nlev, q, n, rho_air, rho_sub) result(res)
 
   integer :: i, k
 
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i = 1, mgncol
       if ( (q(i,k) * rho_air(i,k)) > 0._r8 ) then
@@ -1070,9 +1070,9 @@ subroutine ice_deposition_sublimation_2D(mgncol, nlev, t, qv, qi, ni, &
   real(r8), dimension(mgncol,nlev) :: n0i
   integer :: i, k
   
-  !$acc data create(ab, qiic, niic, lami, n0i) 
+  !$acc data create(ab, qiic, niic, lami, n0i) async(1)
   
-  !$acc parallel loop collapse(2) default(present) 
+  !$acc parallel loop collapse(2) default(present) async(1) 
   do k = 1, nlev
     do i = 1, mgncol
       !GET IN-CLOUD qi, ni
@@ -1088,7 +1088,7 @@ subroutine ice_deposition_sublimation_2D(mgncol, nlev, t, qv, qi, ni, &
   !Get slope and intercept of gamma distn for ice.
   call size_dist_param_basic_2D(mgncol, nlev, mg_ice_props, qiic(:,:), niic(:,:), lami(:,:), n0i(:,:))
 
-  !$acc parallel loop collapse(2) default(present) 
+  !$acc parallel loop collapse(2) default(present) async(1) 
   do k = 1, nlev
     do i = 1, mgncol
       if (qi(i,k)>=qsmall) then
@@ -1158,7 +1158,7 @@ subroutine kk2000_liq_autoconversion(mgncol, nlev, microp_uniform, qcic, &
   
   integer :: i, k
   
-  !$acc data create(prc_coef) 
+  !$acc data create(prc_coef) async(1)
   
   ! Take variance into account, or use uniform value.
   if (.not. microp_uniform) then
@@ -1170,7 +1170,7 @@ subroutine kk2000_liq_autoconversion(mgncol, nlev, microp_uniform, qcic, &
     end do
     !$acc update device(prc_coef)
   else
-    !$acc parallel loop collapse(2) default(present) 
+    !$acc parallel loop collapse(2) default(present) async(1) 
     do k = 1, nlev
       do i = 1, mgncol
         prc_coef(i,k) = 1._r8
@@ -1178,7 +1178,7 @@ subroutine kk2000_liq_autoconversion(mgncol, nlev, microp_uniform, qcic, &
     end do
   end if
 
-  !$acc parallel loop collapse(2) default(present) 
+  !$acc parallel loop collapse(2) default(present) async(1) 
   do k = 1, nlev
     do i = 1,mgncol
       if (qcic(i,k) >= icsmall) then
@@ -1247,7 +1247,7 @@ subroutine sb2001v2_liq_autoconversion(mgncol,nlev,pgam,qc,nc,qr,rho,relvar,au,n
   real(r8) :: dum, dum1, nu
   integer :: dumi, i, k
 
-  !$acc parallel loop collapse(2) default(present) 
+  !$acc parallel loop collapse(2) default(present) async(1) 
   do k = 1, nlev
     do i = 1, mgncol
 
@@ -1351,7 +1351,7 @@ subroutine sb2001v2_accre_cld_water_rain_2D(mgncol,nlev,qc,nc,qr,rho,relvar,pra,
   integer :: i, k
 
   ! accretion
-  !$acc parallel loop collapse(2) default(present) 
+  !$acc parallel loop collapse(2) default(present) async(1) 
   do k = 1, nlev
     do i = 1, mgncol
 
@@ -1440,7 +1440,7 @@ subroutine ice_autoconversion_2D(mgncol, nlev, t, qiic, lami, n0i, dcs, prci, np
   real(r8) :: d_rat
   integer :: i, k
 
-  !$acc parallel loop collapse(2) default(present) 
+  !$acc parallel loop collapse(2) default(present) async(1) 
   do k = 1, nlev
     do i = 1, mgncol
     
@@ -1553,7 +1553,7 @@ subroutine immersion_freezing_2D(mgncol, nlev, microp_uniform, t, pgam, lamc, &
   
   integer :: i, k
 
-  !$acc data create(dum, rising_factorial_term, pgam_tmp) 
+  !$acc data create(dum, rising_factorial_term, pgam_tmp) async(1)
 
   if (.not. microp_uniform) then
     !$acc update host(relvar)
@@ -1564,7 +1564,7 @@ subroutine immersion_freezing_2D(mgncol, nlev, microp_uniform, t, pgam, lamc, &
     end do
     !$acc update device(dum)
   else
-    !$acc parallel loop collapse(2) default(present) 
+    !$acc parallel loop collapse(2) default(present) async(1) 
     do k = 1, nlev
       do i = 1, mgncol
         dum(i,k) = 1._r8
@@ -1572,7 +1572,7 @@ subroutine immersion_freezing_2D(mgncol, nlev, microp_uniform, t, pgam, lamc, &
     end do
   end if
   
-  !$acc parallel loop collapse(2) default(present) 
+  !$acc parallel loop collapse(2) default(present) async(1) 
   do k = 1, nlev
     do i = 1, mgncol
       pgam_tmp(i,k) = pgam(i,k) + 1.0_r8
@@ -1581,7 +1581,7 @@ subroutine immersion_freezing_2D(mgncol, nlev, microp_uniform, t, pgam, lamc, &
   
   rising_factorial_term(:,:) = rising_factorial(mgncol, nlev, pgam_tmp, 3)
   
-  !$acc parallel loop collapse(2) default(present) 
+  !$acc parallel loop collapse(2) default(present) async(1) 
   do k = 1, nlev
     do i = 1, mgncol
 
@@ -1597,7 +1597,7 @@ subroutine immersion_freezing_2D(mgncol, nlev, microp_uniform, t, pgam, lamc, &
     end do
   end do
   
-  !$acc parallel loop collapse(2) default(present) 
+  !$acc parallel loop collapse(2) default(present) async(1) 
   do k = 1, nlev
     do i = 1, mgncol
       pgam_tmp(i,k) = pgam(i,k) + 4.0_r8
@@ -1606,7 +1606,7 @@ subroutine immersion_freezing_2D(mgncol, nlev, microp_uniform, t, pgam, lamc, &
   
   rising_factorial_term(:,:) = rising_factorial(mgncol, nlev, pgam_tmp, 3)
   
-  !$acc parallel loop collapse(2) default(present) 
+  !$acc parallel loop collapse(2) default(present) async(1) 
   do k = 1, nlev
     do i = 1, mgncol
 
@@ -1758,7 +1758,7 @@ subroutine contact_freezing_2D(mgncol, nlev, mdust, microp_uniform, t, p, rndst,
   integer  :: i, k, m
   
   !$acc data create(dum, dum1, dot_product_factor, tcnt, viscosity, mfp, ndfaer, &
-  !$acc&            rising_factorial_term, pgam_tmp) 
+  !$acc&            rising_factorial_term, pgam_tmp) async(1)
   
   if (.not. microp_uniform) then
     !$acc update host(relvar)
@@ -1770,7 +1770,7 @@ subroutine contact_freezing_2D(mgncol, nlev, mdust, microp_uniform, t, p, rndst,
     end do
     !$acc update device(dum,dum1)
   else
-    !$acc parallel loop collapse(2) default(present) 
+    !$acc parallel loop collapse(2) default(present) async(1) 
     do k = 1, nlev
       do i = 1, mgncol
         dum(i,k) = 1._r8
@@ -1779,7 +1779,7 @@ subroutine contact_freezing_2D(mgncol, nlev, mdust, microp_uniform, t, p, rndst,
     end do
   endif
 
-  !$acc parallel loop collapse(2) default(present) 
+  !$acc parallel loop collapse(2) default(present) async(1) 
   do k = 1, nlev
     do i = 1, mgncol
 
@@ -1792,7 +1792,7 @@ subroutine contact_freezing_2D(mgncol, nlev, mdust, microp_uniform, t, p, rndst,
     end do
   end do
 
-  !$acc parallel loop collapse(2) default(present) 
+  !$acc parallel loop collapse(2) default(present) async(1) 
   do m = 1, mdust
     do k = 1, nlev
       do i = 1, mgncol
@@ -1808,7 +1808,7 @@ subroutine contact_freezing_2D(mgncol, nlev, mdust, microp_uniform, t, p, rndst,
     end do
   end do
 
-  !$acc parallel loop collapse(2) default(present) 
+  !$acc parallel loop collapse(2) default(present) async(1) 
   do k = 1, nlev
     do i = 1, mgncol
       dot_product_factor(i,k) = 0.0_r8
@@ -1819,7 +1819,7 @@ subroutine contact_freezing_2D(mgncol, nlev, mdust, microp_uniform, t, p, rndst,
     end do
   end do
   
-  !$acc parallel loop collapse(2) default(present) 
+  !$acc parallel loop collapse(2) default(present) async(1) 
   do k = 1, nlev
     do i = 1, mgncol
       pgam_tmp(i,k) = pgam(i,k) + 2.0_r8
@@ -1828,7 +1828,7 @@ subroutine contact_freezing_2D(mgncol, nlev, mdust, microp_uniform, t, p, rndst,
   
   rising_factorial_term(:,:) = rising_factorial(mgncol, nlev, pgam_tmp, 3)
 
-  !$acc parallel loop collapse(2) default(present) 
+  !$acc parallel loop collapse(2) default(present) async(1) 
   do k = 1, nlev
     do i = 1, mgncol
       contact_factor = dot_product_factor(i,k) * pi * ncic(i,k) * (pgam(i,k) + 1._r8) / lamc(i,k)
@@ -1840,7 +1840,7 @@ subroutine contact_freezing_2D(mgncol, nlev, mdust, microp_uniform, t, p, rndst,
     end do
   end do
   
-  !$acc parallel loop collapse(2) default(present) 
+  !$acc parallel loop collapse(2) default(present) async(1) 
   do k = 1, nlev
     do i = 1, mgncol
       if (qcic(i,k) < qsmall .or. t(i,k) >= 269.15_r8) then
@@ -1905,7 +1905,7 @@ subroutine snow_self_aggregation_2D(mgncol, nlev, t, rho, asn, rhosn, qsic, nsic
 
   integer :: i, k
 
-  !$acc parallel loop collapse(2) default(present) 
+  !$acc parallel loop collapse(2) default(present) async(1) 
   do k = 1, nlev
     do i = 1, mgncol
       if (qsic(i,k) >= qsmall .and. t(i,k) <= tmelt) then
@@ -2031,7 +2031,7 @@ subroutine accrete_cloud_water_snow_2D(mgncol, nlev, t, rho, asn, uns, mu, qcic,
 
   ! ignore collision of snow with droplets above freezing
 
-  !$acc parallel loop collapse(2) default(present) 
+  !$acc parallel loop collapse(2) default(present) async(1) 
   do k = 1, nlev
     do i = 1, mgncol
       if (qsic(i,k) >= qsmall .and. t(i,k) <= tmelt .and. qcic(i,k) >= qsmall) then
@@ -2108,7 +2108,7 @@ subroutine secondary_ice_production_2D(mgncol, nlev, t, psacws, msacwi, nsacwi)
   real(r8), dimension(mgncol,nlev), intent(out) :: nsacwi ! Number
   integer :: i, k
 
-  !$acc parallel loop collapse(2) default(present) 
+  !$acc parallel loop collapse(2) default(present) async(1) 
   do k = 1, nlev
     do i = 1, mgncol
       if((t(i,k) < 270.16_r8) .and. (t(i,k) >= 268.16_r8)) then
@@ -2121,7 +2121,7 @@ subroutine secondary_ice_production_2D(mgncol, nlev, t, psacws, msacwi, nsacwi)
     end do
   end do
 
-  !$acc parallel loop collapse(2) default(present) 
+  !$acc parallel loop collapse(2) default(present) async(1) 
   do k = 1, nlev
     do i = 1, mgncol
       msacwi(i,k) = min(nsacwi(i,k)*mi0, psacws(i,k))
@@ -2238,7 +2238,7 @@ subroutine accrete_rain_snow_2D(mgncol, nlev, t, rho, umr, ums, unr, uns, qric, 
   real(r8) :: common_factor
   integer :: i, k
 
-  !$acc parallel loop collapse(2) default(present) 
+  !$acc parallel loop collapse(2) default(present) async(1) 
   do k = 1, nlev
     do i = 1, mgncol
       if (qric(i,k) >= icsmall .and. qsic(i,k) >= icsmall .and. t(i,k) <= tmelt) then
@@ -2313,7 +2313,7 @@ subroutine heterogeneous_rain_freezing_2D(mgncol, nlev, t, qric, nric, lamr, mnu
   real(r8), dimension(mgncol,nlev), intent(out) :: nnuccr ! Number
   integer :: i, k
 
-  !$acc parallel loop collapse(2) default(present) 
+  !$acc parallel loop collapse(2) default(present) async(1) 
   do k = 1, nlev
     do i = 1, mgncol
 
@@ -2409,14 +2409,14 @@ subroutine accrete_cloud_water_rain_2D(mgncol, nlev, microp_uniform, qric, qcic,
 
   integer :: i, k
   
-  !$acc data create(pra_coef) 
+  !$acc data create(pra_coef) async(1)
 
   if (.not. microp_uniform) then
     !$acc update host(relvar, accre_enhan)
     pra_coef(:,:) = accre_enhan(:,:) * var_coef(relvar(:,:), 1.15_r8)
     !$acc update device(pra_coef)
   else
-    !$acc parallel loop collapse(2) default(present) 
+    !$acc parallel loop collapse(2) default(present) async(1) 
     do k = 1, nlev
       do i = 1, mgncol
         pra_coef(i,k) = 1._r8
@@ -2424,7 +2424,7 @@ subroutine accrete_cloud_water_rain_2D(mgncol, nlev, microp_uniform, qric, qcic,
     end do
   end if
 
-  !$acc parallel loop collapse(2) default(present) 
+  !$acc parallel loop collapse(2) default(present) async(1) 
   do k = 1, nlev
     do i = 1, mgncol
 
@@ -2487,7 +2487,7 @@ subroutine self_collection_rain_2D(mgncol, nlev, rho, qric, nric, nragg)
 
   integer :: i, k
 
-  !$acc parallel loop collapse(2) default(present) 
+  !$acc parallel loop collapse(2) default(present) async(1) 
   do k = 1, nlev
     do i = 1, mgncol
       if (qric(i,k) >= qsmall) then
@@ -2578,7 +2578,7 @@ subroutine accrete_cloud_ice_snow_2D(mgncol, nlev, t, rho, asn, qiic, niic, qsic
 
   integer :: i, k
 
-  !$acc parallel loop collapse(2) default(present) 
+  !$acc parallel loop collapse(2) default(present) async(1) 
   do k = 1, nlev
     do i = 1, mgncol
       if (qsic(i,k) >= qsmall .and. qiic(i,k) >= qsmall .and. t(i,k) <= tmelt) then
@@ -2768,12 +2768,12 @@ subroutine evaporate_sublimate_precip_2D(mgncol, nlev, t, rho, dv, mu, sc, q, qv
 
   integer :: i, k
   
-  !$acc data create(qclr, ab, eps, dum)
+  !$acc data create(qclr, ab, eps, dum) async(1)
 
   ! set temporary cloud fraction to zero if cloud water + ice is very small
   ! this will ensure that evaporation/sublimation of precip occurs over
   ! entire grid cell, since min cloud fraction is specified otherwise
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i = 1, mgncol
       if (qcic(i,k)+qiic(i,k) < 1.e-6_r8) then
@@ -2784,7 +2784,7 @@ subroutine evaporate_sublimate_precip_2D(mgncol, nlev, t, rho, dv, mu, sc, q, qv
     end do
   end do
   
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i = 1, mgncol
      ! calculate q for out-of-cloud region
@@ -2803,7 +2803,7 @@ subroutine evaporate_sublimate_precip_2D(mgncol, nlev, t, rho, dv, mu, sc, q, qv
   
   ab(:,:) = calc_ab_2D(mgncol, nlev, t(:,:), qvl(:,:), xxlv)
   
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i = 1, mgncol
       eps(i,k) = 2._r8*pi*n0r(i,k)*rho(i,k)*Dv(i,k)* &
@@ -2815,7 +2815,7 @@ subroutine evaporate_sublimate_precip_2D(mgncol, nlev, t, rho, dv, mu, sc, q, qv
   end do
   
   ! evaporation of rain
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i = 1, mgncol
       ! only calculate if there is some precip fraction > cloud fraction
@@ -2834,7 +2834,7 @@ subroutine evaporate_sublimate_precip_2D(mgncol, nlev, t, rho, dv, mu, sc, q, qv
   
   ab(:,:) = calc_ab_2D(mgncol, nlev, t(:,:), qvi(:,:), xxls)
   
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i = 1, mgncol
       eps(i,k) = 2._r8*pi*n0s(i,k)*rho(i,k)*Dv(i,k)* &
@@ -2846,7 +2846,7 @@ subroutine evaporate_sublimate_precip_2D(mgncol, nlev, t, rho, dv, mu, sc, q, qv
   end do
 
   ! sublimation of snow
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i = 1, mgncol
       if (precip_frac(i,k) > dum(i,k) .and. qsic(i,k) >= qsmall) then
@@ -3073,14 +3073,14 @@ subroutine evaporate_sublimate_precip_graupel_2D(mgncol, nlev, t, rho, dv, mu, s
   ! set temporary cloud fraction to zero if cloud water + ice is very small
   ! this will ensure that evaporation/sublimation of precip occurs over
   ! entire grid cell, since min cloud fraction is specified otherwise
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i=1,mgncol
       am_evp_st(i,k) = 0._r8
     end do
   end do
   
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i=1,mgncol
       if (qcic(i,k)+qiic(i,k) < 1.e-6_r8) then
@@ -3091,7 +3091,7 @@ subroutine evaporate_sublimate_precip_graupel_2D(mgncol, nlev, t, rho, dv, mu, s
     end do
   end do
   
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i=1,mgncol
       ! only calculate if there is some precip fraction > cloud fraction
@@ -3109,7 +3109,7 @@ subroutine evaporate_sublimate_precip_graupel_2D(mgncol, nlev, t, rho, dv, mu, s
 
   ab(:,:) = calc_ab_2D(mgncol, nlev, t(:,:), qvl(:,:), xxlv)
 
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i=1,mgncol
       ! evaporation of rain
@@ -3134,7 +3134,7 @@ subroutine evaporate_sublimate_precip_graupel_2D(mgncol, nlev, t, rho, dv, mu, s
   
   ab(:,:) = calc_ab_2D(mgncol, nlev, t(:,:), qvi(:,:), xxls)
 
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i=1,mgncol
       ! sublimation of snow
@@ -3155,7 +3155,7 @@ subroutine evaporate_sublimate_precip_graupel_2D(mgncol, nlev, t, rho, dv, mu, s
     end do
   end do
 
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i=1,mgncol
       ! add graupel, do the Same with prdg.
@@ -3263,11 +3263,11 @@ subroutine bergeron_process_snow_2D(mgncol, nlev, t, rho, dv, mu, sc, qvl, qvi, 
 
   integer :: i, k
 
-  !$acc data create(ab) 
+  !$acc data create(ab) async(1)
   
   ab(:,:) = calc_ab_2D(mgncol, nlev, t(:,:), qvi(:,:), xxls)
 
-  !$acc parallel loop collapse(2) default(present) 
+  !$acc parallel loop collapse(2) default(present) async(1) 
   do k = 1, nlev
     do i = 1, mgncol
       if (qsic(i,k) >= qsmall.and. qcic(i,k) >= qsmall .and. t(i,k) < tmelt) then
@@ -3371,7 +3371,7 @@ subroutine graupel_collecting_snow_2D(mgncol, nlev, qsic,qric,umr,ums, &
 
   cons31=pi*pi*ecr*rhosn
 	
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i = 1, mgncol
 
@@ -3474,7 +3474,7 @@ subroutine graupel_collecting_cld_water_2D(mgncol, nlev, qgic, qcic, ncic, rho, 
 
   cons = gamma(bg + 3._r8)*pi/4._r8 * ecid
 
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i = 1, mgncol
 
@@ -3609,7 +3609,7 @@ subroutine graupel_riming_liquid_snow_2D(mgncol,nlev,psacws,qsic,qcic,nsic,rho, 
 
   rhosu = 85000._r8/(ra * tmelt)    ! typical air density at 850 mb
 
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i=1,mgncol
 
@@ -3771,7 +3771,7 @@ subroutine graupel_collecting_rain_2D(mgncol,nlev,qric,qgic,umg,umr,ung,unr,rho,
   cons41=pi*pi*ecr*rhow
   cons32=pi/2._r8*ecr
 
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i=1,mgncol
 
@@ -3931,7 +3931,7 @@ subroutine graupel_rain_riming_snow_2D(mgncol,nlev,pracs,npracs,psacr,qsic,qric,
   cons18=rhosn*rhosn
   cons19=rhow*rhow
 
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i = 1, mgncol
      
@@ -4107,7 +4107,7 @@ subroutine graupel_rime_splintering_2D(mgncol,nlev,t,qcic,qric,qgic,psacwg,pracg
 
 !nmultg,qmultg                                                                             .
 !========================================================================
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i = 1, mgncol
 

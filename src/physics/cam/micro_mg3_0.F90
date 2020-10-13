@@ -1034,11 +1034,11 @@ subroutine micro_mg_tend ( &
   !$acc&              qrout2, nrout2, freqr, reff_rain, qsout2, nsout2, freqs, &
   !$acc&              drout2, dsout2, dgout2, qgout2, ngout2, freqg, dgout, reff_grau, &
   !$acc&              refl, areflz, arefl, frefl, csrfl, acsrfl, fcsrfl, nfice, &
-  !$acc&              dsout, reff_snow )
+  !$acc&              dsout, reff_snow ) async(1)
   
 
   ! Copies of input concentrations that may be changed internally.
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i = 1, mgncol
       qc(i,k) = qcn(i,k)
@@ -1063,7 +1063,7 @@ subroutine micro_mg_tend ( &
      ! if cloud water or ice is present, if not present
      ! set to mincld (mincld used instead of zero, to prevent
      ! possible division by zero errors).
-     !$acc parallel loop collapse(2) default(present)
+     !$acc parallel loop collapse(2) default(present) async(1)
      do k = 1, nlev
        do i = 1, mgncol
          if (qc(i,k) >= qsmall) then
@@ -1074,7 +1074,7 @@ subroutine micro_mg_tend ( &
        end do
      end do
 
-     !$acc parallel loop collapse(2) default(present)
+     !$acc parallel loop collapse(2) default(present) async(1)
      do k = 1, nlev
        do i = 1, mgncol
          if (qi(i,k) >= qsmall)then
@@ -1085,14 +1085,14 @@ subroutine micro_mg_tend ( &
        end do
      end do
 
-     !$acc parallel loop collapse(2) default(present)
+     !$acc parallel loop collapse(2) default(present) async(1)
      do k = 1, nlev
        do i = 1, mgncol
          cldm(i,k) = max(icldm(i,k), lcldm(i,k))
        end do
      end do
 
-     !$acc parallel loop collapse(2) default(present)
+     !$acc parallel loop collapse(2) default(present) async(1)
      do k = 1, nlev
        do i = 1, mgncol
          qsfm(i,k) = 1._r8
@@ -1101,7 +1101,7 @@ subroutine micro_mg_tend ( &
 
   else
      ! get cloud fraction, check for minimum
-     !$acc parallel loop collapse(2) default(present)
+     !$acc parallel loop collapse(2) default(present) async(1)
      do k = 1, nlev
        do i = 1, mgncol
          cldm(i,k) = max(cldn(i,k),mincld)
@@ -1115,7 +1115,7 @@ subroutine micro_mg_tend ( &
   ! Initialize local variables
 
   ! local physical properties
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i = 1, mgncol
       rho(i,k) = p(i,k)/(r*t(i,k))
@@ -1128,7 +1128,7 @@ subroutine micro_mg_tend ( &
   ! air density adjustment for fallspeed parameters
   ! includes air density correction factor to the
   ! power of 0.54 following Heymsfield and Bansemer 2007
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i = 1, mgncol
       rhof(i,k) = (rhosu/rho(i,k))**0.54_r8
@@ -1141,7 +1141,7 @@ subroutine micro_mg_tend ( &
   ! Hail use ah*rhof graupel use ag*rhof
   ! Note that do_hail and do_graupel can't both be true
   if (do_hail) then
-    !$acc parallel loop collapse(2) default(present)
+    !$acc parallel loop collapse(2) default(present) async(1)
     do k = 1, nlev
       do i = 1, mgncol
         agn(i,k) = ah * rhof(i,k)
@@ -1150,7 +1150,7 @@ subroutine micro_mg_tend ( &
   end if
   
   if (do_graupel) then
-    !$acc parallel loop collapse(2) default(present)
+    !$acc parallel loop collapse(2) default(present) async(1)
     do k = 1, nlev
       do i = 1, mgncol
         agn(i,k) = ag * rhof(i,k)
@@ -1158,7 +1158,7 @@ subroutine micro_mg_tend ( &
     end do
   end if
   
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i = 1, mgncol
       acn(i,k) = g * rhow / (18._r8 * mu(i,k))
@@ -1176,7 +1176,7 @@ subroutine micro_mg_tend ( &
   call qsat_ice_all( mgncol, nlev, t(:,:), p(:,:), &
                      esi(:,:), qvi(:,:) )
   
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
      do i = 1, mgncol
 
@@ -1201,7 +1201,7 @@ subroutine micro_mg_tend ( &
      end do
   end do
 
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i = 1, mgncol
       relhum(i,k) = q(i,k) / max(qvl(i,k), qsmall)
@@ -1213,7 +1213,7 @@ subroutine micro_mg_tend ( &
   ! set mtime here to avoid answer-changing
   mtime = deltat
 
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i = 1, mgncol
       ! initialize microphysics output
@@ -1254,7 +1254,7 @@ subroutine micro_mg_tend ( &
     end do
   end do
   
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev+1
     do i = 1, mgncol
       rflx(i,k) = 0._r8
@@ -1265,7 +1265,7 @@ subroutine micro_mg_tend ( &
     end do
   end do
   
-  !$acc parallel loop default(present)
+  !$acc parallel loop default(present) async(1)
   do i = 1, mgncol
     ! initialize precip at surface
     prect(i) = 0._r8
@@ -1283,7 +1283,7 @@ subroutine micro_mg_tend ( &
 
   ! output activated liquid and ice (convert from #/kg -> #/m3)
   !--------------------------------------------------
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i = 1, mgncol
       if (qc(i,k) >= qsmall) then
@@ -1295,7 +1295,7 @@ subroutine micro_mg_tend ( &
     end do 
   end do
 
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i = 1, mgncol
       if (t(i,k) < icenuct) then
@@ -1317,7 +1317,7 @@ subroutine micro_mg_tend ( &
   !-------------------------------------------------------
 
   if (do_cldice) then
-    !$acc parallel loop collapse(2) default(present)
+    !$acc parallel loop collapse(2) default(present) async(1)
     do k = 1, nlev
       do i = 1, mgncol
         if ( naai(i,k) > 0._r8 .and. t(i,k) < icenuct .and. &
@@ -1345,7 +1345,7 @@ subroutine micro_mg_tend ( &
 
 
   !=============================================================================
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i = 1, mgncol
       meltsdttot(i,k) = 0._r8
@@ -1354,7 +1354,7 @@ subroutine micro_mg_tend ( &
     end do
   end do
   
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i = 1, mgncol
 
@@ -1392,7 +1392,7 @@ subroutine micro_mg_tend ( &
   end do 
 
   ! melting of graupel at +2 C
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k=1,nlev
      do i=1,mgncol
 
@@ -1427,7 +1427,7 @@ subroutine micro_mg_tend ( &
      end do
   end do 
 
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k=1,nlev
     do i=1,mgncol
         ! freezing of rain at -5 C
@@ -1472,7 +1472,7 @@ subroutine micro_mg_tend ( &
      end do
   end do 
 
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k=1,nlev
     do i=1,mgncol
       ! obtain in-cloud values of cloud water ratios and number concentrations
@@ -1496,7 +1496,7 @@ subroutine micro_mg_tend ( &
     end do
   end do
 
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k=1,nlev
     do i=1,mgncol
       ! obtain in-cloud values of cloud ice mixing ratios and number concentrations
@@ -1525,7 +1525,7 @@ subroutine micro_mg_tend ( &
   ! for sub-columns cldm has already been set to 1 if cloud
   ! water or ice is present, so precip_frac will be correctly set below
   ! and nothing extra needs to be done here
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i = 1, mgncol
       precip_frac(i,k) = cldm(i,k)
@@ -1533,7 +1533,7 @@ subroutine micro_mg_tend ( &
   end do
       
   if (trim(micro_mg_precip_frac_method) == 'in_cloud') then
-    !$acc parallel loop default(present)
+    !$acc parallel loop default(present) async(1)
     do i = 1, mgncol
       do k = 2, nlev
         if (qc(i,k) < qsmall .and. qi(i,k) < qsmall) then
@@ -1548,7 +1548,7 @@ subroutine micro_mg_tend ( &
 
     ! if rain or snow mix ratios are smaller than threshold,
     ! then leave precip_frac as cloud fraction at current level
-    !$acc parallel loop default(present)
+    !$acc parallel loop default(present) async(1)
     do i = 1, mgncol
       do k = 2, nlev
         if (qr(i,k-1) >= qsmall .or. qs(i,k-1) >= qsmall) then
@@ -1580,7 +1580,7 @@ subroutine micro_mg_tend ( &
                                     prc(:,:), nprc(:,:), nprc1(:,:) )
    endif
        
-   !$acc parallel loop collapse(2) default(present)
+   !$acc parallel loop collapse(2) default(present) async(1)
    do k = 1, nlev
      do i = 1, mgncol
        ! assign qric based on prognostic qr, using assumed precip fraction
@@ -1590,7 +1590,7 @@ subroutine micro_mg_tend ( &
      end do
    end do
 
-   !$acc parallel loop collapse(2) default(present)
+   !$acc parallel loop collapse(2) default(present) async(1)
    do k = 1, nlev
      do i = 1, mgncol
        ! limit in-precip mixing ratios to 10 g/kg
@@ -1598,7 +1598,7 @@ subroutine micro_mg_tend ( &
      end do
    end do
    
-   !$acc parallel loop collapse(2) default(present)
+   !$acc parallel loop collapse(2) default(present) async(1)
    do k = 1, nlev
      do i = 1, mgncol
        ! add autoconversion to precip from above to get provisional rain mixing ratio
@@ -1610,7 +1610,7 @@ subroutine micro_mg_tend ( &
      end do
    end do
 
-   !$acc parallel loop collapse(2) default(present)
+   !$acc parallel loop collapse(2) default(present) async(1)
    do k = 1, nlev
      do i = 1, mgncol
        ! make sure number concentration is a positive number to avoid
@@ -1637,7 +1637,7 @@ subroutine micro_mg_tend ( &
      call ice_autoconversion_2D(mgncol, nlev, t(:,:), qiic(:,:), lami(:,:), n0i(:,:), &
                                 dcs, prci(:,:), nprci(:,:))
    else
-     !$acc parallel loop collapse(2) default(present)
+     !$acc parallel loop collapse(2) default(present) async(1)
      do k = 1, nlev
        do i = 1, mgncol
          ! Add in the particles that we have already converted to snow, and
@@ -1648,7 +1648,7 @@ subroutine micro_mg_tend ( &
      end do
    end if
 
-   !$acc parallel loop collapse(2) default(present)
+   !$acc parallel loop collapse(2) default(present) async(1)
    do k = 1, nlev
      do i = 1, mgncol
        ! note, currently we don't have this
@@ -1659,7 +1659,7 @@ subroutine micro_mg_tend ( &
      end do
    end do
 
-   !$acc parallel loop collapse(2) default(present)
+   !$acc parallel loop collapse(2) default(present) async(1)
    do k = 1, nlev
      do i = 1, mgncol
        ! limit in-precip mixing ratios to 10 g/kg
@@ -1667,7 +1667,7 @@ subroutine micro_mg_tend ( &
      end do
    end do
 
-   !$acc parallel loop collapse(2) default(present)
+   !$acc parallel loop collapse(2) default(present) async(1)
    do k = 1, nlev
      do i = 1, mgncol
        ! if precip mix ratio is zero so should number concentration
@@ -1678,7 +1678,7 @@ subroutine micro_mg_tend ( &
      end do
    end do
 
-   !$acc parallel loop collapse(2) default(present)
+   !$acc parallel loop collapse(2) default(present) async(1)
    do k = 1, nlev
      do i = 1, mgncol
        ! make sure number concentration is a positive number to avoid
@@ -1687,7 +1687,7 @@ subroutine micro_mg_tend ( &
      end do
    end do
 
-   !$acc parallel loop collapse(2) default(present)
+   !$acc parallel loop collapse(2) default(present) async(1)
    do k = 1, nlev
      do i = 1, mgncol
        ! also do this for graupel, which is assumed to be 'precip_frac'
@@ -1696,7 +1696,7 @@ subroutine micro_mg_tend ( &
      end do
    end do
 
-   !$acc parallel loop collapse(2) default(present)
+   !$acc parallel loop collapse(2) default(present) async(1)
    do k = 1, nlev
      do i = 1, mgncol
        ! limit in-precip mixing ratios to 10 g/kg
@@ -1704,7 +1704,7 @@ subroutine micro_mg_tend ( &
      end do
    end do
 
-   !$acc parallel loop collapse(2) default(present)
+   !$acc parallel loop collapse(2) default(present) async(1)
    do k = 1, nlev
      do i = 1, mgncol
        ! if precip mix ratio is zero so should number concentration
@@ -1715,7 +1715,7 @@ subroutine micro_mg_tend ( &
      end do
    end do
 
-   !$acc parallel loop collapse(2) default(present)
+   !$acc parallel loop collapse(2) default(present) async(1)
    do k = 1, nlev
      do i = 1, mgncol
        ! make sure number concentration is a positive number to avoid
@@ -1731,7 +1731,7 @@ subroutine micro_mg_tend ( &
    call size_dist_param_basic_2D( mgncol, nlev, mg_rain_props, qric(:,:), nric(:,:), &
                                   lamr(:,:), n0=n0r(:,:))
    
-   !$acc parallel loop collapse(2) default(present)
+   !$acc parallel loop collapse(2) default(present) async(1)
    do k = 1, nlev
      do i = 1, mgncol
        if (lamr(i,k) >= qsmall) then
@@ -1753,7 +1753,7 @@ subroutine micro_mg_tend ( &
    call size_dist_param_basic_2D( mgncol, nlev, mg_snow_props, qsic(:,:), nsic(:,:), &
                                   lams(:,:), n0=n0s(:,:))
 
-   !$acc parallel loop collapse(2) default(present)
+   !$acc parallel loop collapse(2) default(present) async(1)
    do k = 1, nlev
      do i = 1, mgncol
        if (lams(i,k) > 0._r8) then
@@ -1797,7 +1797,7 @@ subroutine micro_mg_tend ( &
    end if
 
       
-   !$acc parallel loop collapse(2) default(present)
+   !$acc parallel loop collapse(2) default(present) async(1)
    do k = 1, nlev
      do i = 1, mgncol
        if (lamg(i,k) > 0._r8) then
@@ -1823,7 +1823,7 @@ subroutine micro_mg_tend ( &
        call immersion_freezing_2D(mgncol, nlev, microp_uniform, t(:,:), pgam(:,:), lamc(:,:), &
                                   qcic(:,:), ncic(:,:), relvar(:,:), mnuccc(:,:), nnuccc(:,:))
                                   
-       !$acc parallel loop collapse(2) default(present)
+       !$acc parallel loop collapse(2) default(present) async(1)
        do k = 1, nlev
          do i = 1, mgncol
            ! make sure number of droplets frozen does not exceed available ice nuclei concentration
@@ -1843,7 +1843,7 @@ subroutine micro_mg_tend ( &
               nacon(:,:,:), pgam(:,:), lamc(:,:), qcic(:,:), ncic(:,:), &
               relvar(:,:), mnucct(:,:), nnucct(:,:))
 
-       !$acc parallel loop collapse(2) default(present)
+       !$acc parallel loop collapse(2) default(present) async(1)
        do k = 1, nlev  
          do i = 1, mgncol
            mnudep(i,k)=0._r8
@@ -1853,7 +1853,7 @@ subroutine micro_mg_tend ( &
 
      else
         
-       !$acc parallel loop collapse(2) default(present)
+       !$acc parallel loop collapse(2) default(present) async(1)
        do k = 1, nlev
          do i = 1, mgncol
            ! Mass of droplets frozen is the average droplet mass, except
@@ -1864,7 +1864,7 @@ subroutine micro_mg_tend ( &
          end do
        end do
 
-       !$acc parallel loop collapse(2) default(present)
+       !$acc parallel loop collapse(2) default(present) async(1)
        do k = 1, nlev
          do i = 1, mgncol
            if (qcic(i,k) >= qsmall) then
@@ -1877,7 +1877,7 @@ subroutine micro_mg_tend ( &
          end do
        end do
       
-       !$acc parallel loop collapse(2) default(present)
+       !$acc parallel loop collapse(2) default(present) async(1)
        do k = 1, nlev
          do i = 1, mgncol
            if (qcic(i,k) >= qsmall) then
@@ -1890,7 +1890,7 @@ subroutine micro_mg_tend ( &
          end do
        end do
       
-       !$acc parallel loop collapse(2) default(present)
+       !$acc parallel loop collapse(2) default(present) async(1)
        do k = 1, nlev
          do i = 1, mgncol
            if (qcic(i,k) >= qsmall) then
@@ -1906,7 +1906,7 @@ subroutine micro_mg_tend ( &
      end if
 
    else
-     !$acc parallel loop collapse(2) default(present)
+     !$acc parallel loop collapse(2) default(present) async(1)
      do k = 1, nlev
        do i = 1, mgncol
          mnuccc(i,k)=0._r8
@@ -1930,7 +1930,7 @@ subroutine micro_mg_tend ( &
    if (do_cldice) then
       call secondary_ice_production_2D(mgncol, nlev, t(:,:), psacws(:,:), msacwi(:,:), nsacwi(:,:) )
    else
-     !$acc parallel loop collapse(2) default(present)
+     !$acc parallel loop collapse(2) default(present) async(1)
      do k = 1, nlev
        do i = 1, mgncol
          nsacwi(i,k) = 0.0_r8
@@ -1960,7 +1960,7 @@ subroutine micro_mg_tend ( &
       call accrete_cloud_ice_snow_2D(mgncol, nlev, t(:,:), rho(:,:), asn(:,:), qiic(:,:), niic(:,:), &
                                      qsic(:,:), lams(:,:), n0s(:,:), prai(:,:), nprai(:,:))
    else
-     !$acc parallel loop collapse(2) default(present)
+     !$acc parallel loop collapse(2) default(present) async(1)
      do k = 1, nlev
        do i = 1, mgncol
          prai(i,k) = 0._r8
@@ -1972,7 +1972,7 @@ subroutine micro_mg_tend ( &
    call bergeron_process_snow_2D(mgncol, nlev, t(:,:), rho(:,:), dv(:,:), mu(:,:), sc(:,:), &
         qvl(:,:), qvi(:,:), asn(:,:), qcic(:,:), qsic(:,:), lams(:,:), n0s(:,:), bergs(:,:) )
         
-   !$acc parallel loop collapse(2) default(present)
+   !$acc parallel loop collapse(2) default(present) async(1)
    do k = 1, nlev
      do i = 1, mgncol
        bergs(i,k) = bergs(i,k) * micro_mg_berg_eff_factor
@@ -1985,14 +1985,14 @@ subroutine micro_mg_tend ( &
            icldm(:,:), rho(:,:), dv(:,:), qvl(:,:), qvi(:,:), &
            berg(:,:), vap_dep(:,:), ice_sublim(:,:))
 
-      !$acc parallel loop collapse(2) default(present)
+      !$acc parallel loop collapse(2) default(present) async(1)
       do k = 1, nlev
         do i = 1, mgncol
           berg(i,k) = berg(i,k) * micro_mg_berg_eff_factor
         end do
       end do
 
-      !$acc parallel loop collapse(2) default(present)
+      !$acc parallel loop collapse(2) default(present) async(1)
       do k = 1, nlev
         do i = 1, mgncol
           if (ice_sublim(i,k) < 0._r8 .and. qi(i,k) > qsmall .and. icldm(i,k) > mincld) then
@@ -2003,7 +2003,7 @@ subroutine micro_mg_tend ( &
         end do
       end do
 
-      !$acc parallel loop collapse(2) default(present)
+      !$acc parallel loop collapse(2) default(present) async(1)
       do k = 1, nlev
         do i = 1, mgncol
           ! bergeron process should not reduce nc unless
@@ -2055,7 +2055,7 @@ subroutine micro_mg_tend ( &
   else
      
     !need to zero these out to be totally switchable (for conservation)
-    !$acc parallel loop collapse(2) default(present)
+    !$acc parallel loop collapse(2) default(present) async(1)
     do k = 1, nlev 
       do i = 1, mgncol
         pgracs(i,k) = 0._r8
@@ -2085,7 +2085,7 @@ subroutine micro_mg_tend ( &
 
   end if ! end do_graupel/hail loop
    
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev 
     do i = 1, mgncol
 
@@ -2136,7 +2136,7 @@ subroutine micro_mg_tend ( &
     end do
   end do
 
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev 
     do i=1,mgncol
 
@@ -2167,7 +2167,7 @@ subroutine micro_mg_tend ( &
     end do
   end do
 
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev 
     do i=1,mgncol
 
@@ -2208,7 +2208,7 @@ subroutine micro_mg_tend ( &
     end do
   end do
 
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev 
     do i=1,mgncol
 
@@ -2239,7 +2239,7 @@ subroutine micro_mg_tend ( &
     end do
   end do
 
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev 
     do i=1,mgncol
 
@@ -2256,7 +2256,7 @@ subroutine micro_mg_tend ( &
     end do
   end do
 
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev 
     do i=1,mgncol
 
@@ -2282,7 +2282,7 @@ subroutine micro_mg_tend ( &
    
   if (do_cldice) then
 
-    !$acc parallel loop collapse(2) default(present)
+    !$acc parallel loop collapse(2) default(present) async(1)
     do k = 1, nlev 
       do i=1,mgncol
 
@@ -2310,7 +2310,7 @@ subroutine micro_mg_tend ( &
   end if
 
   if (do_cldice) then
-    !$acc parallel loop collapse(2) default(present)
+    !$acc parallel loop collapse(2) default(present) async(1)
     do k = 1, nlev 
       do i=1,mgncol
 
@@ -2343,7 +2343,7 @@ subroutine micro_mg_tend ( &
 
   end if
 
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev 
     do i=1,mgncol
 
@@ -2384,7 +2384,7 @@ subroutine micro_mg_tend ( &
     end do
   end do
 
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev 
     do i=1,mgncol
 
@@ -2428,7 +2428,7 @@ subroutine micro_mg_tend ( &
 
       ! conservation of graupel mass
       !-------------------------------------------------------------------
-      !$acc parallel loop collapse(2) default(present)
+      !$acc parallel loop collapse(2) default(present) async(1)
       do k = 1, nlev 
         do i=1,mgncol
 
@@ -2452,7 +2452,7 @@ subroutine micro_mg_tend ( &
       !-------------------------------------------------------------------
   end if
 
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i = 1, mgncol
 
@@ -2481,7 +2481,7 @@ subroutine micro_mg_tend ( &
    call qsat_water_all( mgncol, nlev, ttmp(:,:), p(:,:), &
                         esn(:,:), qvn(:,:) )
 
-   !$acc parallel loop collapse(2) default(present)
+   !$acc parallel loop collapse(2) default(present) async(1)
    do k = 1, nlev
      do i = 1, mgncol
        if ((pre(i,k)+prds(i,k)+prdg(i,k))*precip_frac(i,k)+ice_sublim(i,k) < -1.e-20_r8) then
@@ -2503,7 +2503,7 @@ subroutine micro_mg_tend ( &
    call qsat_ice_all( mgncol, nlev, ttmp(:,:), p(:,:), &
                       esn(:,:), qvn_tmp_ice(:,:) )
 
-   !$acc parallel loop collapse(2) default(present)
+   !$acc parallel loop collapse(2) default(present) async(1)
    do k = 1, nlev
      do i = 1, mgncol
       
@@ -2541,7 +2541,7 @@ subroutine micro_mg_tend ( &
 
    ! Big "administration" loop enforces conservation, updates variables
    ! that accumulate over substeps, and sets output variables.
-   !$acc parallel loop collapse(2) default(present)
+   !$acc parallel loop collapse(2) default(present) async(1)
    do k = 1, nlev
      do i = 1, mgncol
 
@@ -2575,7 +2575,7 @@ subroutine micro_mg_tend ( &
    end do
 
    if (do_cldice) then
-     !$acc parallel loop collapse(2) default(present)
+     !$acc parallel loop collapse(2) default(present) async(1)
      do k = 1, nlev
        do i = 1, mgncol
          qitend(i,k) = qitend(i,k)+ &
@@ -2586,7 +2586,7 @@ subroutine micro_mg_tend ( &
      end do
    end if
 
-   !$acc parallel loop collapse(2) default(present)
+   !$acc parallel loop collapse(2) default(present) async(1)
    do k = 1, nlev
      do i = 1, mgncol
         qrtend(i,k) = qrtend(i,k)+ &
@@ -2596,7 +2596,7 @@ subroutine micro_mg_tend ( &
    end do
 
    if (do_hail.or.do_graupel) then
-     !$acc parallel loop collapse(2) default(present)
+     !$acc parallel loop collapse(2) default(present) async(1)
      do k = 1, nlev
        do i = 1, mgncol
          qgtend(i,k) = qgtend(i,k) + (pracg(i,k)+pgracs(i,k)+prdg(i,k)+psacr(i,k)+mnuccr(i,k))*precip_frac(i,k) &
@@ -2609,7 +2609,7 @@ subroutine micro_mg_tend ( &
       end do
     else
       !necessary since mnuccr moved to graupel
-      !$acc parallel loop collapse(2) default(present)
+      !$acc parallel loop collapse(2) default(present) async(1)
       do k = 1, nlev
         do i = 1, mgncol
           qstend(i,k) = qstend(i,k)+ &
@@ -2619,7 +2619,7 @@ subroutine micro_mg_tend ( &
       end do
     end if
     
-    !$acc parallel loop collapse(2) default(present)
+    !$acc parallel loop collapse(2) default(present) async(1)
     do k = 1, nlev
       do i = 1, mgncol
 
@@ -2644,7 +2644,7 @@ subroutine micro_mg_tend ( &
    end do
              
    if (do_hail .or. do_graupel) then
-     !$acc parallel loop collapse(2) default(present)
+     !$acc parallel loop collapse(2) default(present) async(1)
      do k = 1, nlev
        do i = 1, mgncol
          prodsnow(i,k) = (prai(i,k)+prci(i,k))*icldm(i,k)+(psacws(i,k)+bergs(i,k))*lcldm(i,k)+(&
@@ -2652,7 +2652,7 @@ subroutine micro_mg_tend ( &
        end do
      end do
    else
-     !$acc parallel loop collapse(2) default(present)
+     !$acc parallel loop collapse(2) default(present) async(1)
      do k = 1, nlev
        do i = 1, mgncol
          prodsnow(i,k) = (prai(i,k)+prci(i,k))*icldm(i,k)+(psacws(i,k)+bergs(i,k))*lcldm(i,k)+(&
@@ -2667,7 +2667,7 @@ subroutine micro_mg_tend ( &
    !    used to calculate pra, prc, ... in this routine
    ! qcsinksum_rate1ord = { rate of direct transfer of cloud water to rain & snow }
    !                      (no cloud ice or bergeron terms)
-   !$acc parallel loop collapse(2) default(present)
+   !$acc parallel loop collapse(2) default(present) async(1)
    do k = 1, nlev
      do i = 1, mgncol
         qcsinksum_rate1ord(i,k) = (pra(i,k)+prc(i,k)+psacws(i,k)+psacwg(i,k)+pgsacw(i,k))*lcldm(i,k) 
@@ -2677,7 +2677,7 @@ subroutine micro_mg_tend ( &
      end do
    end do
    
-   !$acc parallel loop collapse(2) default(present)
+   !$acc parallel loop collapse(2) default(present) async(1)
    do k = 1, nlev
      do i = 1, mgncol
         ! microphysics output, note this is grid-averaged
@@ -2718,7 +2718,7 @@ subroutine micro_mg_tend ( &
      end do
    end do
 
-   !$acc parallel loop collapse(2) default(present)
+   !$acc parallel loop collapse(2) default(present) async(1)
    do k = 1, nlev
      do i = 1, mgncol
       
@@ -2738,7 +2738,7 @@ subroutine micro_mg_tend ( &
 
     
   if(do_graupel.or.do_hail) then
-    !$acc parallel loop collapse(2) default(present)
+    !$acc parallel loop collapse(2) default(present) async(1)
     do k = 1, nlev
       do i = 1, mgncol
         nstend(i,k) = nstend(i,k)+(nsubs(i,k)+ &
@@ -2748,7 +2748,7 @@ subroutine micro_mg_tend ( &
     end do
   else
      !necessary since mnuccr moved to graupel
-     !$acc parallel loop collapse(2) default(present)
+     !$acc parallel loop collapse(2) default(present) async(1)
      do k = 1, nlev
        do i = 1, mgncol
          nstend(i,k) = nstend(i,k)+(nsubs(i,k)+ &
@@ -2757,7 +2757,7 @@ subroutine micro_mg_tend ( &
     end do
   end if
 
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i = 1, mgncol
       nrtend(i,k) = nrtend(i,k)+ &
@@ -2770,7 +2770,7 @@ subroutine micro_mg_tend ( &
   ! maximum (existing N + source terms*dt), which is possible if mtime < deltat
   ! note that currently mtime = deltat
   !================================================================
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i = 1, mgncol
       if (do_cldice .and. nitend(i,k).gt.0._r8.and.ni(i,k)+nitend(i,k)*deltat.gt.nimax(i,k)) then
@@ -2782,7 +2782,7 @@ subroutine micro_mg_tend ( &
   !-----------------------------------------------------
   ! convert rain/snow q and N for output to history, note,
   ! output is for gridbox average
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i = 1, mgncol
       qrout(i,k) = qr(i,k)
@@ -2818,7 +2818,7 @@ subroutine micro_mg_tend ( &
   !================================================================================
 
   ! Re-apply droplet activation tendency
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i = 1, mgncol
       nc(i,k) = ncn(i,k)
@@ -2827,7 +2827,7 @@ subroutine micro_mg_tend ( &
   end do
 
   ! Re-apply rain freezing and snow melting.
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i = 1, mgncol
       qstend(i,k) = qstend(i,k) + (qs(i,k)-qsn(i,k))/deltat
@@ -2835,7 +2835,7 @@ subroutine micro_mg_tend ( &
     end do
   end do
 
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i = 1, mgncol
       nstend(i,k) = nstend(i,k) + (ns(i,k)-nsn(i,k))/deltat
@@ -2843,7 +2843,7 @@ subroutine micro_mg_tend ( &
     end do
   end do
 
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i = 1, mgncol
       qrtend(i,k) = qrtend(i,k) + (qr(i,k)-qrn(i,k))/deltat
@@ -2851,7 +2851,7 @@ subroutine micro_mg_tend ( &
     end do
   end do
 
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i = 1, mgncol
       nrtend(i,k) = nrtend(i,k) + (nr(i,k)-nrn(i,k))/deltat
@@ -2860,7 +2860,7 @@ subroutine micro_mg_tend ( &
   end do
 
 ! Re-apply graupel freezing/melting
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i = 1, mgncol
       qgtend(i,k) = qgtend(i,k) + (qg(i,k)-qgr(i,k))/deltat
@@ -2868,7 +2868,7 @@ subroutine micro_mg_tend ( &
     end do
   end do
 
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i = 1, mgncol
       ngtend(i,k) = ngtend(i,k) + (ng(i,k)-ngr(i,k))/deltat
@@ -2880,7 +2880,7 @@ subroutine micro_mg_tend ( &
   !================================================================================
 
   ! modify to include snow. in prain & evap (diagnostic here: for wet dep)
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i = 1, mgncol
       nevapr(i,k) = nevapr(i,k) + evapsnow(i,k)
@@ -2888,7 +2888,7 @@ subroutine micro_mg_tend ( &
     end do
   end do
 
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k=1,nlev
      do i=1,mgncol
 
@@ -2915,14 +2915,14 @@ subroutine micro_mg_tend ( &
   
   ! switch for specification of droplet and crystal number
   if (ngcons) then
-    !$acc parallel loop collapse(2) default(present)
+    !$acc parallel loop collapse(2) default(present) async(1)
     do k=1,nlev
       do i=1,mgncol
         dumng(i,k)=ngnst/rho(i,k)
       end do
     end do
   else  
-    !$acc parallel loop collapse(2) default(present)
+    !$acc parallel loop collapse(2) default(present) async(1)
     do k=1,nlev
       do i=1,mgncol
         dumng(i,k) = max((ng(i,k)+ngtend(i,k)*deltat)/precip_frac(i,k),0._r8)
@@ -2932,14 +2932,14 @@ subroutine micro_mg_tend ( &
 
   ! switch for specification of droplet and crystal number
   if (nccons) then
-    !$acc parallel loop collapse(2) default(present)
+    !$acc parallel loop collapse(2) default(present) async(1)
     do k=1,nlev
       do i=1,mgncol
         dumnc(i,k)=ncnst/rho(i,k)
       end do
     end do
   else
-    !$acc parallel loop collapse(2) default(present)
+    !$acc parallel loop collapse(2) default(present) async(1)
     do k=1,nlev
       do i=1,mgncol
         dumnc(i,k) = max((nc(i,k)+nctend(i,k)*deltat)/lcldm(i,k),0._r8)
@@ -2949,14 +2949,14 @@ subroutine micro_mg_tend ( &
 
   ! switch for specification of cloud ice number
   if (nicons) then
-    !$acc parallel loop collapse(2) default(present)
+    !$acc parallel loop collapse(2) default(present) async(1)
     do k=1,nlev
       do i=1,mgncol
         dumni(i,k)=ninst/rho(i,k)
       end do
     end do
   else 
-    !$acc parallel loop collapse(2) default(present)
+    !$acc parallel loop collapse(2) default(present) async(1)
     do k=1,nlev
       do i=1,mgncol
         dumni(i,k) = max((ni(i,k)+nitend(i,k)*deltat)/icldm(i,k),0._r8)
@@ -2971,7 +2971,7 @@ subroutine micro_mg_tend ( &
   call size_dist_param_liq_2D( mgncol, nlev,  mg_liq_props, dumc(:,:), dumnc(:,:), & 
                                rho(:,:), pgam(:,:), lamc(:,:) )
 
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k=1,nlev
      do i=1,mgncol
 
@@ -3032,7 +3032,7 @@ subroutine micro_mg_tend ( &
   call size_dist_param_basic_2D( mgncol, nlev, mg_rain_props, dumr(:,:), dumnr(:,:), &
                                  lamr(:,:) )
 
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k=1,nlev
      do i=1,mgncol
        if (lamr(i,k).ge.qsmall) then
@@ -3056,7 +3056,7 @@ subroutine micro_mg_tend ( &
   call size_dist_param_basic_2D( mgncol, nlev, mg_snow_props, dums(:,:), dumns(:,:), &
                                  lams(:,:) )
 
-   !$acc parallel loop collapse(2) default(present)
+   !$acc parallel loop collapse(2) default(present) async(1)
    do k=1,nlev
       do i=1,mgncol
         if (lams(i,k).ge.qsmall) then
@@ -3086,7 +3086,7 @@ subroutine micro_mg_tend ( &
                                      lamg(:,:) )
     end if
   
-    !$acc parallel loop collapse(2) default(present)
+    !$acc parallel loop collapse(2) default(present) async(1)
     do k=1,nlev
        do i=1,mgncol
         if (lamg(i,k).ge.qsmall) then
@@ -3105,7 +3105,7 @@ subroutine micro_mg_tend ( &
       end do
    end do
    
-   !$acc parallel loop collapse(2) default(present)
+   !$acc parallel loop collapse(2) default(present) async(1)
    do k=1,nlev
       do i=1,mgncol
 
@@ -3132,7 +3132,7 @@ subroutine micro_mg_tend ( &
      end do
   end do
   
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k=1,nlev
      do i=1,mgncol
        pdel_inv(i,k) = 1._r8/pdel(i,k)
@@ -3141,7 +3141,7 @@ subroutine micro_mg_tend ( &
   
   ! Begin sedimentaion calculations 
   
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i = 1, mgncol
       dum_2D(i,k) = max( fi(i,k)*pdel_inv(i,k), fni(i,k)*pdel_inv(i,k) )
@@ -3149,7 +3149,7 @@ subroutine micro_mg_tend ( &
   end do
   
   nstep_max = 0
-  !$acc kernels copyout(nstep_max) 
+  !$acc kernels copyout(nstep_max) async(1)
   do i=1,mgncol
     ! calculate number of split time steps to ensure courant stability criteria
     ! for sedimentation calculations
@@ -3164,7 +3164,7 @@ subroutine micro_mg_tend ( &
   do n = 1,nstep_max
     
     if (do_cldice) then
-      !$acc parallel loop collapse(2) default(present)
+      !$acc parallel loop collapse(2) default(present) async(1)
       do k = 1, nlev
         do i=1,mgncol
           if( n <= nstep(i) ) then 
@@ -3174,7 +3174,7 @@ subroutine micro_mg_tend ( &
         end do
       end do
     else
-      !$acc parallel loop collapse(2) default(present)
+      !$acc parallel loop collapse(2) default(present) async(1)
       do k = 1, nlev
         do i=1,mgncol
           if( n <= nstep(i) ) then 
@@ -3186,7 +3186,7 @@ subroutine micro_mg_tend ( &
     end if
 
     ! top of model
-    !$acc parallel loop default(present)
+    !$acc parallel loop default(present) async(1)
     do i=1,mgncol
       if( n <= nstep(i) ) then
         ! add fallout terms to microphysical tendencies
@@ -3203,7 +3203,7 @@ subroutine micro_mg_tend ( &
       end if
     end do
 
-    !$acc parallel loop collapse(2) default(present)
+    !$acc parallel loop collapse(2) default(present) async(1)
     do k = 2, nlev
       do i = 1, mgncol
         if( n <= nstep(i) ) then
@@ -3244,7 +3244,7 @@ subroutine micro_mg_tend ( &
     end do
 
     ! Ice flux
-    !$acc parallel loop collapse(2) default(present)
+    !$acc parallel loop collapse(2) default(present) async(1)
     do k = 1,nlev
       do i=1,mgncol
         if( n <= nstep(i) ) then
@@ -3256,7 +3256,7 @@ subroutine micro_mg_tend ( &
     ! units below are m/s
     ! sedimentation flux at surface is added to precip flux at surface
     ! to get total precip (cloud + precip water) rate
-    !$acc parallel loop default(present)
+    !$acc parallel loop default(present) async(1)
     do i=1,mgncol
       if( n <= nstep(i) ) then
         prect(i) = prect(i)+falouti(i,nlev)/g/real(nstep(i))/1000._r8
@@ -3266,7 +3266,7 @@ subroutine micro_mg_tend ( &
    
    end do
    
-   !$acc parallel loop collapse(2) default(present)
+   !$acc parallel loop collapse(2) default(present) async(1)
    do k = 1, nlev
      do i = 1, mgncol
        dum_2D(i,k) = max( fc(i,k)*pdel_inv(i,k), fnc(i,k)*pdel_inv(i,k) )
@@ -3274,7 +3274,7 @@ subroutine micro_mg_tend ( &
    end do
    
    nstep_max = 0
-   !$acc kernels copyout(nstep_max) 
+   !$acc kernels copyout(nstep_max) async(1)
    do i=1,mgncol
      ! calculate number of split time steps to ensure courant stability criteria
      ! for sedimentation calculations
@@ -3288,7 +3288,7 @@ subroutine micro_mg_tend ( &
    !==============================================================
    do n = 1,nstep_max
 
-     !$acc parallel loop collapse(2) default(present)
+     !$acc parallel loop collapse(2) default(present) async(1)
      do k = 1, nlev
        do i=1,mgncol
          if( n <= nstep(i) ) then 
@@ -3299,7 +3299,7 @@ subroutine micro_mg_tend ( &
      end do
 
      ! top of model
-     !$acc parallel loop default(present)
+     !$acc parallel loop default(present) async(1)
      do i=1,mgncol
        if( n <= nstep(i) ) then
          ! add fallout terms to microphysical tendencies
@@ -3316,7 +3316,7 @@ subroutine micro_mg_tend ( &
        end if
      end do
 
-     !$acc parallel loop collapse(2) default(present)
+     !$acc parallel loop collapse(2) default(present) async(1)
      do k = 2,nlev
        do i=1,mgncol
          if( n <= nstep(i) ) then
@@ -3347,7 +3347,7 @@ subroutine micro_mg_tend ( &
     end do
 
     !Liquid condensate flux here
-    !$acc parallel loop collapse(2) default(present)
+    !$acc parallel loop collapse(2) default(present) async(1)
     do k = 1,nlev
       do i=1,mgncol
         if( n <= nstep(i) ) then
@@ -3356,7 +3356,7 @@ subroutine micro_mg_tend ( &
       end do
     end do
 
-    !$acc parallel loop default(present)
+    !$acc parallel loop default(present) async(1)
     do i=1,mgncol
       if( n <= nstep(i) ) then
         prect(i) = prect(i)+faloutc(i,nlev)/g/real(nstep(i))/1000._r8
@@ -3365,7 +3365,7 @@ subroutine micro_mg_tend ( &
     
   end do
   
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i = 1, mgncol
       dum_2D(i,k) = max( fr(i,k)*pdel_inv(i,k), fnr(i,k)*pdel_inv(i,k) )
@@ -3373,7 +3373,7 @@ subroutine micro_mg_tend ( &
   end do
   
   nstep_max = 0
-  !$acc kernels copyout(nstep_max) 
+  !$acc kernels copyout(nstep_max) async(1)
   do i=1,mgncol
     ! calculate number of split time steps to ensure courant stability criteria
     ! for sedimentation calculations
@@ -3387,7 +3387,7 @@ subroutine micro_mg_tend ( &
   !==============================================================
   do n = 1, nstep_max
     
-    !$acc parallel loop collapse(2) default(present)
+    !$acc parallel loop collapse(2) default(present) async(1)
     do k = 1, nlev
       do i=1,mgncol
         if( n <= nstep(i) ) then 
@@ -3398,7 +3398,7 @@ subroutine micro_mg_tend ( &
     end do
 
     ! top of model
-    !$acc parallel loop default(present)
+    !$acc parallel loop default(present) async(1)
     do i=1,mgncol
       if( n <= nstep(i) ) then 
         ! add fallout terms to microphysical tendencies
@@ -3415,7 +3415,7 @@ subroutine micro_mg_tend ( &
       end if
     end do
     
-    !$acc parallel loop collapse(2) default(present)
+    !$acc parallel loop collapse(2) default(present) async(1)
     do k = 2,nlev
       do i=1,mgncol
         if( n <= nstep(i) ) then 
@@ -3437,7 +3437,7 @@ subroutine micro_mg_tend ( &
      end do
 
      ! Rain Flux
-     !$acc parallel loop collapse(2) default(present)
+     !$acc parallel loop collapse(2) default(present) async(1)
      do k = 2,nlev
        do i = 1,mgncol
          if( n <= nstep(i) ) then 
@@ -3446,7 +3446,7 @@ subroutine micro_mg_tend ( &
        end do
      end do
 
-     !$acc parallel loop default(present)
+     !$acc parallel loop default(present) async(1)
      do i = 1,mgncol
        if( n <= nstep(i) ) then
          prect(i) = prect(i)+faloutr(i,nlev)/g/real(nstep(i))/1000._r8
@@ -3455,7 +3455,7 @@ subroutine micro_mg_tend ( &
      
    end do
    
-   !$acc parallel loop collapse(2) default(present)
+   !$acc parallel loop collapse(2) default(present) async(1)
    do k = 1, nlev
      do i = 1, mgncol
        dum_2D(i,k) = max( fs(i,k)*pdel_inv(i,k), fns(i,k)*pdel_inv(i,k) )
@@ -3463,9 +3463,8 @@ subroutine micro_mg_tend ( &
    end do
    
    nstep_max = 0
-   !$acc kernels copyout(nstep_max) 
+   !$acc kernels copyout(nstep_max) async(1)
    do i=1,mgncol
-
      ! calculate number of split time steps to ensure courant stability criteria
      ! for sedimentation calculations
      !-------------------------------------------------------------------
@@ -3478,7 +3477,7 @@ subroutine micro_mg_tend ( &
    !==============================================================
    do n = 1, nstep_max
      
-     !$acc parallel loop collapse(2) default(present)
+     !$acc parallel loop collapse(2) default(present) async(1)
      do k = 1, nlev
        do i=1,mgncol
          if( n <= nstep(i) ) then
@@ -3489,7 +3488,7 @@ subroutine micro_mg_tend ( &
      end do
 
      ! top of model
-     !$acc parallel loop default(present)
+     !$acc parallel loop default(present) async(1)
      do i=1,mgncol
        if( n <= nstep(i) ) then     
 
@@ -3507,7 +3506,7 @@ subroutine micro_mg_tend ( &
        end if
      end do
      
-     !$acc parallel loop collapse(2) default(present)
+     !$acc parallel loop collapse(2) default(present) async(1)
      do k = 2,nlev
        do i=1,mgncol
          if( n <= nstep(i) ) then 
@@ -3529,7 +3528,7 @@ subroutine micro_mg_tend ( &
      end do
 
      ! Snow Flux
-     !$acc parallel loop collapse(2) default(present)
+     !$acc parallel loop collapse(2) default(present) async(1)
      do k = 2,nlev
        do i = 1,mgncol
          if( n <= nstep(i) ) then
@@ -3538,7 +3537,7 @@ subroutine micro_mg_tend ( &
        end do
      end do
 
-     !$acc parallel loop default(present)
+     !$acc parallel loop default(present) async(1)
      do i = 1,mgncol
        if( n <= nstep(i) ) then
          prect(i) = prect(i)+falouts(i,nlev)/g/real(nstep(i))/1000._r8
@@ -3548,7 +3547,7 @@ subroutine micro_mg_tend ( &
      
    end do
    
-   !$acc parallel loop collapse(2) default(present)
+   !$acc parallel loop collapse(2) default(present) async(1)
    do k = 1, nlev
      do i = 1, mgncol
        dum_2D(i,k) = max( fg(i,k)*pdel_inv(i,k), fng(i,k)*pdel_inv(i,k) )
@@ -3556,9 +3555,8 @@ subroutine micro_mg_tend ( &
    end do
    
    nstep_max = 0
-   !$acc kernels copyout(nstep_max) 
+   !$acc kernels copyout(nstep_max) async(1)
    do i=1,mgncol
-
      ! Graupel Sedimentation
      ! calculate number of split time steps to ensure courant stability criteria
      ! for sedimentation calculations
@@ -3572,7 +3570,7 @@ subroutine micro_mg_tend ( &
    !==============================================================
    do n = 1, nstep_max
      
-     !$acc parallel loop collapse(2) default(present)
+     !$acc parallel loop collapse(2) default(present) async(1)
      do k = 1, nlev
        do i=1,mgncol
          if( n <= nstep(i) ) then
@@ -3583,7 +3581,7 @@ subroutine micro_mg_tend ( &
      end do
 
      ! top of model
-     !$acc parallel loop default(present)
+     !$acc parallel loop default(present) async(1)
      do i=1,mgncol
        if( n <= nstep(i) ) then     
          ! add fallout terms to microphysical tendencies
@@ -3600,7 +3598,7 @@ subroutine micro_mg_tend ( &
        end if
      end do
 
-     !$acc parallel loop collapse(2) default(present)
+     !$acc parallel loop collapse(2) default(present) async(1)
      do k = 2,nlev
        do i=1,mgncol
          if( n <= nstep(i) ) then 
@@ -3622,7 +3620,7 @@ subroutine micro_mg_tend ( &
      end do
 
      ! Graupel Flux
-     !$acc parallel loop collapse(2) default(present)
+     !$acc parallel loop collapse(2) default(present) async(1)
      do k = 2,nlev
        do i = 1,mgncol
          if( n <= nstep(i) ) then
@@ -3632,7 +3630,7 @@ subroutine micro_mg_tend ( &
      end do
 
      ! Add to snow flux at surface
-     !$acc parallel loop default(present)
+     !$acc parallel loop default(present) async(1)
      do i = 1,mgncol
        if( n <= nstep(i) ) then
          prect(i) = prect(i)+faloutg(i,nlev)/g/real(nstep(i))/1000._r8
@@ -3647,7 +3645,7 @@ subroutine micro_mg_tend ( &
 
   ! get new update for variables that includes sedimentation tendency
   ! note : here dum variables are grid-average, NOT in-cloud
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k=1,nlev
      do i=1,mgncol
         dumc(i,k) = max(qc(i,k)+qctend(i,k)*deltat,0._r8)
@@ -3691,7 +3689,7 @@ subroutine micro_mg_tend ( &
   !====================================================================
 
   ! melting of snow at +2 C
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k=1,nlev
      do i=1,mgncol
 
@@ -3723,7 +3721,7 @@ subroutine micro_mg_tend ( &
   enddo
 
   ! melting of graupel at +2 C
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k=1,nlev
      do i=1,mgncol
 
@@ -3755,7 +3753,7 @@ subroutine micro_mg_tend ( &
      enddo
   enddo
 
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
    do k=1,nlev
       do i=1,mgncol
 
@@ -3789,7 +3787,7 @@ subroutine micro_mg_tend ( &
    call size_dist_param_basic_2D( mgncol, nlev, mg_rain_props, dumr(:,:), dumnr(:,:), &
                                  lamr(:,:) )
         
-   !$acc parallel loop collapse(2) default(present)
+   !$acc parallel loop collapse(2) default(present) async(1)
    do k=1,nlev
       do i=1,mgncol
           
@@ -3825,7 +3823,7 @@ subroutine micro_mg_tend ( &
    enddo
 
    if (do_cldice) then
-      !$acc parallel loop collapse(2) default(present)
+      !$acc parallel loop collapse(2) default(present) async(1)
       do k=1,nlev
         do i=1,mgncol
            if (t(i,k)+tlat(i,k)/cpp*deltat > tmelt) then
@@ -3864,7 +3862,7 @@ subroutine micro_mg_tend ( &
 
      ! homogeneously freeze droplets at -40 C
      !-----------------------------------------------------------------
-     !$acc parallel loop collapse(2) default(present)
+     !$acc parallel loop collapse(2) default(present) async(1)
      do k=1,nlev
         do i=1,mgncol
            if (t(i,k)+tlat(i,k)/cpp*deltat < 233.15_r8) then
@@ -3901,7 +3899,7 @@ subroutine micro_mg_tend ( &
      ! together all microphysical processes
      !-----------------------------------------------------------------
      ! follow code similar to old CAM scheme
-     !$acc parallel loop collapse(2) default(present)
+     !$acc parallel loop collapse(2) default(present) async(1)
      do k=1,nlev
         do i=1,mgncol
 
@@ -3914,7 +3912,7 @@ subroutine micro_mg_tend ( &
      call qsat_water_all( mgncol, nlev, ttmp(:,:), p(:,:), &
                           esn(:,:), qvn(:,:) )
 
-     !$acc parallel loop collapse(2) default(present)
+     !$acc parallel loop collapse(2) default(present) async(1)
      do k=1,nlev
         do i=1,mgncol
            if (qtmp(i,k) > qvn(i,k) .and. qvn(i,k) > 0 .and. allow_sed_supersat) then
@@ -3956,7 +3954,7 @@ subroutine micro_mg_tend ( &
 
   ! update cloud variables after instantaneous processes to get effective radius
   ! variables are in-cloud to calculate size dist parameters
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k=1,nlev
      do i=1,mgncol
         dumc(i,k) = max(qc(i,k)+qctend(i,k)*deltat,0._r8)/lcldm(i,k)
@@ -4001,7 +3999,7 @@ subroutine micro_mg_tend ( &
   !-----------------------------------------------------------------
 
   if (do_cldice) then
-     !$acc parallel loop collapse(2) default(present)
+     !$acc parallel loop collapse(2) default(present) async(1)
      do k=1,nlev
         do i=1,mgncol
           dum_2D(i,k) = dumni(i,k)
@@ -4011,7 +4009,7 @@ subroutine micro_mg_tend ( &
      call size_dist_param_basic_2D( mgncol, nlev, mg_ice_props, dumi(:,:), dumni(:,:), &
                                     lamx_tmp(:,:), n0=dumni0(:,:))
     
-     !$acc parallel loop collapse(2) default(present)
+     !$acc parallel loop collapse(2) default(present) async(1)
      do k=1,nlev
         do i=1,mgncol
            if (dumi(i,k).ge.qsmall) then
@@ -4036,7 +4034,7 @@ subroutine micro_mg_tend ( &
         enddo
      enddo
   else
-     !$acc parallel loop collapse(2) default(present)
+     !$acc parallel loop collapse(2) default(present) async(1)
      do k=1,nlev
         do i=1,mgncol
            ! NOTE: If CARMA is doing the ice microphysics, then the ice effective
@@ -4050,7 +4048,7 @@ subroutine micro_mg_tend ( &
 
   ! cloud droplet effective radius
   !-----------------------------------------------------------------
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k=1,nlev
      do i=1,mgncol
        dum_2D(i,k) = dumnc(i,k)
@@ -4060,7 +4058,7 @@ subroutine micro_mg_tend ( &
   call size_dist_param_liq_2D( mgncol, nlev,  mg_liq_props, dumc(:,:), dumnc(:,:), & 
                                rho(:,:), pgam_tmp(:,:), lamc_tmp(:,:) )
 
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k=1,nlev
      do i=1,mgncol
         if (dumc(i,k).ge.qsmall) then
@@ -4103,7 +4101,7 @@ subroutine micro_mg_tend ( &
   call size_dist_param_liq_2D( mgncol, nlev,  mg_liq_props, dumc(:,:), dumnc(:,:), & 
                                rho(:,:), pgam_tmp(:,:), lamc_tmp(:,:) )
 
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k=1,nlev
      do i=1,mgncol
         if (dumc(i,k).ge.qsmall) then
@@ -4116,7 +4114,7 @@ subroutine micro_mg_tend ( &
 
   ! recalculate 'final' rain size distribution parameters
   ! to ensure that rain size is in bounds, adjust rain number if needed
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k=1,nlev
      do i=1,mgncol
        dum_2D(i,k) = dumnr(i,k)
@@ -4126,7 +4124,7 @@ subroutine micro_mg_tend ( &
   call size_dist_param_basic_2D( mgncol, nlev, mg_rain_props, dumr(:,:), dumnr(:,:), &
                                  lamx_tmp(:,:) )
 
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k=1,nlev
      do i=1,mgncol
 
@@ -4145,7 +4143,7 @@ subroutine micro_mg_tend ( &
 
   ! recalculate 'final' snow size distribution parameters
   ! to ensure that snow size is in bounds, adjust snow number if needed
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k=1,nlev
      do i=1,mgncol
        dum_2D(i,k) = dumns(i,k)
@@ -4155,7 +4153,7 @@ subroutine micro_mg_tend ( &
   call size_dist_param_basic_2D( mgncol, nlev, mg_snow_props, dums(:,:), dumns(:,:), &
                                  lamx_tmp(:,:), n0=dumns0 )
   
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k=1,nlev
      do i=1,mgncol
         if (dums(i,k).ge.qsmall) then
@@ -4177,7 +4175,7 @@ subroutine micro_mg_tend ( &
 
   ! recalculate 'final' graupel size distribution parameters
   ! to ensure that  size is in bounds, addjust number if needed
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k=1,nlev
      do i=1,mgncol
        dum_2D(i,k) = dumng(i,k)
@@ -4194,7 +4192,7 @@ subroutine micro_mg_tend ( &
                                    lamx_tmp(:,:) )
   end if
    
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k=1,nlev
      do i=1,mgncol
 
@@ -4211,7 +4209,7 @@ subroutine micro_mg_tend ( &
      enddo
   enddo
 
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k=1,nlev
      do i=1,mgncol
         ! if updated q (after microphysics) is zero, then ensure updated n is also zero
@@ -4229,7 +4227,7 @@ subroutine micro_mg_tend ( &
 
   ! qc and qi are only used for output calculations past here,
   ! so add qctend and qitend back in one more time
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k=1,nlev
     do i=1,mgncol
       qc(i,k) = qc(i,k) + qctend(i,k) * deltat
@@ -4246,7 +4244,7 @@ subroutine micro_mg_tend ( &
   ! scaled diameter of snow (passed to radiation in CAM)
   ! reff_rain/reff_snow:
   ! calculate effective radius of rain and snow in microns for COSP using Eq. 9 of COSP v1.3 manual
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k=1,nlev
     do i=1,mgncol
       if (qrout(i,k) .gt. 1.e-7_r8 .and. nrout(i,k) .gt. 0._r8) then
@@ -4265,7 +4263,7 @@ subroutine micro_mg_tend ( &
   ! outputs are just dsout2 times constants.
   drout2(:,:) = avg_diameter_2D(mgncol, nlev, qrout(:,:), nrout(:,:), rho(:,:), rhow)
   
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k=1,nlev
     do i=1,mgncol
       if (qrout(i,k) .gt. 1.e-7_r8 .and. nrout(i,k) .gt. 0._r8) then
@@ -4277,7 +4275,7 @@ subroutine micro_mg_tend ( &
     end do
   end do
   
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k=1,nlev
     do i=1,mgncol
       if (qsout(i,k) .gt. 1.e-7_r8 .and. nsout(i,k) .gt. 0._r8) then
@@ -4296,7 +4294,7 @@ subroutine micro_mg_tend ( &
   ! outputs are just dsout2 times constants.
   dsout2(:,:) = avg_diameter_2D(mgncol, nlev, qsout(:,:), nsout(:,:), rho(:,:), rhosn)
   
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k=1,nlev
     do i=1,mgncol
       if (qsout(i,k) .gt. 1.e-7_r8 .and. nsout(i,k) .gt. 0._r8) then
@@ -4310,7 +4308,7 @@ subroutine micro_mg_tend ( &
     end do
   end do
 
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k=1,nlev
     do i=1,mgncol
       if (qgout(i,k) .gt. 1.e-7_r8 .and. ngout(i,k) .gt. 0._r8) then
@@ -4329,7 +4327,7 @@ subroutine micro_mg_tend ( &
   ! outputs are just dsout2 times constants.
   dgout2(:,:) = avg_diameter_2D(mgncol, nlev, qgout(:,:), ngout(:,:), rho(:,:), rhogtmp)
   
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do k=1,nlev
     do i=1,mgncol
       if (qgout(i,k) .gt. 1.e-7_r8 .and. ngout(i,k) .gt. 0._r8) then
@@ -4348,7 +4346,7 @@ subroutine micro_mg_tend ( &
   ! formulas from Matthew Shupe, NOAA/CERES
   ! *****note: radar reflectivity is local (in-precip average)
   ! units of mm^6/m^3
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do i = 1,mgncol
      do k=1,nlev
         if (qc(i,k).ge.qsmall .and. (nc(i,k)+nctend(i,k)*deltat).gt.10._r8) then
@@ -4360,7 +4358,7 @@ subroutine micro_mg_tend ( &
      end do
   end do
         
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do i = 1,mgncol
      do k=1,nlev
         if (qi(i,k).ge.qsmall) then
@@ -4371,7 +4369,7 @@ subroutine micro_mg_tend ( &
      end do
   end do
 
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do i = 1,mgncol
      do k=1,nlev
         if (qsout(i,k).ge.qsmall) then
@@ -4380,7 +4378,7 @@ subroutine micro_mg_tend ( &
      end do
   end do
 
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do i = 1,mgncol
      do k=1,nlev
         refl(i,k)=dum_2D(i,k)+dum1_2D(i,k)
@@ -4392,7 +4390,7 @@ subroutine micro_mg_tend ( &
   ! formula approximated from data of Matrasov (2007)
   ! rainrt is the rain rate in mm/hr
   ! reflectivity (dum) is in DBz
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do i = 1,mgncol
      do k=1,nlev
         if (rainrt(i,k).ge.0.001_r8) then
@@ -4408,7 +4406,7 @@ subroutine micro_mg_tend ( &
      end do
    end do
 
-   !$acc parallel loop collapse(2) default(present)
+   !$acc parallel loop collapse(2) default(present) async(1)
    do i = 1,mgncol
       do k=1,nlev
         ! add to refl
@@ -4419,7 +4417,7 @@ subroutine micro_mg_tend ( &
      end do
    end do
 
-   !$acc parallel loop collapse(2) default(present)
+   !$acc parallel loop collapse(2) default(present) async(1)
    do i = 1,mgncol
       do k=1,nlev
         ! convert back to DBz
@@ -4431,7 +4429,7 @@ subroutine micro_mg_tend ( &
      end do
    end do
 
-   !$acc parallel loop collapse(2) default(present)
+   !$acc parallel loop collapse(2) default(present) async(1)
    do i = 1,mgncol
       do k=1,nlev
         !set averaging flag
@@ -4446,7 +4444,7 @@ subroutine micro_mg_tend ( &
      end do
    end do
 
-   !$acc parallel loop collapse(2) default(present)
+   !$acc parallel loop collapse(2) default(present) async(1)
    do i = 1,mgncol
       do k=1,nlev
         ! bound cloudsat reflectivity
@@ -4454,7 +4452,7 @@ subroutine micro_mg_tend ( &
      end do
    end do
 
-   !$acc parallel loop collapse(2) default(present)
+   !$acc parallel loop collapse(2) default(present) async(1)
    do i = 1,mgncol
       do k=1,nlev
         !set averaging flag
@@ -4470,7 +4468,7 @@ subroutine micro_mg_tend ( &
   end do
 
   !redefine fice here....
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do i = 1,mgncol
     do k=1,nlev
       dum_2D(i,k) = qsout(i,k) + qrout(i,k) + qc(i,k) + qi(i,k)
@@ -4478,7 +4476,7 @@ subroutine micro_mg_tend ( &
     end do
   end do
   
-  !$acc parallel loop collapse(2) default(present)
+  !$acc parallel loop collapse(2) default(present) async(1)
   do i = 1,mgncol
     do k=1,nlev
       if (dumi(i,k) .gt. qsmall .and. dum_2D(i,k) .gt. qsmall) then
@@ -4490,6 +4488,7 @@ subroutine micro_mg_tend ( &
   end do
   
   !$acc end data
+  !$acc wait
 
 end subroutine micro_mg_tend
 
