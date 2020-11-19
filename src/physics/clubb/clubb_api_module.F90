@@ -155,7 +155,11 @@ module clubb_api_module
     ilambda0_stability_coef, imult_coef, itaumin, itaumax, imu, &
     iLscale_mu_coef, iLscale_pert_coef, ialpha_corr, iSkw_denom_coef, &
     ic_K10, ic_K10h, ithlp2_rad_coef, ithlp2_rad_cloud_frac_thresh, &
-    iup2_vp2_factor, iSkw_max_mag
+    iup2_vp2_factor, iSkw_max_mag, iC_invrs_tau_bkgnd, &
+    iC_invrs_tau_sfc, iC_invrs_tau_shear, iC_invrs_tau_N2, &
+    iC_invrs_tau_N2_wp2, iC_invrs_tau_N2_xp2, iC_invrs_tau_N2_wpxp, &
+    iC_invrs_tau_N2_clear_wp3, ialtitude_threshold, irtp2_clip_coef
+
 
   use pdf_parameter_module, only : &
 ! The CLUBB_CAM preprocessor directives are being commented out because this
@@ -248,7 +252,11 @@ module clubb_api_module
         ilambda0_stability_coef, imult_coef, itaumin, itaumax, imu, &
         iLscale_mu_coef, iLscale_pert_coef, ialpha_corr, iSkw_denom_coef, &
         ic_K10, ic_K10h, ithlp2_rad_coef, ithlp2_rad_cloud_frac_thresh, &
-        iup2_vp2_factor, iSkw_max_mag
+        iup2_vp2_factor, iSkw_max_mag, iC_invrs_tau_bkgnd, &
+        iC_invrs_tau_sfc, iC_invrs_tau_shear, iC_invrs_tau_N2, &
+        iC_invrs_tau_N2_wp2, iC_invrs_tau_N2_xp2, iC_invrs_tau_N2_wpxp, &
+        iC_invrs_tau_N2_clear_wp3, ialtitude_threshold, irtp2_clip_coef
+
 
 
 
@@ -517,7 +525,7 @@ contains
     qclvar, &                                               ! intent(out)
 #endif
     thlprcp, wprcp, ice_supersat_frac, &                    ! intent(out)
-    rcm_in_layer, cloud_cover )                             ! intent(out)
+    rcm_in_layer, cloud_cover, invrs_tau_zm )               ! intent(out)
 
     use advance_clubb_core_module, only : advance_clubb_core
 
@@ -692,8 +700,9 @@ contains
 
     ! Variables that need to be output for use in host models
     real( kind = core_rknd ), intent(out), dimension(gr%nz) ::  &
-      wprcp,            & ! w'r_c' (momentum levels)                  [(kg/kg) m/s]
-      ice_supersat_frac   ! ice cloud fraction (thermodynamic levels) [-]
+      wprcp,             & ! w'r_c' (momentum levels)                  [(kg/kg) m/s]
+      ice_supersat_frac, & ! ice cloud fraction (thermodynamic levels) [-]
+      invrs_tau_zm         ! One divided by tau on zm levels           [1/s]
 
     real( kind = core_rknd ), dimension(gr%nz), intent(out) :: &
       Kh_zt, & ! Eddy diffusivity coefficient on thermodynamic levels   [m^2/s]
@@ -758,7 +767,7 @@ contains
                qclvar, &                                      ! intent(out)
 #endif
       thlprcp, wprcp, ice_supersat_frac, &                    ! intent(out)
-      rcm_in_layer, cloud_cover, &                            ! intent(out)
+      rcm_in_layer, cloud_cover, invrs_tau_zm, &              ! intent(out)
       err_code_api )                                          ! intent(out)
 
   end subroutine advance_clubb_core_api
@@ -2562,6 +2571,7 @@ contains
                                                  l_diag_Lscale_from_tau, & ! Out
                                                  l_use_C7_Richardson, & ! Out
                                                  l_use_C11_Richardson, & ! Out
+                                                 l_use_shear_Richardson, & ! Out
                                                  l_brunt_vaisala_freq_moist, & ! Out
                                                  l_use_thvm_in_bv_freq, & ! Out
                                                  l_rcm_supersat_adj, & ! Out
@@ -2666,6 +2676,7 @@ contains
                                       ! mixing length scale as Lscale = tau * tke
       l_use_C7_Richardson,          & ! Parameterize C7 based on Richardson number
       l_use_C11_Richardson,         & ! Parameterize C11 and C16 based on Richardson number
+      l_use_shear_Richardson,       & ! Use shear in the calculation of Richardson number
       l_brunt_vaisala_freq_moist,   & ! Use a different formula for the Brunt-Vaisala frequency in
                                       ! saturated atmospheres (from Durran and Klemp, 1982)
       l_use_thvm_in_bv_freq,        & ! Use thvm in the calculation of Brunt-Vaisala frequency
@@ -2710,6 +2721,7 @@ contains
                                          l_diag_Lscale_from_tau, & ! Out
                                          l_use_C7_Richardson, & ! Out
                                          l_use_C11_Richardson, & ! Out
+                                         l_use_shear_Richardson, & ! Out
                                          l_brunt_vaisala_freq_moist, & ! Out
                                          l_use_thvm_in_bv_freq, & ! Out
                                          l_rcm_supersat_adj, & ! Out
@@ -2757,6 +2769,7 @@ contains
                                                      l_diag_Lscale_from_tau, & ! In
                                                      l_use_C7_Richardson, & ! In
                                                      l_use_C11_Richardson, & ! In
+                                                     l_use_shear_Richardson, & ! In
                                                      l_brunt_vaisala_freq_moist, & ! In
                                                      l_use_thvm_in_bv_freq, & ! In
                                                      l_rcm_supersat_adj, & ! In
@@ -2863,6 +2876,7 @@ contains
                                       ! mixing length scale as Lscale = tau * tke
       l_use_C7_Richardson,          & ! Parameterize C7 based on Richardson number
       l_use_C11_Richardson,         & ! Parameterize C11 and C16 based on Richardson number
+      l_use_shear_Richardson,       & ! Use shear in the calculation of Richardson number
       l_brunt_vaisala_freq_moist,   & ! Use a different formula for the Brunt-Vaisala frequency in
                                       ! saturated atmospheres (from Durran and Klemp, 1982)
       l_use_thvm_in_bv_freq,        & ! Use thvm in the calculation of Brunt-Vaisala frequency
@@ -2911,6 +2925,7 @@ contains
                                              l_diag_Lscale_from_tau, & ! In
                                              l_use_C7_Richardson, & ! In
                                              l_use_C11_Richardson, & ! In
+                                             l_use_shear_Richardson, & ! In
                                              l_brunt_vaisala_freq_moist, & ! In
                                              l_use_thvm_in_bv_freq, & ! In
                                              l_rcm_supersat_adj, & ! In
