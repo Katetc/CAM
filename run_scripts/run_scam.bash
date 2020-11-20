@@ -11,7 +11,7 @@
 # Variables
 CASE="scam_${@: -1}"
 CASEROOT="/home/$USER/projects/scratch/$CASE"
-MACH="nelson"
+MACH="carson"
 COMPSET="FSCAM"
 RES="T42_T42"
 QUEUE="regular"  
@@ -109,36 +109,9 @@ clubb_vars_zm_list="'wp2', 'rtp2', 'thlp2', 'rtpthlp', 'wprtp', 'wpthlp', 'wp4',
 # After shutting off SILHS, to retune the high clouds, adjust 
 # micro_mg_dcs, micro_mg_berg_eff_factor, cldfrc2m_rhmini, cldfrc2m_rhmaxi.
 cat >> user_nl_cam << EOF
-dtime = 300
 nhtfrq = 1,1
 mfilt = 5000,5000,5000
-ndens = 2,2,2,2,2,2
-history_budget = .true.
-microp_scheme = 'MG'
-micro_mg_version = $MGVER
-micro_mg_sub_version = 0
-!micro_mg_num_steps = 1
-!micro_mg_dcs = 390e-6
-macrop_scheme = 'CLUBB_SGS'
-eddy_scheme = 'CLUBB_SGS'
-shallow_scheme = 'CLUBB_SGS'
-deep_scheme = 'ZM'
-subcol_scheme = '$subcol_scheme_namelist_value'
-use_subcol_microp = $use_subcol_microp_namelist_value
-microp_uniform = $microp_uniform_namelist_value
 history_amwg = .true.
-history_vdiag = .false.
-clubb_do_adv = .false.
-clubb_expldiff = .false.
-clubb_rainevap_turb = .false.
-clubb_cloudtop_cooling = .false.
-clubb_l_use_C7_Richardson = .true.
-clubb_l_use_C11_Richardson = .true.
-clubb_l_brunt_vaisala_freq_moist = .true.
-clubb_l_use_thvm_in_bv_freq = .true.
-clubb_l_rcm_supersat_adj = .false.
-clubb_l_stability_correct_tau_zm = .false.
-clubb_C14 = 1.0
 fincl1 = 'U:A','PS:A','T:A','V:A','OMEGA:A','Z3:A','PRECT:A',
 'CLDLIQ:A', 'CLDICE:A', 'LWCF:A', 'SWCF:A', 'FLUT:A',
 'TMQ:A', 'PRECC:A', 'PRECL:A', 'CME:A', 'PRODPREC:A',
@@ -153,52 +126,7 @@ fincl1 = 'U:A','PS:A','T:A','V:A','OMEGA:A','Z3:A','PRECT:A',
 'MPDICE:A','INEGCLPTEND', 'LNEGCLPTEND', 'VNEGCLPTEND',
 'QCRAT:A', $clubb_vars_zt_list,$clubb_vars_zm_list,
 'SL', 'Q', 'RHW', 'QRS', 'QRL', 'HR', 'FDL'
-!, 'SILHS_CLUBB_PRECIP_FRAC','SILHS_CLUBB_ICE_SS_FRAC'
 ncdata='/home/pub/cam_inputdata/atm/cam/inic/gaus/cami_0000-09-01_64x128_L30_c031210.nc' 
-fincl2 = 'CLDTOT', 'CLDST','CDNUMC','CLDLIQ','CLDICE','FLUT',
-'LWCF','SWCF','PRECT'
-end_restart = .true.
-subcol_SILHS_weight = .true.
-subcol_SILHS_numsubcol = $NUMSC
-subcol_SILHS_corr_file_name = 'arm_97'
-subcol_silhs_q_to_micro = .true. ! if .false. gridbox means are used instead of sample points
-subcol_silhs_n_to_micro = .true. ! if .false. gridbox means are used instead of sample points
-subcol_silhs_use_clear_col = .false.
-subcol_SILHS_constrainmn = .false.
-subcol_silhs_ncnp2_on_ncnm2 = 0.05,
-subcol_silhs_hmp2_ip_on_hmm2_ip_intrcpt%rr = 1.0,
-subcol_silhs_hmp2_ip_on_hmm2_ip_intrcpt%Nr = 1.0,
-subcol_silhs_hmp2_ip_on_hmm2_ip_intrcpt%rs = 1.0,
-subcol_silhs_hmp2_ip_on_hmm2_ip_intrcpt%Ns = 1.0,
-subcol_silhs_hmp2_ip_on_hmm2_ip_intrcpt%ri = 1.0,
-subcol_silhs_hmp2_ip_on_hmm2_ip_intrcpt%Ni = 1.0
-subcol_silhs_hmp2_ip_on_hmm2_ip_slope%rr = 0.0,
-subcol_silhs_hmp2_ip_on_hmm2_ip_slope%Nr = 0.0,
-subcol_silhs_hmp2_ip_on_hmm2_ip_slope%rs = 0.0,
-subcol_silhs_hmp2_ip_on_hmm2_ip_slope%Ns = 0.0,
-subcol_silhs_hmp2_ip_on_hmm2_ip_slope%ri = 0.0,
-subcol_silhs_hmp2_ip_on_hmm2_ip_slope%Ni = 0.0
-l_lh_importance_sampling = .true.
-l_Lscale_vert_avg = .false.
-l_lh_straight_mc = .false.
-l_lh_clustered_sampling = .true.
-l_rcm_in_cloud_k_lh_start = .true.
-l_random_k_lh_start = .false.
-l_max_overlap_in_cloud = .true.
-l_lh_instant_var_covar_src = .true.
-l_lh_limit_weights = .true.
-l_lh_var_frac = .false.
-l_lh_normalize_weights = .true.
-sol_facti_cloud_borne = 1.0D0
-dust_emis_fact = 0.3D0
-nucleate_ice_subgrid = 1.0
-seasalt_emis_scale = 0.6
-
-! CLUBB history!!!
-clubb_history = .true.
-clubb_rad_history = .false.
-clubb_vars_zt = $clubb_vars_zt_list
-clubb_vars_zm = $clubb_vars_zm_list
 EOF
 
 # Run submission

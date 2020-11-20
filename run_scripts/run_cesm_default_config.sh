@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Variables
-CASE="test_CLUBB_ZM_aee778a"
-CASEROOT="/glade/scratch/$USER/$CASE"
-MACH="cheyenne"
+CASE="test_CLUBB_ZM_carson"
+CASEROOT="/home/$USER/projects/scratch/$CASE"
+MACH="carson"
 COMPSET="F2000climo"
 #RES="f09_f09"
 RES="f19_f19"
@@ -72,8 +72,10 @@ echo "----- Run configuration -----"
 ./xmlchange RUN_STARTDATE="2000-01-01"
 #./xmlchange STOP_OPTION=nyears
 #./xmlchange STOP_N=4
-./xmlchange STOP_OPTION=nmonths
-./xmlchange STOP_N=14
+#./xmlchange STOP_OPTION=nmonths
+./xmlchange STOP_OPTION=nsteps
+#./xmlchange STOP_N=14
+./xmlchange STOP_N=1
 ./xmlchange DOUT_S="FALSE" # Turn on/off short-term archiving
 
 cat >> user_nl_cam << EOF
@@ -101,4 +103,3 @@ fi
 
 # Success?!
 echo "Success"'!'
-exit 0
