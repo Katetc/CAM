@@ -142,6 +142,7 @@ module clubb_intr
   logical  :: clubb_l_upwind_xpyp_ta = .false.
   logical  :: clubb_l_use_C7_Richardson = .false.
   logical  :: clubb_l_use_C11_Richardson = .false.
+  logical  :: clubb_l_use_shear_Richardson = .false.
   logical  :: clubb_l_use_cloud_cover = .false.
   logical  :: clubb_l_use_thvm_in_bv_freq = .false.
   logical  :: clubb_l_vert_avg_closure = .false.
@@ -524,6 +525,7 @@ end subroutine clubb_init_cnst
                                clubb_lmin_coef, clubb_skw_max_mag, clubb_l_stability_correct_tau_zm, &
                                clubb_gamma_coefb, clubb_up2_vp2_factor, &
                                clubb_l_use_C7_Richardson, clubb_l_use_C11_Richardson, &
+                               clubb_l_use_shear_Richardson, &
                                clubb_l_brunt_vaisala_freq_moist, clubb_l_use_thvm_in_bv_freq, &
                                clubb_l_rcm_supersat_adj, clubb_l_damp_wp3_Skw_squared, &
                                clubb_l_predict_upwp_vpwp, clubb_l_min_wp2_from_corr_wx, &
@@ -667,6 +669,8 @@ end subroutine clubb_init_cnst
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_l_use_C7_Richardson")
     call mpi_bcast(clubb_l_use_C11_Richardson,         1, mpi_logical, mstrid, mpicom, ierr)
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_l_use_C11_Richardson")
+    call mpi_bcast(clubb_l_use_shear_Richardson,       1, mpi_logical, mstrid, mpicom, ierr)
+    if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_l_use_shear_Richardson")
     call mpi_bcast(clubb_l_brunt_vaisala_freq_moist,         1, mpi_logical, mstrid, mpicom, ierr)
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_l_brunt_vaisala_freq_moist")
     call mpi_bcast(clubb_l_use_thvm_in_bv_freq,         1, mpi_logical, mstrid, mpicom, ierr)
@@ -1003,6 +1007,7 @@ end subroutine clubb_init_cnst
     call init_clubb_config_flags( clubb_config_flags ) ! In/Out
     clubb_config_flags%l_use_C7_Richardson = clubb_l_use_C7_Richardson
     clubb_config_flags%l_use_C11_Richardson = clubb_l_use_C11_Richardson
+    clubb_config_flags%l_use_shear_Richardson = clubb_l_use_shear_Richardson
     clubb_config_flags%l_brunt_vaisala_freq_moist = clubb_l_brunt_vaisala_freq_moist
     clubb_config_flags%l_use_thvm_in_bv_freq = clubb_l_use_thvm_in_bv_freq
     clubb_config_flags%l_rcm_supersat_adj = clubb_l_rcm_supersat_adj
@@ -1473,6 +1478,7 @@ end subroutine clubb_init_cnst
    real(r8) :: cloud_frac_inout(pverp+1-top_lev)		! CLUBB output of cloud fraction		[fraction]
    real(r8) :: rcm_in_layer_out(pverp+1-top_lev)		! CLUBB output of in-cloud liq. wat. mix. ratio [kg/kg]
    real(r8) :: cloud_cover_out(pverp+1-top_lev)		! CLUBB output of in-cloud cloud fraction	[fraction]
+   real(r8) :: invrs_tau_zm_out(pverp+1-top_lev)		! CLUBB output of 1 divided by time-scale	[1/s]
    real(r8) :: thlprcp_out(pverp+1-top_lev)
    real(r8) :: rho_ds_zm(pverp+1-top_lev)			! Dry, static density on momentum levels      	[kg/m^3]
    real(r8) :: rho_ds_zt(pverp+1-top_lev)			! Dry, static density on thermodynamic levels 	[kg/m^3]
@@ -2367,7 +2373,7 @@ end subroutine clubb_init_cnst
             khzm_out, khzt_out, &
             qclvar_out, thlprcp_out, &
             wprcp_out, ice_supersat_frac_out, &
-            rcm_in_layer_out, cloud_cover_out)
+            rcm_in_layer_out, cloud_cover_out, invrs_tau_zm_out )
 
          if ( err_code == clubb_fatal_error ) then
              write(fstderr,*) "Fatal error in CLUBB: at timestep ", get_nstep(), "LAT: ", state1%lat(i), " LON: ", state1%lon(i)
@@ -4256,6 +4262,7 @@ end function diag_ustar
                                       ! mixing length scale as Lscale = tau * tke
       l_use_C7_Richardson,          & ! Parameterize C7 based on Richardson number
       l_use_C11_Richardson,         & ! Parameterize C11 and C16 based on Richardson number
+      l_use_shear_Richardson,       & ! Use shear in the calculation of Richardson number
       l_brunt_vaisala_freq_moist,   & ! Use a different formula for the Brunt-Vaisala frequency in
                                       ! saturated atmospheres (from Durran and Klemp, 1982)
       l_use_thvm_in_bv_freq,        & ! Use thvm in the calculation of Brunt-Vaisala frequency
@@ -4304,6 +4311,7 @@ end function diag_ustar
                                                l_diag_Lscale_from_tau, & ! Out
                                                l_use_C7_Richardson, & ! Out
                                                l_use_C11_Richardson, & ! Out
+                                               l_use_shear_Richardson, & ! Out
                                                l_brunt_vaisala_freq_moist, & ! Out
                                                l_use_thvm_in_bv_freq, & ! Out
                                                l_rcm_supersat_adj, & ! Out
@@ -4346,6 +4354,7 @@ end function diag_ustar
                                                    l_diag_Lscale_from_tau, & ! In
                                                    l_use_C7_Richardson, & ! In
                                                    l_use_C11_Richardson, & ! In
+                                                   l_use_shear_Richardson, & ! In
                                                    l_brunt_vaisala_freq_moist, & ! In
                                                    l_use_thvm_in_bv_freq, & ! In
                                                    l_rcm_supersat_adj, & ! In
