@@ -1031,7 +1031,7 @@ end subroutine clubb_init_cnst
     clubb_config_flags%l_diag_Lscale_from_tau = clubb_l_diag_Lscale_from_tau
     clubb_config_flags%l_damp_wp2_using_em = clubb_l_damp_wp2_using_em
     clubb_config_flags%l_update_pressure = l_update_pressure
-    clubb_config_flags%l_lmm_stepping = l_lmm_stepping
+    clubb_config_flags%l_lmm_stepping = clubb_l_lmm_stepping
    
     !  Set up CLUBB core.  Note that some of these inputs are overwritten
     !  when clubb_tend_cam is called.  The reason is that heights can change
