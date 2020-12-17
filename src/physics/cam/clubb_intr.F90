@@ -149,6 +149,7 @@ module clubb_intr
   logical  :: clubb_l_diag_Lscale_from_tau = .false.
   logical  :: clubb_l_damp_wp2_using_em = .false.
   logical  :: clubb_l_lmm_stepping = .false.
+  logical  :: clubb_l_e3sm_config = .false.
 
 !  Constant parameters
   logical, parameter, private :: &
@@ -534,7 +535,7 @@ end subroutine clubb_init_cnst
                                clubb_l_trapezoidal_rule_zt, clubb_l_trapezoidal_rule_zm, &
                                clubb_l_call_pdf_closure_twice, clubb_l_use_cloud_cover, &
                                clubb_l_diag_Lscale_from_tau, clubb_l_damp_wp2_using_em, &
-                               clubb_l_lmm_stepping
+                               clubb_l_lmm_stepping, clubb_l_e3sm_config
 
     !----- Begin Code -----
 
@@ -705,6 +706,8 @@ end subroutine clubb_init_cnst
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_l_damp_wp2_using_em")
     call mpi_bcast(clubb_l_lmm_stepping,         1, mpi_logical, mstrid, mpicom, ierr)
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_l_lmm_stepping")
+    call mpi_bcast(clubb_l_e3sm_config,         1, mpi_logical, mstrid, mpicom, ierr)
+    if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_l_e3sm_config")
 
     !  Overwrite defaults if they are true
     if (clubb_history) l_stats = .true.
@@ -1032,6 +1035,7 @@ end subroutine clubb_init_cnst
     clubb_config_flags%l_damp_wp2_using_em = clubb_l_damp_wp2_using_em
     clubb_config_flags%l_update_pressure = l_update_pressure
     clubb_config_flags%l_lmm_stepping = clubb_l_lmm_stepping
+    clubb_config_flags%l_e3sm_config = clubb_l_e3sm_config
    
     !  Set up CLUBB core.  Note that some of these inputs are overwritten
     !  when clubb_tend_cam is called.  The reason is that heights can change
@@ -4276,7 +4280,8 @@ end function diag_ustar
       l_damp_wp3_Skw_squared,       & ! Set damping on wp3 to use Skw^2 rather than Skw^4
       l_prescribed_avg_deltaz,      & ! used in adj_low_res_nu. If .true., avg_deltaz = deltaz
       l_update_pressure,            & ! Flag for having CLUBB update pressure and exner
-      l_lmm_stepping                  ! Apply Linear Multistep Method (LMM) Stepping
+      l_lmm_stepping,               & ! Apply Linear Multistep Method (LMM) Stepping
+      l_e3sm_config                   ! Run model with E3SM settings
 
     logical, save :: first_call = .true.
 
@@ -4323,8 +4328,9 @@ end function diag_ustar
                                                l_single_C2_Skw, & ! Out
                                                l_damp_wp3_Skw_squared, & ! Out
                                                l_prescribed_avg_deltaz, & ! Out
-                                               l_update_pressure, &  ! Intent(out)
-                                               l_lmm_stepping ) ! Intent(out)
+                                               l_update_pressure, & ! Intent(out)
+                                               l_lmm_stepping, & ! Intent(out)
+                                               l_e3sm_config ) ! Intent(out)
 
       call initialize_clubb_config_flags_type_api( iiPDF_type, & ! In
                                                    ipdf_call_placement, & ! In
@@ -4369,6 +4375,7 @@ end function diag_ustar
                                                    l_prescribed_avg_deltaz, & ! In
                                                    l_update_pressure, & ! In
                                                    l_lmm_stepping, & ! In
+                                                   l_e3sm_config, & ! In
                                                    clubb_config_flags_in ) ! Out
 
       first_call = .false.
