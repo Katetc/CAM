@@ -1,0 +1,32 @@
+pipeline {
+  agent any
+  stages {
+    stage('Check out externals') {
+      steps {
+        sh 'python manage_externals/checkout_externals -e Externals.cfg'
+      }
+    }
+    stage('Copy Config Files') {
+      steps {
+        sh '''cp -rf cime_config_cesm_machines_files/config_machines.xml cime/config/cesm/machines/config_machines.xml
+              cp -rf cime_config_cesm_machines_files/config_compilers.xml cime/config/cesm/machines/config_compilers.xml'''
+      }
+    }
+    stage('Remove Old Output') {
+      steps {
+        sh 'rm -rf /home/pub/cam_output'
+      }
+    }
+    stage('Run CAM') {
+      steps {
+        sh '''source /opt/intel/bin/ifortvars.sh intel64
+              run_scripts/run_scam.bash atex'''
+      }
+    }
+  }
+  post {
+    always {
+      cleanWs(cleanWhenSuccess: true, cleanWhenFailure: true)
+    }
+  }
+}
