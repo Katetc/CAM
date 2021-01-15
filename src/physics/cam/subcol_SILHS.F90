@@ -735,6 +735,8 @@ contains
         l_calc_weights_all_levs_itime, & ! .true. if we calculate sample weights separately at all 
                                          !    grid levels at the current time step   
         l_rad_itime                      ! .true. if we calculate radiation at the current time step  
+
+      real(r8), parameter :: vert_decorr_coef = 0.03_r8
       
       !---------------
       !Output from generate_silhs_sample
@@ -1146,6 +1148,7 @@ contains
                     clubb_config_flags%l_tke_aniso, &                     ! In
                     clubb_config_flags%l_standard_term_ta, &              ! In
                     clubb_config_flags%l_single_C2_Skw, &                 ! In
+                    vert_decorr_coef, &                                   ! In
                     X_nl_all_levs, X_mixt_comp_all_levs, &                ! Out
                     lh_sample_point_weights)                              ! Out
 
