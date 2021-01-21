@@ -639,7 +639,8 @@ contains
    
       use silhs_api_module, only :       generate_silhs_sample_api, & ! Ncn_to_Nc, &
                                          clip_transform_silhs_output_api, &
-                                         est_kessler_microphys_api
+                                         est_kessler_microphys_api, &
+                                         vert_decorr_coef
 
       use clubb_intr, only:              clubb_config_flags
 #endif
@@ -736,8 +737,6 @@ contains
                                          !    grid levels at the current time step   
         l_rad_itime                      ! .true. if we calculate radiation at the current time step  
 
-      real(r8), parameter :: vert_decorr_coef = 0.03_r8
-      
       !---------------
       !Output from generate_silhs_sample
       !--------------
