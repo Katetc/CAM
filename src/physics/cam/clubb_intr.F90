@@ -692,8 +692,8 @@ end subroutine clubb_init_cnst
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_l_min_xp2_from_corr_wx")
     call mpi_bcast(clubb_l_upwind_xpyp_ta,         1, mpi_logical, mstrid, mpicom, ierr)
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_l_upwind_xpyp_ta")
-    call mpi_bcast(clubb_l_godunov_upwind_xpyp_ta,   1, mpi_logical, mstrid, mpicom, ierr)
-    if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_l_godunov_upwind_xpyp_ta")
+    call mpi_bcast(clubb_l_godunov_upwind_wpxp_ta,   1, mpi_logical, mstrid, mpicom, ierr)
+    if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_l_godunov_upwind_wpxp_ta")
     call mpi_bcast(clubb_l_vert_avg_closure,         1, mpi_logical, mstrid, mpicom, ierr)
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_l_vert_avg_closure")
     call mpi_bcast(clubb_l_trapezoidal_rule_zt,         1, mpi_logical, mstrid, mpicom, ierr)
@@ -1029,7 +1029,7 @@ end subroutine clubb_init_cnst
     clubb_config_flags%l_min_wp2_from_corr_wx = clubb_l_min_wp2_from_corr_wx
     clubb_config_flags%l_min_xp2_from_corr_wx = clubb_l_min_xp2_from_corr_wx
     clubb_config_flags%l_upwind_xpyp_ta = clubb_l_upwind_xpyp_ta
-    clubb_config_flags%l_godunov_upwind_xpyp_ta = clubb_l_godunov_upwind_xpyp_ta
+    clubb_config_flags%l_godunov_upwind_wpxp_ta = clubb_l_godunov_upwind_wpxp_ta
     clubb_config_flags%l_vert_avg_closure = clubb_l_vert_avg_closure
     clubb_config_flags%l_trapezoidal_rule_zt = clubb_l_trapezoidal_rule_zt
     clubb_config_flags%l_trapezoidal_rule_zm = clubb_l_trapezoidal_rule_zm
