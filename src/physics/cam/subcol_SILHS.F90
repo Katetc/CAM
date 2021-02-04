@@ -740,9 +740,9 @@ contains
       !---------------
       !Output from generate_silhs_sample
       !--------------
-      real(r8), dimension(state%ngrdcol,pverp-top_lev+1,subcol_SILHS_numsubcol,pdf_dim) :: X_nl_all_levs ! Sample transformed to normal-lognormal
-      real(r8), dimension(state%ngrdcol,pverp-top_lev+1,subcol_SILHS_numsubcol)   :: lh_sample_point_weights ! Subcolumn weights
-      integer, dimension(state%ngrdcol,pverp-top_lev+1,subcol_SILHS_numsubcol)    :: X_mixt_comp_all_levs ! Which Mixture Component
+      real(r8), dimension(state%ngrdcol,subcol_SILHS_numsubcol,pverp-top_lev+1,pdf_dim) :: X_nl_all_levs ! Sample transformed to normal-lognormal
+      real(r8), dimension(state%ngrdcol,subcol_SILHS_numsubcol,pverp-top_lev+1)   :: lh_sample_point_weights ! Subcolumn weights
+      integer, dimension(state%ngrdcol,subcol_SILHS_numsubcol,pverp-top_lev+1)    :: X_mixt_comp_all_levs ! Which Mixture Component
 
       real(r8), dimension(state%ngrdcol,pverp-top_lev+1, subcol_SILHS_numsubcol) :: &
                   rc_all_points, & ! Calculate RCM from LH output
@@ -758,7 +758,7 @@ contains
       !----------------
       ! Output from clip_transform_silhs_output_api
       !----------------
-      real( kind = core_rknd ), dimension(state%ngrdcol,pverp-top_lev+1,subcol_SILHS_numsubcol) :: &
+      real( kind = core_rknd ), dimension(state%ngrdcol,subcol_SILHS_numsubcol,pverp-top_lev+1) :: &
         lh_rt_clipped,  & ! rt generated from silhs sample points
         lh_thl_clipped, & ! thl generated from silhs sample points
         lh_rc_clipped,  & ! rc generated from silhs sample points
@@ -1180,7 +1180,7 @@ contains
         do k = 1, pverp-top_lev+1
           do i = 1, ngrdcol
             ! Calc column liquid water for output (rcm)
-            rc_all_points(i,k,j) = lh_rc_clipped(i,k,j)
+            rc_all_points(i,k,j) = lh_rc_clipped(i,j,k)
           end do
         end do
       end do
@@ -1191,7 +1191,7 @@ contains
           do k = 1, pverp-top_lev+1
             do i = 1, ngrdcol
               ! Calc subcolumn precipitating liq water for output (rrm)
-              rain_all_pts(i,k,j) = X_nl_all_levs(i,k,j,iiPDF_rr)
+              rain_all_pts(i,k,j) = X_nl_all_levs(i,j,k,iiPDF_rr)
             end do
           end do
         end do
@@ -1203,7 +1203,7 @@ contains
           do k = 1, pverp-top_lev+1
             do i = 1, ngrdcol
               ! Calc subcolumn number rain conc for output (nrainm)
-              nrain_all_pts(i,k,j) = X_nl_all_levs(i,k,j,iiPDF_Nr)
+              nrain_all_pts(i,k,j) = X_nl_all_levs(i,j,k,iiPDF_Nr)
             end do
           end do
         end do
@@ -1215,7 +1215,7 @@ contains
           do k = 1, pverp-top_lev+1
             do i = 1, ngrdcol
               ! Calc subcolumn precipitating snow      for output (rsm)
-              snow_all_pts(i,k,j) = X_nl_all_levs(i,k,j,iiPDF_rs)
+              snow_all_pts(i,k,j) = X_nl_all_levs(i,j,k,iiPDF_rs)
             end do
           end do
         end do
@@ -1227,7 +1227,7 @@ contains
           do k = 1, pverp-top_lev+1
             do i = 1, ngrdcol
               ! Calc subcolumn precipitating snow conc for output (Nsm)
-              nsnow_all_pts(i,k,j) = X_nl_all_levs(i,k,j,iiPDF_Ns)
+              nsnow_all_pts(i,k,j) = X_nl_all_levs(i,j,k,iiPDF_Ns)
             end do
           end do
         end do
@@ -1239,7 +1239,7 @@ contains
           do k = 1, pverp-top_lev+1
             do i = 1, ngrdcol
               ! Calc subcolumn cloud ice mixing ratio
-              ice_all_pts(i,k,j) = X_nl_all_levs(i,k,j,iiPDF_ri)
+              ice_all_pts(i,k,j) = X_nl_all_levs(i,j,k,iiPDF_ri)
             end do
           end do
         end do
@@ -1251,7 +1251,7 @@ contains
           do k = 1, pverp-top_lev+1
             do i = 1, ngrdcol
               ! Calc subcolumn cloud ice number
-              nice_all_pts(i,k,j) = X_nl_all_levs(i,k,j,iiPDF_Ni)
+              nice_all_pts(i,k,j) = X_nl_all_levs(i,j,k,iiPDF_Ni)
             end do
           end do
         end do
@@ -1262,7 +1262,7 @@ contains
         do k = 1, pverp-top_lev+1
           do i = 1, ngrdcol
             ! Calc subcolumn vert velocity for output (wm)
-            w_all_points(i,k,j) = X_nl_all_levs(i,k,j,iiPDF_w)
+            w_all_points(i,k,j) = X_nl_all_levs(i,j,k,iiPDF_w)
           end do
         end do
       end do
@@ -1272,7 +1272,7 @@ contains
         do k = 1, pverp-top_lev+1
           do i = 1, ngrdcol
             ! Calc cloud liq water number conc 
-            nclw_all_pts(i,k,j) = lh_Nc_clipped(i,k,j)
+            nclw_all_pts(i,k,j) = lh_Nc_clipped(i,j,k)
           end do
         end do
       end do
@@ -1285,7 +1285,7 @@ contains
       do k = top_lev, pverp
         do i = 1, ngrdcol
           do j = 1, num_subcols
-            RT_lh_out( num_subcols*(i-1)+j,k ) = lh_rt_clipped(i,pverp-k+1,j)
+            RT_lh_out( num_subcols*(i-1)+j,k ) = lh_rt_clipped(i,j,pverp-k+1)
           end do          
         end do
       end do
@@ -1330,7 +1330,7 @@ contains
       do k = top_lev, pverp
         do i = 1, ngrdcol
           do j = 1, num_subcols
-            RVM_lh_out(   num_subcols*(i-1)+j,k ) = lh_rv_clipped(i,pverp-k+1,j)
+            RVM_lh_out(   num_subcols*(i-1)+j,k ) = lh_rv_clipped(i,j,pverp-k+1)
           end do          
         end do
       end do
@@ -1339,7 +1339,7 @@ contains
       do k = top_lev, pverp
         do i = 1, ngrdcol
           do j = 1, num_subcols
-            THL_lh_out(   num_subcols*(i-1)+j,k ) = lh_thl_clipped(i,pverp-k+1,j)
+            THL_lh_out(   num_subcols*(i-1)+j,k ) = lh_thl_clipped(i,j,pverp-k+1)
           end do          
         end do
       end do
@@ -1415,7 +1415,7 @@ contains
         ! Pack up weights for output
         do i = 1, ngrdcol
           do j = 1, num_subcols      
-            weights(num_subcols*(i-1)+j) = lh_sample_point_weights(i,2,j) ! Using grid level 2 always won't work 
+            weights(num_subcols*(i-1)+j) = lh_sample_point_weights(i,j,2) ! Using grid level 2 always won't work 
                                                                           !   if weights vary with height.
           end do
         end do
@@ -1712,7 +1712,7 @@ contains
               ! Calc effective cloud fraction for testing
               if ( ( rc_all_points(i,pverp-k+1,j) .gt. qsmall ) &
                      .or. ( ice_all_pts(i,pverp-k+1,j) .gt. qsmall ) ) then
-                 eff_cldfrac(i,k) = eff_cldfrac(i,k) + lh_sample_point_weights(i,pverp-k+1,j)
+                 eff_cldfrac(i,k) = eff_cldfrac(i,k) + lh_sample_point_weights(i,j,pverp-k+1)
               else 
                 eff_cldfrac(i,k) = 0.0_r8
               endif
@@ -1852,9 +1852,9 @@ contains
      real(r8), dimension(pcols,psubcols,pver ) :: exner
 
      ! Inputs to lh_microphys_var_covar_driver
-     real(r8), dimension(pcols,pverp,psubcols) :: rt_all_clubb, thl_all_clubb, w_all_clubb, &
+     real(r8), dimension(pcols,psubcols,pverp) :: rt_all_clubb, thl_all_clubb, w_all_clubb, &
                                                   qctend_clubb, qvtend_clubb, thltend_clubb
-     real(r8), dimension(pcols,pverp-top_lev+1,psubcols) :: height_depndt_weights
+     real(r8), dimension(pcols,psubcols,pverp-top_lev+1) :: height_depndt_weights
 
      ! Outputs from lh_microphys_var_covar_driver
      real(r8), dimension(:,:), pointer :: rtp2_mc_zt, thlp2_mc_zt, wprtp_mc_zt, &
@@ -1969,12 +1969,12 @@ contains
            thltend(igrdcol,isubcol,pverp) = thltend(igrdcol,isubcol,pver)
 
            ! Flip inputs to CLUBB's grid. Note the dimension ordering change.
-           rt_all_clubb(igrdcol,1:pverp,isubcol) = clubb_flip_grid( rt_all(igrdcol,isubcol,1:pverp) )
-           thl_all_clubb(igrdcol,1:pverp,isubcol) = clubb_flip_grid( thl_all(igrdcol,isubcol,1:pverp) )
-           w_all_clubb(igrdcol,1:pverp,isubcol) = clubb_flip_grid( w_all(igrdcol,isubcol,1:pverp) )
-           qctend_clubb(igrdcol,1:pverp,isubcol) = clubb_flip_grid( qctend(igrdcol,isubcol,1:pverp) )
-           qvtend_clubb(igrdcol,1:pverp,isubcol) = clubb_flip_grid( qvtend(igrdcol,isubcol,1:pverp) )
-           thltend_clubb(igrdcol,1:pverp,isubcol) = clubb_flip_grid( thltend(igrdcol,isubcol,1:pverp) )
+           rt_all_clubb(igrdcol,isubcol,1:pverp) = clubb_flip_grid( rt_all(igrdcol,isubcol,1:pverp) )
+           thl_all_clubb(igrdcol,isubcol,1:pverp) = clubb_flip_grid( thl_all(igrdcol,isubcol,1:pverp) )
+           w_all_clubb(igrdcol,isubcol,1:pverp) = clubb_flip_grid( w_all(igrdcol,isubcol,1:pverp) )
+           qctend_clubb(igrdcol,isubcol,1:pverp) = clubb_flip_grid( qctend(igrdcol,isubcol,1:pverp) )
+           qvtend_clubb(igrdcol,isubcol,1:pverp) = clubb_flip_grid( qvtend(igrdcol,isubcol,1:pverp) )
+           thltend_clubb(igrdcol,isubcol,1:pverp) = clubb_flip_grid( thltend(igrdcol,isubcol,1:pverp) )
 
         end do ! isubcol = 1, nsubcol(igrdcol)
      end do ! igrdcol = 1, ngrdcol
@@ -1991,16 +1991,16 @@ contains
        ! It will have to change once the weights vary with altitude!
        ! I'm not sure whether the grid will need to be flipped.
        do k = 1, pverp-top_lev+1
-          height_depndt_weights(igrdcol,k,1:ns) = weights(igrdcol,1:ns)
+          height_depndt_weights(igrdcol,1:ns,k) = weights(igrdcol,1:ns)
        end do
 
        ! Make the call!!!!!
        call lh_microphys_var_covar_driver_api &
-            ( pverp-top_lev+1, ns, ztodt, height_depndt_weights(igrdcol,1:pverp-top_lev+1,1:ns), &
+            ( pverp-top_lev+1, ns, ztodt, height_depndt_weights(igrdcol,1:ns,1:pverp-top_lev+1), &
               pdf_params_chnk(igrdcol,lchnk), &
-              rt_all_clubb(igrdcol,1:pverp-top_lev+1,1:ns), thl_all_clubb(igrdcol,1:pverp-top_lev+1,1:ns), &
-              w_all_clubb(igrdcol,1:pverp-top_lev+1,1:ns), qctend_clubb(igrdcol,1:pverp-top_lev+1,1:ns), &
-              qvtend_clubb(igrdcol,1:pverp-top_lev+1,1:ns), thltend_clubb(igrdcol,1:pverp-top_lev+1,1:ns), &
+              rt_all_clubb(igrdcol,1:ns,1:pverp-top_lev+1), thl_all_clubb(igrdcol,1:ns,1:pverp-top_lev+1), &
+              w_all_clubb(igrdcol,1:ns,1:pverp-top_lev+1), qctend_clubb(igrdcol,1:ns,1:pverp-top_lev+1), &
+              qvtend_clubb(igrdcol,1:ns,1:pverp-top_lev+1), thltend_clubb(igrdcol,1:ns,1:pverp-top_lev+1), &
               silhs_config_flags%l_lh_instant_var_covar_src, &
               rtp2_mc_zt(igrdcol,1:pverp-top_lev+1), thlp2_mc_zt(igrdcol,1:pverp-top_lev+1), &
               wprtp_mc_zt(igrdcol,1:pverp-top_lev+1), wpthlp_mc_zt(igrdcol,1:pverp-top_lev+1), &
