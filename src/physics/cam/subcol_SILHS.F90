@@ -1119,9 +1119,7 @@ contains
       
       !$acc data create( X_mixt_comp_all_levs, X_nl_all_levs, lh_rc_clipped, lh_Nc_clipped, &
       !$acc&             lh_sample_point_weights, lh_rt_clipped, lh_rt_clipped, &
-      !$acc&             rc_all_points, nclw_all_pts, ice_all_pts, nice_all_pts, &
-      !$acc&             lh_rv_clipped, lh_thl_clipped, rain_all_pts, nrain_all_pts, &
-      !$acc&             snow_all_pts, nsnow_all_pts, w_all_points, THL_lh_out, &
+      !$acc&             lh_rv_clipped, lh_thl_clipped, THL_lh_out, &
       !$acc&             RT_lh_out, RCM_lh_out, NCLW_lh_out, ICE_lh_out, &
       !$acc&             NICE_lh_out, RVM_lh_out, THL_lh_out, RAIN_lh_out, &
       !$acc&             NRAIN_lh_out, SNOW_lh_out, NSNOW_lh_out, WM_lh_out, &
@@ -1174,108 +1172,6 @@ contains
                   lh_AKm(i,:), AKm(i,:), AKstd(i,:), AKstd_cld(i,:), AKm_rcm(i,:), AKm_rcc(i,:), lh_rcm_avg(i,:))
         end do
       end if
-     
-      !$acc parallel loop collapse(3) default(present)
-      do j = 1, num_subcols
-        do k = 1, pverp-top_lev+1
-          do i = 1, ngrdcol
-            ! Calc column liquid water for output (rcm)
-            rc_all_points(i,k,j) = lh_rc_clipped(i,j,k)
-          end do
-        end do
-      end do
-
-      if ( iiPDF_rr > 0 ) then
-        !$acc parallel loop collapse(3) default(present)
-        do j = 1, num_subcols
-          do k = 1, pverp-top_lev+1
-            do i = 1, ngrdcol
-              ! Calc subcolumn precipitating liq water for output (rrm)
-              rain_all_pts(i,k,j) = X_nl_all_levs(i,j,k,iiPDF_rr)
-            end do
-          end do
-        end do
-      end if
-
-      if ( iiPDF_Nr > 0 ) then
-        !$acc parallel loop collapse(3) default(present)
-        do j = 1, num_subcols
-          do k = 1, pverp-top_lev+1
-            do i = 1, ngrdcol
-              ! Calc subcolumn number rain conc for output (nrainm)
-              nrain_all_pts(i,k,j) = X_nl_all_levs(i,j,k,iiPDF_Nr)
-            end do
-          end do
-        end do
-      end if
-
-      if ( iiPDF_rs > 0 ) then
-        !$acc parallel loop collapse(3) default(present)
-        do j = 1, num_subcols
-          do k = 1, pverp-top_lev+1
-            do i = 1, ngrdcol
-              ! Calc subcolumn precipitating snow      for output (rsm)
-              snow_all_pts(i,k,j) = X_nl_all_levs(i,j,k,iiPDF_rs)
-            end do
-          end do
-        end do
-      end if
-
-      if ( iiPDF_Ns > 0 ) then
-        !$acc parallel loop collapse(3) default(present)
-        do j = 1, num_subcols
-          do k = 1, pverp-top_lev+1
-            do i = 1, ngrdcol
-              ! Calc subcolumn precipitating snow conc for output (Nsm)
-              nsnow_all_pts(i,k,j) = X_nl_all_levs(i,j,k,iiPDF_Ns)
-            end do
-          end do
-        end do
-      end if
-
-      if ( iiPDF_ri > 0 ) then
-        !$acc parallel loop collapse(3) default(present)
-        do j = 1, num_subcols
-          do k = 1, pverp-top_lev+1
-            do i = 1, ngrdcol
-              ! Calc subcolumn cloud ice mixing ratio
-              ice_all_pts(i,k,j) = X_nl_all_levs(i,j,k,iiPDF_ri)
-            end do
-          end do
-        end do
-      end if
-
-      if ( iiPDF_Ni > 0 ) then
-        !$acc parallel loop collapse(3) default(present)
-        do j = 1, num_subcols
-          do k = 1, pverp-top_lev+1
-            do i = 1, ngrdcol
-              ! Calc subcolumn cloud ice number
-              nice_all_pts(i,k,j) = X_nl_all_levs(i,j,k,iiPDF_Ni)
-            end do
-          end do
-        end do
-      end if
-
-      !$acc parallel loop collapse(3) default(present)
-      do j = 1, num_subcols
-        do k = 1, pverp-top_lev+1
-          do i = 1, ngrdcol
-            ! Calc subcolumn vert velocity for output (wm)
-            w_all_points(i,k,j) = X_nl_all_levs(i,j,k,iiPDF_w)
-          end do
-        end do
-      end do
-     
-      !$acc parallel loop collapse(3) default(present)
-      do j = 1, num_subcols
-        do k = 1, pverp-top_lev+1
-          do i = 1, ngrdcol
-            ! Calc cloud liq water number conc 
-            nclw_all_pts(i,k,j) = lh_Nc_clipped(i,j,k)
-          end do
-        end do
-      end do
 
       !-------------------------------------------------------------------------
       !            Convert from CLUBB vertical grid to CAM grid
@@ -1283,117 +1179,117 @@ contains
        
       !$acc parallel loop collapse(3) default(present)
       do k = top_lev, pverp
-        do i = 1, ngrdcol
-          do j = 1, num_subcols
-            RT_lh_out( num_subcols*(i-1)+j,k ) = lh_rt_clipped(i,j,pverp-k+1)
+        do j = 1, num_subcols
+          do i = 1, ngrdcol
+            RT_lh_out( ngrdcol*(j-1)+i,k ) = lh_rt_clipped(i,j,pverp-k+1)
+          end do          
+        end do
+      end do
+      
+      !$acc parallel loop collapse(3) default(present)
+      do k = top_lev, pverp
+        do j = 1, num_subcols
+          do i = 1, ngrdcol
+            RCM_lh_out( ngrdcol*(j-1)+i,k ) = lh_rc_clipped(i,j,pverp-k+1)
           end do          
         end do
       end do
        
       !$acc parallel loop collapse(3) default(present)
       do k = top_lev, pverp
-        do i = 1, ngrdcol
-          do j = 1, num_subcols
-            RCM_lh_out( num_subcols*(i-1)+j,k ) = rc_all_points(i,pverp-k+1,j)
+        do j = 1, num_subcols
+          do i = 1, ngrdcol
+            NCLW_lh_out( ngrdcol*(j-1)+i,k ) = lh_Nc_clipped(i,j,pverp-k+1)
           end do          
         end do
       end do
        
       !$acc parallel loop collapse(3) default(present)
       do k = top_lev, pverp
-        do i = 1, ngrdcol
-          do j = 1, num_subcols
-            NCLW_lh_out( num_subcols*(i-1)+j,k ) = nclw_all_pts(i,pverp-k+1,j)
-          end do          
-        end do
-      end do
-       
-      !$acc parallel loop collapse(3) default(present)
-      do k = top_lev, pverp
-        do i = 1, ngrdcol
-          do j = 1, num_subcols
-            ICE_lh_out(   num_subcols*(i-1)+j,k ) = ice_all_pts(i,pverp-k+1,j)
+        do j = 1, num_subcols
+          do i = 1, ngrdcol
+            ICE_lh_out(   ngrdcol*(j-1)+i,k ) = X_nl_all_levs(i,j,pverp-k+1,iiPDF_ri)
           end do          
         end do
       end do
      
       !$acc parallel loop collapse(3) default(present)
       do k = top_lev, pverp
-        do i = 1, ngrdcol
-          do j = 1, num_subcols
-            NICE_lh_out(  num_subcols*(i-1)+j,k ) = nice_all_pts(i,pverp-k+1,j)
+        do j = 1, num_subcols
+          do i = 1, ngrdcol
+            NICE_lh_out(  ngrdcol*(j-1)+i,k ) = X_nl_all_levs(i,j,pverp-k+1,iiPDF_Ni)
           end do          
         end do
       end do
      
       !$acc parallel loop collapse(3) default(present)
       do k = top_lev, pverp
-        do i = 1, ngrdcol
-          do j = 1, num_subcols
-            RVM_lh_out(   num_subcols*(i-1)+j,k ) = lh_rv_clipped(i,j,pverp-k+1)
+        do j = 1, num_subcols
+          do i = 1, ngrdcol
+            RVM_lh_out(   ngrdcol*(j-1)+i,k ) = lh_rv_clipped(i,j,pverp-k+1)
           end do          
         end do
       end do
      
       !$acc parallel loop collapse(3) default(present)
       do k = top_lev, pverp
-        do i = 1, ngrdcol
-          do j = 1, num_subcols
-            THL_lh_out(   num_subcols*(i-1)+j,k ) = lh_thl_clipped(i,j,pverp-k+1)
+        do j = 1, num_subcols
+          do i = 1, ngrdcol
+            THL_lh_out(   ngrdcol*(j-1)+i,k ) = lh_thl_clipped(i,j,pverp-k+1)
           end do          
         end do
       end do
      
       !$acc parallel loop collapse(3) default(present)
       do k = top_lev, pverp
-        do i = 1, ngrdcol
-          do j = 1, num_subcols
-            RAIN_lh_out(  num_subcols*(i-1)+j,k ) = rain_all_pts(i,pverp-k+1,j)
+        do j = 1, num_subcols
+          do i = 1, ngrdcol
+            RAIN_lh_out(  ngrdcol*(j-1)+i,k ) =  X_nl_all_levs(i,j,pverp-k+1,iiPDF_rr)
           end do          
         end do
       end do
      
       !$acc parallel loop collapse(3) default(present)
       do k = top_lev, pverp
-        do i = 1, ngrdcol
-          do j = 1, num_subcols
-            NRAIN_lh_out( num_subcols*(i-1)+j,k ) = nrain_all_pts(i,pverp-k+1,j)
+        do j = 1, num_subcols
+          do i = 1, ngrdcol
+            NRAIN_lh_out( ngrdcol*(j-1)+i,k ) = X_nl_all_levs(i,j,pverp-k+1,iiPDF_Nr)
           end do          
         end do
       end do
      
       !$acc parallel loop collapse(3) default(present)
       do k = top_lev, pverp
-        do i = 1, ngrdcol
-          do j = 1, num_subcols
-            SNOW_lh_out(  num_subcols*(i-1)+j,k ) = snow_all_pts(i,pverp-k+1,j)
+        do j = 1, num_subcols
+          do i = 1, ngrdcol
+            SNOW_lh_out(  ngrdcol*(j-1)+i,k ) = X_nl_all_levs(i,j,pverp-k+1,iiPDF_rs)
           end do          
         end do
       end do
      
       !$acc parallel loop collapse(3) default(present)
       do k = top_lev, pverp
-        do i = 1, ngrdcol
-          do j = 1, num_subcols
-            NSNOW_lh_out( num_subcols*(i-1)+j,k ) = nsnow_all_pts(i,pverp-k+1,j)
+        do j = 1, num_subcols
+          do i = 1, ngrdcol
+            NSNOW_lh_out( ngrdcol*(j-1)+i,k ) = X_nl_all_levs(i,j,pverp-k+1,iiPDF_Ns)
           end do          
         end do
       end do
      
       !$acc parallel loop collapse(3) default(present)
       do k = top_lev, pverp
-        do i = 1, ngrdcol
-          do j = 1, num_subcols
-            WM_lh_out(    num_subcols*(i-1)+j,k ) = w_all_points(i,pverp-k+1,j)
+        do j = 1, num_subcols
+          do i = 1, ngrdcol
+            WM_lh_out(    ngrdcol*(j-1)+i,k ) = X_nl_all_levs(i,j,pverp-k+1,iiPDF_w)
           end do          
         end do
       end do
      
       !$acc parallel loop collapse(3) default(present)
       do k = top_lev, pverp
-        do i = 1, ngrdcol
-          do j = 1, num_subcols
-            OMEGA_lh_out( num_subcols*(i-1)+j,k ) = -1._r8 * WM_lh_out(num_subcols*(i-1)+j,k) &
+        do j = 1, num_subcols
+          do i = 1, ngrdcol
+            OMEGA_lh_out( ngrdcol*(j-1)+i,k ) = -1._r8 * WM_lh_out(ngrdcol*(j-1)+i,k) &
                                                            * rho_ds_zt(i,pverp-k+1) * gravit
           end do
         end do
@@ -1401,8 +1297,8 @@ contains
      
       if ( l_est_kessler_microphys ) then
         do k = top_lev, pverp
-          do i = 1, ngrdcol
-            do j = 1, num_subcols
+          do j = 1, num_subcols
+            do i = 1, ngrdcol
               AKm_out(i,k) = AKm(i,pverp-k+1)
               lh_AKm_out(i,k) = lh_AKm(i,pverp-k+1)
             end do
@@ -1413,9 +1309,9 @@ contains
          
       if (subcol_SILHS_weight) then 
         ! Pack up weights for output
-        do i = 1, ngrdcol
-          do j = 1, num_subcols      
-            weights(num_subcols*(i-1)+j) = lh_sample_point_weights(i,j,2) ! Using grid level 2 always won't work 
+        do j = 1, num_subcols      
+          do i = 1, ngrdcol
+            weights(ngrdcol*(j-1)+i) = lh_sample_point_weights(i,j,2) ! Using grid level 2 always won't work 
                                                                           !   if weights vary with height.
           end do
         end do
@@ -1519,21 +1415,21 @@ contains
       ! Code to update the state variables for interactive runs
       !$acc parallel loop collapse(3) default(present)
       do k = 1, pver-top_lev+1
-        do i = 1, ngrdcol
-          do j = 1, num_subcols
+        do j = 1, num_subcols
+          do i = 1, ngrdcol
               
-            state_sc%t(num_subcols*(i-1)+j,k) = THL_lh_out(num_subcols*(i-1)+j,k) * invs_exner(i,k) &
-                                                + Lv * RCM_lh_out(num_subcols*(i-1)+j,k) / Cp
+            state_sc%t(ngrdcol*(j-1)+i,k) = THL_lh_out(ngrdcol*(j-1)+i,k) * invs_exner(i,k) &
+                                                + Lv * RCM_lh_out(ngrdcol*(j-1)+i,k) / Cp
           end do
         end do
       end do
       
       !$acc parallel loop collapse(3) default(present)
       do k = 1, pver-top_lev+1
-        do i = 1, ngrdcol
-          do j = 1, num_subcols
+        do j = 1, num_subcols
+          do i = 1, ngrdcol
 
-            state_sc%s(num_subcols*(i-1)+j,k) = cpair * state_sc%t(num_subcols*(i-1)+j,k) &
+            state_sc%s(ngrdcol*(j-1)+i,k) = cpair * state_sc%t(ngrdcol*(j-1)+i,k) &
                                                 + gravit * state%zm(i,k) + state%phis(i)
           end do
         end do
@@ -1541,12 +1437,12 @@ contains
 
       !$acc parallel loop collapse(3) default(present)
       do k = 1, pver-top_lev+1
-        do i = 1, ngrdcol
-          do j = 1, num_subcols
+        do j = 1, num_subcols
+          do i = 1, ngrdcol
             ! Vertical Velocity is not part of the energy conservation checks, but
             ! we need to be careful here, because the SILHS output VV is noisy.
-            state_sc%omega(num_subcols*(i-1)+j,k) = OMEGA_lh_out(num_subcols*(i-1)+j,k)
-            state_sc%q(num_subcols*(i-1)+j,k,ixq) = RVM_lh_out(num_subcols*(i-1)+j,k) 
+            state_sc%omega(ngrdcol*(j-1)+i,k) = OMEGA_lh_out(ngrdcol*(j-1)+i,k)
+            state_sc%q(ngrdcol*(j-1)+i,k,ixq) = RVM_lh_out(ngrdcol*(j-1)+i,k) 
           end do
         end do
       end do
@@ -1556,10 +1452,10 @@ contains
          
         !$acc parallel loop collapse(3) default(present)
         do k = 1, pver-top_lev+1
-          do i = 1, ngrdcol
-            do j = 1, num_subcols
-              state_sc%q(num_subcols*(i-1)+j,k,ixcldliq) = RCM_lh_out(num_subcols*(i-1)+j,k)
-              state_sc%q(num_subcols*(i-1)+j,k,ixcldice) = ICE_lh_out(num_subcols*(i-1)+j,k)
+          do j = 1, num_subcols
+            do i = 1, ngrdcol
+              state_sc%q(ngrdcol*(j-1)+i,k,ixcldliq) = RCM_lh_out(ngrdcol*(j-1)+i,k)
+              state_sc%q(ngrdcol*(j-1)+i,k,ixcldice) = ICE_lh_out(ngrdcol*(j-1)+i,k)
             end do
           end do
         end do
@@ -1567,9 +1463,9 @@ contains
         if (ixrain > 0) then
           !$acc parallel loop collapse(3) default(present)
           do k = 1, pver-top_lev+1
-            do i = 1, ngrdcol
-              do j = 1, num_subcols
-                state_sc%q(num_subcols*(i-1)+j,k,ixrain) = RAIN_lh_out(num_subcols*(i-1)+j,k)
+            do j = 1, num_subcols
+              do i = 1, ngrdcol
+                state_sc%q(ngrdcol*(j-1)+i,k,ixrain) = RAIN_lh_out(ngrdcol*(j-1)+i,k)
               end do
             end do
           end do
@@ -1578,9 +1474,9 @@ contains
         if (ixsnow > 0) then
           !$acc parallel loop collapse(3) default(present)
           do k = 1, pver-top_lev+1
-            do i = 1, ngrdcol
-              do j = 1, num_subcols
-                state_sc%q(num_subcols*(i-1)+j,k,ixsnow) = SNOW_lh_out(num_subcols*(i-1)+j,k)
+            do j = 1, num_subcols
+              do i = 1, ngrdcol
+                state_sc%q(ngrdcol*(j-1)+i,k,ixsnow) = SNOW_lh_out(ngrdcol*(j-1)+i,k)
               end do
             end do
           end do
@@ -1589,14 +1485,14 @@ contains
       else   
          
         do k = 1, pver-top_lev+1
-          do i = 1, ngrdcol
-            do j = 1, num_subcols
-              state_sc%q(num_subcols*(i-1)+j,k,ixcldliq) = state%q(i,k,ixcldliq)
-              state_sc%q(num_subcols*(i-1)+j,k,ixcldice) = state%q(i,k,ixcldice)
+          do j = 1, num_subcols
+            do i = 1, ngrdcol
+              state_sc%q(ngrdcol*(j-1)+i,k,ixcldliq) = state%q(i,k,ixcldliq)
+              state_sc%q(ngrdcol*(j-1)+i,k,ixcldice) = state%q(i,k,ixcldice)
               if (ixrain > 0) &
-                state_sc%q(num_subcols*(i-1)+j,k,ixrain) = state%q(i,k,ixrain)
+                state_sc%q(ngrdcol*(j-1)+i,k,ixrain) = state%q(i,k,ixrain)
               if (ixsnow > 0) &
-                state_sc%q(num_subcols*(i-1)+j,k,ixsnow) = state%q(i,k,ixsnow)
+                state_sc%q(ngrdcol*(j-1)+i,k,ixsnow) = state%q(i,k,ixsnow)
             end do
           end do
         end do
@@ -1607,10 +1503,10 @@ contains
         
         !$acc parallel loop collapse(3) default(present)
         do k = 1, pver-top_lev+1
-          do i = 1, ngrdcol
-            do j = 1, num_subcols
-              state_sc%q(num_subcols*(i-1)+j,k,ixnumice) = NICE_lh_out(num_subcols*(i-1)+j,k)
-              state_sc%q(num_subcols*(i-1)+j,k,ixnumliq) = NCLW_lh_out(num_subcols*(i-1)+j,k)
+          do j = 1, num_subcols
+            do i = 1, ngrdcol
+              state_sc%q(ngrdcol*(j-1)+i,k,ixnumice) = NICE_lh_out(ngrdcol*(j-1)+i,k)
+              state_sc%q(ngrdcol*(j-1)+i,k,ixnumliq) = NCLW_lh_out(ngrdcol*(j-1)+i,k)
             end do
           end do
         end do
@@ -1618,9 +1514,9 @@ contains
         if (ixnumrain > 0) then
           !$acc parallel loop collapse(3) default(present)
           do k = 1, pver-top_lev+1
-            do i = 1, ngrdcol
-              do j = 1, num_subcols
-                state_sc%q(num_subcols*(i-1)+j,k,ixnumrain) = NRAIN_lh_out(num_subcols*(i-1)+j,k)
+            do j = 1, num_subcols
+              do i = 1, ngrdcol
+                state_sc%q(ngrdcol*(j-1)+i,k,ixnumrain) = NRAIN_lh_out(ngrdcol*(j-1)+i,k)
               end do
             end do
           end do
@@ -1629,9 +1525,9 @@ contains
         if (ixnumsnow > 0) then
           !$acc parallel loop collapse(3) default(present)
           do k = 1, pver-top_lev+1
-            do i = 1, ngrdcol
-              do j = 1, num_subcols
-                state_sc%q(num_subcols*(i-1)+j,k,ixnumsnow) = NSNOW_lh_out(num_subcols*(i-1)+j,k)
+            do j = 1, num_subcols
+              do i = 1, ngrdcol
+                state_sc%q(ngrdcol*(j-1)+i,k,ixnumsnow) = NSNOW_lh_out(ngrdcol*(j-1)+i,k)
               end do
             end do
           end do
@@ -1640,14 +1536,14 @@ contains
       else     
        
         do k = 1, pver-top_lev+1
-          do i = 1, ngrdcol
-            do j = 1, num_subcols
-              state_sc%q(num_subcols*(i-1)+j,k,ixnumliq) = state%q(i,k,ixnumliq)
-              state_sc%q(num_subcols*(i-1)+j,k,ixnumice) = state%q(i,k,ixnumice)
+          do j = 1, num_subcols
+            do i = 1, ngrdcol
+              state_sc%q(ngrdcol*(j-1)+i,k,ixnumliq) = state%q(i,k,ixnumliq)
+              state_sc%q(ngrdcol*(j-1)+i,k,ixnumice) = state%q(i,k,ixnumice)
               if (ixnumrain > 0) &
-                state_sc%q(num_subcols*(i-1)+j,k,ixnumrain) = state%q(i,k,ixnumrain)
+                state_sc%q(ngrdcol*(j-1)+i,k,ixnumrain) = state%q(i,k,ixnumrain)
               if (ixnumsnow > 0) &
-                state_sc%q(num_subcols*(i-1)+j,k,ixnumsnow) = state%q(i,k,ixnumsnow)
+                state_sc%q(ngrdcol*(j-1)+i,k,ixnumsnow) = state%q(i,k,ixnumsnow)
             end do
           end do
         end do
@@ -1656,11 +1552,11 @@ contains
        
       !$acc parallel loop collapse(3) default(present)
       do k = 1, pver-top_lev+1
-        do i = 1, ngrdcol
-          do j = 1, num_subcols
+        do j = 1, num_subcols
+          do i = 1, ngrdcol
             ! Change liq and ice (and rain and snow) num conc zeros to min values (1e-12)
-            if (state_sc%q(num_subcols*(i-1)+j,k,ixnumliq) .lt. min_num_conc) then
-                state_sc%q(num_subcols*(i-1)+j,k,ixnumliq) = min_num_conc
+            if (state_sc%q(ngrdcol*(j-1)+i,k,ixnumliq) .lt. min_num_conc) then
+                state_sc%q(ngrdcol*(j-1)+i,k,ixnumliq) = min_num_conc
             end if
           end do
         end do
@@ -1668,10 +1564,10 @@ contains
        
       !$acc parallel loop collapse(3) default(present)
       do k = 1, pver-top_lev+1
-        do i = 1, ngrdcol
-          do j = 1, num_subcols   
-            if (state_sc%q(num_subcols*(i-1)+j,k,ixnumice) .lt. min_num_conc) then
-                state_sc%q(num_subcols*(i-1)+j,k,ixnumice) = min_num_conc
+        do j = 1, num_subcols  
+          do i = 1, ngrdcol 
+            if (state_sc%q(ngrdcol*(j-1)+i,k,ixnumice) .lt. min_num_conc) then
+                state_sc%q(ngrdcol*(j-1)+i,k,ixnumice) = min_num_conc
             end if
           end do
         end do
@@ -1680,10 +1576,10 @@ contains
       if (ixnumrain > 0) then
         !$acc parallel loop collapse(3) default(present)
         do k = 1, pver-top_lev+1
-          do i = 1, ngrdcol
-            do j = 1, num_subcols      
-              if(state_sc%q(num_subcols*(i-1)+j,k,ixnumrain) .lt. min_num_conc) then
-                 state_sc%q(num_subcols*(i-1)+j,k,ixnumrain) = min_num_conc
+          do j = 1, num_subcols   
+            do i = 1, ngrdcol   
+              if(state_sc%q(ngrdcol*(j-1)+i,k,ixnumrain) .lt. min_num_conc) then
+                 state_sc%q(ngrdcol*(j-1)+i,k,ixnumrain) = min_num_conc
                end if
             end do
           end do
@@ -1693,10 +1589,10 @@ contains
       if (ixnumsnow > 0) then
         !$acc parallel loop collapse(3) default(present)
         do k = 1, pver-top_lev+1
-          do i = 1, ngrdcol
-            do j = 1, num_subcols     
-              if(state_sc%q(num_subcols*(i-1)+j,k,ixnumsnow) .lt. min_num_conc) then
-                 state_sc%q(num_subcols*(i-1)+j,k,ixnumsnow) = min_num_conc
+          do j = 1, num_subcols     
+            do i = 1, ngrdcol
+              if(state_sc%q(ngrdcol*(j-1)+i,k,ixnumsnow) .lt. min_num_conc) then
+                 state_sc%q(ngrdcol*(j-1)+i,k,ixnumsnow) = min_num_conc
               end if
             end do
           end do
@@ -1710,8 +1606,8 @@ contains
             do j = 1, num_subcols
                
               ! Calc effective cloud fraction for testing
-              if ( ( rc_all_points(i,pverp-k+1,j) .gt. qsmall ) &
-                     .or. ( ice_all_pts(i,pverp-k+1,j) .gt. qsmall ) ) then
+              if ( ( lh_rc_clipped(i,j,pverp-k+1) .gt. qsmall ) &
+                     .or. ( X_nl_all_levs(i,j,pverp-k+1,iiPDF_ri) .gt. qsmall ) ) then
                  eff_cldfrac(i,k) = eff_cldfrac(i,k) + lh_sample_point_weights(i,j,pverp-k+1)
               else 
                 eff_cldfrac(i,k) = 0.0_r8
