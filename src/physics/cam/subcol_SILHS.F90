@@ -1177,115 +1177,38 @@ contains
       !            Convert from CLUBB vertical grid to CAM grid
       !------------------------------------------------------------------------
        
-      !$acc parallel loop collapse(3) default(present)
+      ! This kernel is executed in stream 1:
+      !$acc parallel loop collapse(3) default(present) async(1)
       do k = top_lev, pverp
         do j = 1, num_subcols
           do i = 1, ngrdcol
-            RT_lh_out( ngrdcol*(j-1)+i,k ) = lh_rt_clipped(i,j,pverp-k+1)
-          end do          
-        end do
-      end do
-      
-      !$acc parallel loop collapse(3) default(present)
-      do k = top_lev, pverp
-        do j = 1, num_subcols
-          do i = 1, ngrdcol
-            RCM_lh_out( ngrdcol*(j-1)+i,k ) = lh_rc_clipped(i,j,pverp-k+1)
-          end do          
-        end do
-      end do
-       
-      !$acc parallel loop collapse(3) default(present)
-      do k = top_lev, pverp
-        do j = 1, num_subcols
-          do i = 1, ngrdcol
+            RT_lh_out(   ngrdcol*(j-1)+i,k ) = lh_rt_clipped(i,j,pverp-k+1)
+            RCM_lh_out(  ngrdcol*(j-1)+i,k ) = lh_rc_clipped(i,j,pverp-k+1)
             NCLW_lh_out( ngrdcol*(j-1)+i,k ) = lh_Nc_clipped(i,j,pverp-k+1)
+            RVM_lh_out(  ngrdcol*(j-1)+i,k ) = lh_rv_clipped(i,j,pverp-k+1)
+            THL_lh_out(  ngrdcol*(j-1)+i,k ) = lh_thl_clipped(i,j,pverp-k+1)
           end do          
         end do
       end do
        
-      !$acc parallel loop collapse(3) default(present)
+      ! This kernel is executed in stream 2:
+      !$acc parallel loop collapse(3) default(present) async(2)
       do k = top_lev, pverp
         do j = 1, num_subcols
           do i = 1, ngrdcol
             ICE_lh_out(   ngrdcol*(j-1)+i,k ) = X_nl_all_levs(i,j,pverp-k+1,iiPDF_ri)
-          end do          
-        end do
-      end do
-     
-      !$acc parallel loop collapse(3) default(present)
-      do k = top_lev, pverp
-        do j = 1, num_subcols
-          do i = 1, ngrdcol
             NICE_lh_out(  ngrdcol*(j-1)+i,k ) = X_nl_all_levs(i,j,pverp-k+1,iiPDF_Ni)
-          end do          
-        end do
-      end do
-     
-      !$acc parallel loop collapse(3) default(present)
-      do k = top_lev, pverp
-        do j = 1, num_subcols
-          do i = 1, ngrdcol
-            RVM_lh_out(   ngrdcol*(j-1)+i,k ) = lh_rv_clipped(i,j,pverp-k+1)
-          end do          
-        end do
-      end do
-     
-      !$acc parallel loop collapse(3) default(present)
-      do k = top_lev, pverp
-        do j = 1, num_subcols
-          do i = 1, ngrdcol
-            THL_lh_out(   ngrdcol*(j-1)+i,k ) = lh_thl_clipped(i,j,pverp-k+1)
-          end do          
-        end do
-      end do
-     
-      !$acc parallel loop collapse(3) default(present)
-      do k = top_lev, pverp
-        do j = 1, num_subcols
-          do i = 1, ngrdcol
-            RAIN_lh_out(  ngrdcol*(j-1)+i,k ) =  X_nl_all_levs(i,j,pverp-k+1,iiPDF_rr)
-          end do          
-        end do
-      end do
-     
-      !$acc parallel loop collapse(3) default(present)
-      do k = top_lev, pverp
-        do j = 1, num_subcols
-          do i = 1, ngrdcol
+            RAIN_lh_out(  ngrdcol*(j-1)+i,k ) = X_nl_all_levs(i,j,pverp-k+1,iiPDF_rr)
             NRAIN_lh_out( ngrdcol*(j-1)+i,k ) = X_nl_all_levs(i,j,pverp-k+1,iiPDF_Nr)
-          end do          
-        end do
-      end do
-     
-      !$acc parallel loop collapse(3) default(present)
-      do k = top_lev, pverp
-        do j = 1, num_subcols
-          do i = 1, ngrdcol
             SNOW_lh_out(  ngrdcol*(j-1)+i,k ) = X_nl_all_levs(i,j,pverp-k+1,iiPDF_rs)
-          end do          
-        end do
-      end do
-     
-      !$acc parallel loop collapse(3) default(present)
-      do k = top_lev, pverp
-        do j = 1, num_subcols
-          do i = 1, ngrdcol
             NSNOW_lh_out( ngrdcol*(j-1)+i,k ) = X_nl_all_levs(i,j,pverp-k+1,iiPDF_Ns)
-          end do          
-        end do
-      end do
-     
-      !$acc parallel loop collapse(3) default(present)
-      do k = top_lev, pverp
-        do j = 1, num_subcols
-          do i = 1, ngrdcol
             WM_lh_out(    ngrdcol*(j-1)+i,k ) = X_nl_all_levs(i,j,pverp-k+1,iiPDF_w)
           end do          
         end do
       end do
      
-      !$acc parallel loop collapse(3) default(present)
+      ! This kernel is executed in stream 2 because WM_lh_out comes from stream 2:
+      !$acc parallel loop collapse(3) default(present) async(2)
       do k = top_lev, pverp
         do j = 1, num_subcols
           do i = 1, ngrdcol
@@ -1413,29 +1336,25 @@ contains
       !---------------------------------------------------
   
       ! Code to update the state variables for interactive runs
-      !$acc parallel loop collapse(3) default(present)
+      ! This kernel is executed in stream 3, but waits for stream 1
+      ! because THL_lh_out and RCM_lh_out come from stream 1:
+      !$acc parallel loop collapse(3) default(present) wait(1) async(3)
       do k = 1, pver-top_lev+1
         do j = 1, num_subcols
           do i = 1, ngrdcol
               
             state_sc%t(ngrdcol*(j-1)+i,k) = THL_lh_out(ngrdcol*(j-1)+i,k) * invs_exner(i,k) &
                                                 + Lv * RCM_lh_out(ngrdcol*(j-1)+i,k) / Cp
-          end do
-        end do
-      end do
-      
-      !$acc parallel loop collapse(3) default(present)
-      do k = 1, pver-top_lev+1
-        do j = 1, num_subcols
-          do i = 1, ngrdcol
-
+            
             state_sc%s(ngrdcol*(j-1)+i,k) = cpair * state_sc%t(ngrdcol*(j-1)+i,k) &
                                                 + gravit * state%zm(i,k) + state%phis(i)
           end do
         end do
       end do
-
-      !$acc parallel loop collapse(3) default(present)
+      
+      ! This kernel is executed in stream 4, but waits for stream 1 and 2
+      ! because RVM_lh_out is from stream 1 and OMEGA_lh_out is from stream 2:
+      !$acc parallel loop collapse(3) default(present) wait(1,2) async(4)
       do k = 1, pver-top_lev+1
         do j = 1, num_subcols
           do i = 1, ngrdcol
@@ -1450,7 +1369,9 @@ contains
         
       if (subcol_SILHS_q_to_micro) then ! Send SILHS predicted constituents to microp
          
-        !$acc parallel loop collapse(3) default(present)
+        ! This kernel is executed in stream 5, but waits for stream 1 and 2
+        ! because RCM_lh_out is from stream 1 and ICE_lh_out is from stream 2:
+        !$acc parallel loop collapse(3) default(present) wait(1,2) async(5)
         do k = 1, pver-top_lev+1
           do j = 1, num_subcols
             do i = 1, ngrdcol
@@ -1461,7 +1382,9 @@ contains
         end do
         
         if (ixrain > 0) then
-          !$acc parallel loop collapse(3) default(present)
+          ! This kernel is executed in stream 6, but waits for stream 2
+          ! because RAIN_lh_out is from stream 2:
+          !$acc parallel loop collapse(3) default(present) wait(2) async(6)
           do k = 1, pver-top_lev+1
             do j = 1, num_subcols
               do i = 1, ngrdcol
@@ -1472,7 +1395,9 @@ contains
         end if
         
         if (ixsnow > 0) then
-          !$acc parallel loop collapse(3) default(present)
+          ! This kernel is executed in stream 7, but waits for stream 2
+          ! because SNOW_lh_out is from stream 2:
+          !$acc parallel loop collapse(3) default(present) wait(2) async(7)
           do k = 1, pver-top_lev+1
             do j = 1, num_subcols
               do i = 1, ngrdcol
@@ -1501,7 +1426,9 @@ contains
        
       if (subcol_SILHS_n_to_micro) then ! Send SILHS predicted number conc to microp
         
-        !$acc parallel loop collapse(3) default(present)
+        ! This kernel is executed in stream 8, but waits for stream 1 and 2
+        ! because NCLW_lh_out is from stream 1 and NICE_lh_out is from stream 2:
+        !$acc parallel loop collapse(3) default(present) wait(1,2) async(8)
         do k = 1, pver-top_lev+1
           do j = 1, num_subcols
             do i = 1, ngrdcol
@@ -1512,7 +1439,9 @@ contains
         end do
         
         if (ixnumrain > 0) then
-          !$acc parallel loop collapse(3) default(present)
+          ! This kernel is executed in stream 9, but waits for stream 2
+          ! because NRAIN_lh_out is from stream 2:
+          !$acc parallel loop collapse(3) default(present) wait(2) async(9)
           do k = 1, pver-top_lev+1
             do j = 1, num_subcols
               do i = 1, ngrdcol
@@ -1523,7 +1452,9 @@ contains
         end if
         
         if (ixnumsnow > 0) then
-          !$acc parallel loop collapse(3) default(present)
+          ! This kernel is executed in stream 10, but waits for stream 2
+          ! because NSNOW_lh_out is from stream 2:
+          !$acc parallel loop collapse(3) default(present) wait(2) async(10)
           do k = 1, pver-top_lev+1
             do j = 1, num_subcols
               do i = 1, ngrdcol
@@ -1549,8 +1480,10 @@ contains
         end do
          
       endif
-       
-      !$acc parallel loop collapse(3) default(present)
+      
+      ! This kernel is executed in stream 8, because state_sc%q(:,:,ixnumliq) and
+      !  state_sc%q(:,:,ixnumice) are from stream 8
+      !$acc parallel loop collapse(3) default(present) async(8)
       do k = 1, pver-top_lev+1
         do j = 1, num_subcols
           do i = 1, ngrdcol
@@ -1558,14 +1491,7 @@ contains
             if (state_sc%q(ngrdcol*(j-1)+i,k,ixnumliq) .lt. min_num_conc) then
                 state_sc%q(ngrdcol*(j-1)+i,k,ixnumliq) = min_num_conc
             end if
-          end do
-        end do
-      end do
-       
-      !$acc parallel loop collapse(3) default(present)
-      do k = 1, pver-top_lev+1
-        do j = 1, num_subcols  
-          do i = 1, ngrdcol 
+            
             if (state_sc%q(ngrdcol*(j-1)+i,k,ixnumice) .lt. min_num_conc) then
                 state_sc%q(ngrdcol*(j-1)+i,k,ixnumice) = min_num_conc
             end if
@@ -1574,7 +1500,9 @@ contains
       end do
         
       if (ixnumrain > 0) then
-        !$acc parallel loop collapse(3) default(present)
+        ! This kernel is executed in stream 9, because state_sc%q(:,:,ixnumrain) is
+        ! from stream 9
+        !$acc parallel loop collapse(3) default(present) async(9)
         do k = 1, pver-top_lev+1
           do j = 1, num_subcols   
             do i = 1, ngrdcol   
@@ -1587,7 +1515,9 @@ contains
       endif
         
       if (ixnumsnow > 0) then
-        !$acc parallel loop collapse(3) default(present)
+        ! This kernel is executed in stream 10, because state_sc%q(:,:,ixnumsnow) is
+        ! from stream 10
+        !$acc parallel loop collapse(3) default(present) async(10)
         do k = 1, pver-top_lev+1
           do j = 1, num_subcols     
             do i = 1, ngrdcol
