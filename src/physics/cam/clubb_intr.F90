@@ -141,6 +141,7 @@ module clubb_intr
   logical  :: clubb_l_trapezoidal_rule_zm = .false.
   logical  :: clubb_l_upwind_xpyp_ta = .false.
   logical  :: clubb_l_godunov_upwind_wpxp_ta = .false.
+  logical  :: clubb_l_godunov_upwind_xpyp_ta = .false.
   logical  :: clubb_l_use_C7_Richardson = .false.
   logical  :: clubb_l_use_C11_Richardson = .false.
   logical  :: clubb_l_use_shear_Richardson = .false.
@@ -534,6 +535,7 @@ end subroutine clubb_init_cnst
                                clubb_l_rcm_supersat_adj, clubb_l_damp_wp3_Skw_squared, &
                                clubb_l_predict_upwp_vpwp, clubb_l_min_wp2_from_corr_wx, &
                                clubb_l_min_xp2_from_corr_wx, clubb_l_upwind_xpyp_ta, clubb_l_godunov_upwind_wpxp_ta, &
+                               clubb_l_godunov_upwind_xpyp_ta, &
                                clubb_l_vert_avg_closure, clubb_l_trapezoidal_rule_zt, clubb_l_trapezoidal_rule_zm, &
                                clubb_l_call_pdf_closure_twice, clubb_l_use_cloud_cover, &
                                clubb_l_diag_Lscale_from_tau, clubb_l_damp_wp2_using_em, &
@@ -694,6 +696,8 @@ end subroutine clubb_init_cnst
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_l_upwind_xpyp_ta")
     call mpi_bcast(clubb_l_godunov_upwind_wpxp_ta,   1, mpi_logical, mstrid, mpicom, ierr)
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_l_godunov_upwind_wpxp_ta")
+    call mpi_bcast(clubb_l_godunov_upwind_xpyp_ta,   1, mpi_logical, mstrid, mpicom, ierr)
+    if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_l_godunov_upwind_xpyp_ta")
     call mpi_bcast(clubb_l_vert_avg_closure,         1, mpi_logical, mstrid, mpicom, ierr)
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_l_vert_avg_closure")
     call mpi_bcast(clubb_l_trapezoidal_rule_zt,         1, mpi_logical, mstrid, mpicom, ierr)
@@ -1030,6 +1034,7 @@ end subroutine clubb_init_cnst
     clubb_config_flags%l_min_xp2_from_corr_wx = clubb_l_min_xp2_from_corr_wx
     clubb_config_flags%l_upwind_xpyp_ta = clubb_l_upwind_xpyp_ta
     clubb_config_flags%l_godunov_upwind_wpxp_ta = clubb_l_godunov_upwind_wpxp_ta
+    clubb_config_flags%l_godunov_upwind_xpyp_ta = clubb_l_godunov_upwind_xpyp_ta
     clubb_config_flags%l_vert_avg_closure = clubb_l_vert_avg_closure
     clubb_config_flags%l_trapezoidal_rule_zt = clubb_l_trapezoidal_rule_zt
     clubb_config_flags%l_trapezoidal_rule_zm = clubb_l_trapezoidal_rule_zm
@@ -4265,6 +4270,10 @@ end function diag_ustar
                                       ! differencing approximation rather than a centered 
                                       ! differencing for turbulent advection terms. 
                                       ! It affects  wpxp only.
+      l_godunov_upwind_xpyp_ta,     & ! This flag determines whether we want to use an upwind
+                                      ! differencing approximation rather than a centered
+                                      ! differencing for turbulent advection terms. It affects
+                                      ! xpyp only.
       l_use_cloud_cover,            & ! Use cloud_cover and rcm_in_layer to help boost cloud_frac
                                       ! and rcm to help increase cloudiness at coarser grid
                                       ! resolutions.
@@ -4323,6 +4332,7 @@ end function diag_ustar
                                                l_standard_term_ta, & ! Out
                                                l_partial_upwind_wp3, & ! Out
                                                l_godunov_upwind_wpxp_ta, & ! Out
+                                               l_godunov_upwind_xpyp_ta, & ! Out
                                                l_use_cloud_cover, & ! Out
                                                l_diagnose_correlations, & ! Out
                                                l_calc_w_corr, & ! Out
@@ -4370,6 +4380,7 @@ end function diag_ustar
                                                    l_standard_term_ta, & ! In
                                                    l_partial_upwind_wp3, & ! In
                                                    l_godunov_upwind_wpxp_ta, & ! In
+                                                   l_godunov_upwind_xpyp_ta, & ! In
                                                    l_use_cloud_cover, & ! In
                                                    l_diagnose_correlations, & ! In
                                                    l_calc_w_corr, & ! In
