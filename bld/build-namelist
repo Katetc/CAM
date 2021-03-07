@@ -3068,7 +3068,7 @@ if ($clubb_sgs  =~ /$TRUE/io) {
    add_default($nl, 'clubb_mult_coef');
    add_default($nl, 'clubb_Skw_denom_coef');
    add_default($nl, 'clubb_skw_max_mag');
-   add_default($nl, 'clubb_up2_vp2_factor');
+   add_default($nl, 'clubb_up2_sfc_coef');
    add_default($nl, 'clubb_C_wp2_splat');
 
    add_default($nl, 'clubb_l_brunt_vaisala_freq_moist');

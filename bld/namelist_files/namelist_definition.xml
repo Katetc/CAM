@@ -3499,11 +3499,11 @@ Default: 0.0
 Maximum magnitude of skewness allowed.
 </entry>
 
-<entry id="clubb_up2_vp2_factor" type="real" category="pblrad"
+<entry id="clubb_up2_sfc_coef" type="real" category="pblrad"
        group="clubb_params_nl" valid_values="" >
 Factor used in calculating the surface values of up2 (variance of the u wind
 component) and vp2 (variance of the v wind component).  Increasing
-clubb_up2_vp2_factor increases the values of up2 and vp2 at the surface.
+clubb_up2_sfc_coef increases the values of up2 and vp2 at the surface.
 </entry>
 
 <entry id="clubb_C_wp2_splat" type="real" category="pblrad"

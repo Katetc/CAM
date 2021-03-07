@@ -127,7 +127,7 @@ module clubb_intr
   real(r8) :: clubb_mult_coef = unset_r8
   real(r8) :: clubb_Skw_denom_coef = unset_r8
   real(r8) :: clubb_skw_max_mag = unset_r8
-  real(r8) :: clubb_up2_vp2_factor = unset_r8
+  real(r8) :: clubb_up2_sfc_coef = unset_r8
   real(r8) :: clubb_C_wp2_splat = unset_r8
   logical  :: clubb_l_brunt_vaisala_freq_moist = .false.
   logical  :: clubb_l_call_pdf_closure_twice = .false.
@@ -528,7 +528,7 @@ end subroutine clubb_init_cnst
                                clubb_lambda0_stability_coef, clubb_l_lscale_plume_centered, &
                                clubb_do_liqsupersat, clubb_do_energyfix,&
                                clubb_lmin_coef, clubb_skw_max_mag, clubb_l_stability_correct_tau_zm, &
-                               clubb_gamma_coefb, clubb_up2_vp2_factor, &
+                               clubb_gamma_coefb, clubb_up2_sfc_coef, &
                                clubb_l_use_C7_Richardson, clubb_l_use_C11_Richardson, &
                                clubb_l_use_shear_Richardson, &
                                clubb_l_brunt_vaisala_freq_moist, clubb_l_use_thvm_in_bv_freq, &
@@ -669,8 +669,8 @@ end subroutine clubb_init_cnst
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_l_stability_correct_tau_zm")
     call mpi_bcast(clubb_gamma_coefb, 1, mpi_real8,   mstrid, mpicom, ierr)
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_gamma_coefb")
-    call mpi_bcast(clubb_up2_vp2_factor, 1, mpi_real8,   mstrid, mpicom, ierr)
-    if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_up2_vp2_factor")
+    call mpi_bcast(clubb_up2_sfc_coef, 1, mpi_real8,   mstrid, mpicom, ierr)
+    if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_up2_sfc_coef")
 
     call mpi_bcast(clubb_l_use_C7_Richardson,         1, mpi_logical, mstrid, mpicom, ierr)
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_l_use_C7_Richardson")
@@ -762,7 +762,7 @@ end subroutine clubb_init_cnst
                                 em_min, &
                                 iC1, iC1b, iC2rt, iC2thl, iC2rtthl, igamma_coef, igamma_coefb, &
                                 imult_coef, ic_K10, iskw_max_mag, &
-                                iC8, iC8b, iC11, iC11b, iC4, iC14, iup2_vp2_factor, params_list
+                                iC8, iC8b, iC11, iC11b, iC4, iC14, iup2_sfc_coef, params_list
                                 
 
 
@@ -1015,7 +1015,7 @@ end subroutine clubb_init_cnst
     clubb_params(iC1)  = clubb_C1
     clubb_params(iC1b) = clubb_C1b
     clubb_params(igamma_coefb) = clubb_gamma_coefb
-    clubb_params(iup2_vp2_factor) = clubb_up2_vp2_factor
+    clubb_params(iup2_sfc_coef) = clubb_up2_sfc_coef
     clubb_params(iC4) = clubb_C4
     clubb_params(ic_K9) = clubb_c_K9
     clubb_params(inu9)  = clubb_nu9
