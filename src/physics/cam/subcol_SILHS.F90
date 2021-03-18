@@ -941,125 +941,199 @@ contains
       l_calc_weights_all_levs_itime = .false. ! subcol_utils cannot compute weighted avgs
                                               !   when the weights vary with height.   
                                               !   Don't set to true until this is fixed!!
-      
-      !----------------
-      ! Loop over all the active grid columns in the chunk
-      !----------------
+
          
-      do i = 1, ngrdcol
-        ! Setup the CLUBB vertical grid object. This must be done for each
-        ! column as the z-distance between hybrid pressure levels can 
-        ! change easily.
-        ! Define the CLUBB momentum grid (in height, units of m)
-        do k = 1, pverp-top_lev+1
+      ! Setup the CLUBB vertical grid object. This must be done for each
+      ! column as the z-distance between hybrid pressure levels can 
+      ! change easily.
+      ! Define the CLUBB momentum grid (in height, units of m)
+      do k = 1, pverp-top_lev+1
+        do i = 1, ngrdcol
           zi_g(i,k) = state%zi(i,pverp-k+1)-state%zi(i,pverp)
         end do
+      end do
         
-        ! Define the CLUBB thermodynamic grid (in units of m)
-        do k = 1, pver-top_lev+1
+      
+      ! Define the CLUBB thermodynamic grid (in units of m)
+      do k = 1, pver-top_lev+1
+        do i = 1, ngrdcol
           zt_g(i,k+1) = state%zm(i,pver-k+1)-state%zi(i,pverp)
+          
+          ! Thermodynamic ghost point is below surface
+          zt_g(i,1) = -1._r8*zt_g(i,2)
         end do
-       
-        ! Thermodynamic ghost point is below surface
-        zt_g(i,1) = -1._r8*zt_g(i,2)
+      end do
          
-        ! Calculate the distance between grid levels on the host model grid,
-        ! using host model grid indices.
-        do k = top_lev, pver
+      ! Calculate the distance between grid levels on the host model grid,
+      ! using host model grid indices.
+      do k = top_lev, pver
+        do i = 1, ngrdcol
           dz_g(i,k) = state%zi(i,k)-state%zi(i,k+1)
         end do
+      end do
         
-        ! Inverse delta_zm is required for the 3-level L-scale averaging
-        do k = 1, pver-top_lev+1
+      ! Inverse delta_zm is required for the 3-level L-scale averaging
+      do k = 1, pver-top_lev+1
+        do i = 1, ngrdcol
           delta_zm(i,k+1) = state%zi(i,pverp-k)-state%zi(i,pverp-k+1)
+          
+          ! Handle CLUBB sub-sfc ghost point as done in clubb grid_class.F90
+          delta_zm(i,1) = delta_zm(i,2) 
         end do
-        ! Handle CLUBB sub-sfc ghost point as done in clubb grid_class.F90
-        delta_zm(i,1) = delta_zm(i,2) 
+      end do
        
-        ! Compute dry static density on CLUBB vertical grid
-        do k = 1, pver-top_lev+1
+      ! Compute dry static density on CLUBB vertical grid
+      do k = 1, pver-top_lev+1
+        do i = 1, ngrdcol
           rho_ds_zt(i,k+1) = (1._r8/gravit)*state%pdel(i,pver-k+1)/dz_g(i,pver-k+1)
+          
+          ! CLUBB ghost point under the surface
+          rho_ds_zt(i,1) = rho_ds_zt(i,2)
         end do
-        ! CLUBB ghost point under the surface
-        rho_ds_zt(i,1) = rho_ds_zt(i,2)
+      end do
        
-        ! Set up hydromet array, flipped from CAM vert grid to CLUBB
-        do k = 1, pver-top_lev+1
-          if ( iirr > 0 ) then
-            ! If ixrain and family are greater than zero, then MG2 is
-            ! being used, and rain and snow are part of state. Otherwise,
-            ! diagnostic rain and snow from MG1 are used in hydromet.
-            if (ixrain > 0) then
+      ! Set up hydromet array, flipped from CAM vert grid to CLUBB
+      if ( iirr > 0 ) then
+        ! If ixrain and family are greater than zero, then MG2 is
+        ! being used, and rain and snow are part of state. Otherwise,
+        ! diagnostic rain and snow from MG1 are used in hydromet.
+        if (ixrain > 0) then
+          do k = 1, pver-top_lev+1
+            do i = 1, ngrdcol
               hydromet(i,k+1,iirr) = state%q(i,pver-k+1,ixrain)
-            else
+            end do
+          end do
+        else
+          do k = 1, pver-top_lev+1
+            do i = 1, ngrdcol
               hydromet(i,k+1,iirr) = qrain(i,pver-k+1)
-            endif
-          endif
-          if ( iiNr > 0 ) then
-            if (ixnumrain > 0) then
+            end do
+          end do
+        endif
+      endif
+      
+      if ( iiNr > 0 ) then
+        if (ixnumrain > 0) then
+          do k = 1, pver-top_lev+1
+            do i = 1, ngrdcol
               hydromet(i,k+1,iiNr) = state%q(i,pver-k+1,ixnumrain)
-            else
+            end do
+          end do
+        else
+          do k = 1, pver-top_lev+1
+            do i = 1, ngrdcol
               hydromet(i,k+1,iiNr) = nrain(i,pver-k+1)
-            endif
-          endif
-          if ( iirs > 0 ) then
-            if (ixsnow > 0) then
+            end do
+          end do
+        endif
+      endif
+          
+      if ( iirs > 0 ) then
+        if (ixsnow > 0) then
+          do k = 1, pver-top_lev+1
+            do i = 1, ngrdcol
               hydromet(i,k+1,iirs) = state%q(i,pver-k+1,ixsnow)
-            else
+            end do
+          end do
+        else
+          do k = 1, pver-top_lev+1
+            do i = 1, ngrdcol
               hydromet(i,k+1,iirs) = qsnow(i,pver-k+1)
-            endif
-          endif
-          if ( iiNs > 0 ) then
-            if (ixnumsnow > 0) then
+            end do
+          end do
+        endif
+      endif
+          
+      if ( iiNs > 0 ) then
+        if (ixnumsnow > 0) then
+          do k = 1, pver-top_lev+1
+            do i = 1, ngrdcol
               hydromet(i,k+1,iiNs) = state%q(i,pver-k+1,ixnumsnow)
-            else
+            end do
+          end do
+        else
+          do k = 1, pver-top_lev+1
+            do i = 1, ngrdcol
               hydromet(i,k+1,iiNs) = nsnow(i,pver-k+1)
-            endif
-          endif
-          if ( iiri > 0 ) then
+            end do
+          end do
+        endif
+      endif
+          
+      if ( iiri > 0 ) then
+        do k = 1, pver-top_lev+1
+          do i = 1, ngrdcol
             hydromet(i,k+1,iiri) = state%q(i,pver-k+1,ixcldice)
-          endif
-          if ( iiNi > 0 ) then
-            hydromet(i,k+1,iiNi) = state%q(i,pver-k+1,ixnumice)
-          endif
-   
-          Ncm(i,k+1) = state%q(i,pver-k+1,ixnumliq)
-
+          end do
         end do
-
-        do k = 1, hydromet_dim ! ghost point below the surface
+      endif
+          
+      if ( iiNi > 0 ) then
+        do k = 1, pver-top_lev+1
+          do i = 1, ngrdcol
+            hydromet(i,k+1,iiNi) = state%q(i,pver-k+1,ixnumice)
+          end do
+        end do
+      endif
+      
+      do k = 1, hydromet_dim ! ghost point below the surface
+        do i = 1, ngrdcol
           hydromet(i,1,k) = hydromet(i,2,k)                  
         end do
+      end do
+   
+      do k = 1, pver-top_lev+1
+        do i = 1, ngrdcol
+          Ncm(i,k+1) = state%q(i,pver-k+1,ixnumliq)
+          Ncm(i,1) = Ncm(i,2)
+       end do
+      end do
        
-        Ncm(i,1) = Ncm(i,2)
-       
-        ! Convert from CAM vertical grid to CLUBB
-        do k = 1, pverp-top_lev+1 
+      ! Convert from CAM vertical grid to CLUBB
+      do k = 1, pverp-top_lev+1 
+        do i = 1, ngrdcol
           rcm_in(i,k)  = rcm(i,pverp-k+1)
           ice_supersat_frac_in(i,k) = ice_supersat_frac(i,pverp-k+1)
         end do
-        do k = 1, pver-top_lev+1
+      end do
+        
+      
+      do k = 1, pver-top_lev+1
+        do i = 1, ngrdcol
           cld_frac_in(i,k+1) = alst(i,pver-k+1)
+          cld_frac_in(i,1) = cld_frac_in(i,2) ! Ghost pt below surface
         end do
-        cld_frac_in(i,1) = cld_frac_in(i,2) ! Ghost pt below surface
-        ! Calculate a clubb-specific exner function
-        ! (This is grid mean, as pressure levels do not change in 
-        !  the subcolumn state)
-        invs_exner(i,:) = ((state%pmid(i,:)/p0_clubb)**(rair/cpair))
-       
-        ! Call setup_pdf_parameters to get the CLUBB PDF ready for SILHS
-        ! Compute Num concentration of cloud nuclei
-        Nc_in_cloud(i,:) = Ncm(i,:) / max( cld_frac_in(i,:), cloud_frac_min )
+      end do
+        
+      ! Calculate a clubb-specific exner function
+      ! (This is grid mean, as pressure levels do not change in 
+      !  the subcolumn state)
+      do k = 1, pver-top_lev+1
+        do i = 1, ngrdcol
+          invs_exner(i,k) = ((state%pmid(i,k)/p0_clubb)**(rair/cpair))
+        end do
+      end do
+     
+      ! Call setup_pdf_parameters to get the CLUBB PDF ready for SILHS
+      ! Compute Num concentration of cloud nuclei
+      do k = 1, pverp-top_lev+1 
+        do i = 1, ngrdcol
+          Nc_in_cloud(i,k) = Ncm(i,k) / max( cld_frac_in(i,k), cloud_frac_min )
+        end do
+      end do
 
-        ! The variable wphydrometp is only used when l_calc_w_corr is enabled.
-        ! The l_calc_w_corr flag is turned off by default, so wphydrometp will
-        ! simply be set to 0 to simplify matters.
-        wphydrometp = 0.0_r8
+      ! The variable wphydrometp is only used when l_calc_w_corr is enabled.
+      ! The l_calc_w_corr flag is turned off by default, so wphydrometp will
+      ! simply be set to 0 to simplify matters.
+      wphydrometp = 0.0_r8
 
-        do k = 1, pverp-top_lev+1
+      do k = 1, pverp-top_lev+1
+        do i = 1, ngrdcol
           khzm(i,k) = khzm_in(i,pverp-k+1)
         end do
+      end do
        
+      do i = 1, ngrdcol
         ! make the call
         call setup_pdf_parameters_api( pverp-top_lev+1, pdf_dim, ztodt, &                 ! In
                                        Nc_in_cloud(i,:), rcm_in(i,:), cld_frac_in(i,:), khzm(i,:), &          ! In
@@ -1079,42 +1153,55 @@ contains
                                        corr_array_1(i,:,:,:), corr_array_2(i,:,:,:), &                      ! Out
                                        corr_cholesky_mtx_1(i,:,:,:), corr_cholesky_mtx_2(i,:,:,:), &        ! Out
                                        hydromet_pdf_params(i,:) )                              ! Out
-
-        ! In order for Lscale to be used properly, it needs to be passed out of
-        ! advance_clubb_core, saved to the pbuf, and then pulled out of the
-        ! pbuf for use here.  The profile of Lscale is passed into subroutine
-        ! generate_silhs_sample_api for use in calculating the vertical
-        ! correlation coefficient.  Rather than output Lscale directly, its
-        ! value can be calculated from other fields that are already output to
-        ! pbuf.  The equation relating Lscale to eddy diffusivity is:
-        !
-        ! Kh = c_K * Lscale * sqrt( TKE ).
-        !
-        ! Both Kh and TKE are written to the pbuf, and c_K is easily extracted
-        ! from CLUBB's tunable parameters.  The equation for Lscale is:
-        !
-        ! Lscale = Kh / ( c_K * sqrt( TKE ) ).
-        !
-        ! Since Kh and TKE are output on momentum (interface) grid levels, the
-        ! resulting calculation of Lscale is also found on momentum levels.  It
-        ! needs to be interpolated back to thermodynamic (midpoint) grid levels
-        ! for further use.
-        do k = 1, pverp-top_lev+1
+      end do
+      
+      ! In order for Lscale to be used properly, it needs to be passed out of
+      ! advance_clubb_core, saved to the pbuf, and then pulled out of the
+      ! pbuf for use here.  The profile of Lscale is passed into subroutine
+      ! generate_silhs_sample_api for use in calculating the vertical
+      ! correlation coefficient.  Rather than output Lscale directly, its
+      ! value can be calculated from other fields that are already output to
+      ! pbuf.  The equation relating Lscale to eddy diffusivity is:
+      !
+      ! Kh = c_K * Lscale * sqrt( TKE ).
+      !
+      ! Both Kh and TKE are written to the pbuf, and c_K is easily extracted
+      ! from CLUBB's tunable parameters.  The equation for Lscale is:
+      !
+      ! Lscale = Kh / ( c_K * sqrt( TKE ) ).
+      !
+      ! Since Kh and TKE are output on momentum (interface) grid levels, the
+      ! resulting calculation of Lscale is also found on momentum levels.  It
+      ! needs to be interpolated back to thermodynamic (midpoint) grid levels
+      ! for further use.
+      do k = 1, pverp-top_lev+1
+        do i = 1, ngrdcol
           tke(i,k) = tke_in(i,pverp-k+1)
         end do
-        Lscale_zm(i,:) = khzm(i,:) / ( c_K * sqrt( max( tke(i,:), em_min ) ) )
+      end do
+      
+      do k = 1, pverp-top_lev+1
+        do i = 1, ngrdcol
+          Lscale_zm(i,k) = khzm(i,k) / ( c_K * sqrt( max( tke(i,k), em_min ) ) )
+        end do
+      end do
 
-       
+      do i = 1, ngrdcol
         Lscale(i,1) = Lscale_zm(i,1) + ( Lscale_zm(i,2) - Lscale_zm(i,1) ) &
                                      * ( zt_g(i,1) - zi_g(i,1) ) / ( zi_g(i,2) - zi_g(i,1) )
-       
-        do k = 2, pverp-top_lev+1
+      end do
+     
+      do k = 2, pverp-top_lev+1
+        do i = 1, ngrdcol
           Lscale(i,k) = Lscale_zm(i,k-1) + ( Lscale_zm(i,k) - Lscale_zm(i,k-1) ) &
                                          * ( zt_g(i,k) - zi_g(i,k-1) ) / ( zi_g(i,k) - zi_g(i,k-1) )
         end do
-       
-        Lscale(i,:) = max( Lscale(i,:), 0.01_r8 )
-        
+      end do
+     
+      do k = 2, pverp-top_lev+1
+        do i = 1, ngrdcol
+          Lscale(i,:) = max( Lscale(i,:), 0.01_r8 )
+        end do
       end do
       
       !$acc data create( X_mixt_comp_all_levs, X_nl_all_levs, lh_rc_clipped, lh_Nc_clipped, &
@@ -1176,7 +1263,6 @@ contains
       !-------------------------------------------------------------------------
       !            Convert from CLUBB vertical grid to CAM grid
       !------------------------------------------------------------------------
-       
       ! This kernel is executed in stream 1:
       !$acc parallel loop collapse(3) default(present) async(1)
       do k = top_lev, pverp
@@ -1334,7 +1420,6 @@ contains
       !---------------------------------------------------
       !            Updating state variables
       !---------------------------------------------------
-  
       ! Code to update the state variables for interactive runs
       ! This kernel is executed in stream 3, but waits for stream 1
       ! because THL_lh_out and RCM_lh_out come from stream 1:
