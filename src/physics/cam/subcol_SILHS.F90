@@ -693,14 +693,14 @@ contains
       type(hydromet_pdf_parameter), dimension(state%ngrdcol, pverp-top_lev+1) :: &
                                     hydromet_pdf_params  ! Hydrometeor PDF parameters
                                     
-      real(r8), dimension(state%ngrdcol, pdf_dim, pdf_dim, pverp-top_lev+1) :: &       
+      real(r8), dimension(state%ngrdcol, pverp-top_lev+1, pdf_dim, pdf_dim) :: &       
                           corr_array_1, corr_array_2  ! Correlation matrix for pdf components
                                     
-      real(r8), dimension(state%ngrdcol, pdf_dim, pverp-top_lev+1) :: &
+      real(r8), dimension(state%ngrdcol, pverp-top_lev+1, pdf_dim) :: &
                           mu_x_1, mu_x_2, &    ! Mean array for PDF components
                           sigma_x_1, sigma_x_2 ! Std dev arr for PDF components
                                     
-      real(r8), dimension(state%ngrdcol, pdf_dim, pdf_dim, pverp-top_lev+1) :: &       
+      real(r8), dimension(state%ngrdcol, pverp-top_lev+1, pdf_dim, pdf_dim) :: &       
                           corr_cholesky_mtx_1, corr_cholesky_mtx_2  ! Transposed corr cholesky mtx
                                     
       real(r8), dimension(state%ngrdcol, pverp-top_lev+1) :: Nc_in_cloud
