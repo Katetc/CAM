@@ -35,6 +35,29 @@ module setup_clubb_pdf_params
   ! component cloud fraction.
   logical, parameter, private :: &
     l_interp_prescribed_params = .false.
+    
+  ! The component correlations of w and r_t and the component correlations of
+  ! w and theta_l must both be 0 when using the ADG1 PDF.  In other words, w
+  ! and r_t (theta_l) have overall covariance w'r_t' (w'theta_l'), but the
+  ! individual component covariance and correlation are defined to be 0.
+  ! Since the component covariances (or correlations) of w and chi (old s) and
+  ! of w and eta (old t) are based on the covariances (or correlations) of w
+  ! and r_t and of w and theta_l, the individual component correlation and
+  ! covariance of w and chi, as well of as w and eta, are defined to be 0.
+  !
+  ! The PDF component correlation of w and x, calculated as part of the PDF
+  ! parameters, comes out to be 0 (within numerical roundoff) when the ADG1
+  ! PDF is used.  However, when l_fix_w_chi_eta_correlations is enabled, the
+  ! component correlations of PDF variables are specified, and the values
+  ! that were calculated as part of the PDF parameters are ignored in the
+  ! correlation array.  When this happens, and when the ADG1 PDF is selected,
+  ! the l_follow_ADG1_PDF_standards flag can be used to force the component
+  ! correlations of w and x to have a value of 0, following the ADG1 standard,
+  ! rather than whatever value might be specified in the correlation array.
+  !
+  ! Note:  the ADG2 PDF follows the same standards as the ADG1 PDF.
+  logical, parameter :: &
+    l_follow_ADG1_PDF_standards = .true.
 
   contains
 
@@ -121,8 +144,7 @@ module setup_clubb_pdf_params
         core_rknd        ! Variable(s)
 
     use matrix_operations, only: &
-        Cholesky_factor, & ! Procedure(s)
-        mirror_lower_triangular_matrix
+        Cholesky_factor  ! Procedure(s)
 
     use stats_type_utilities, only: &
 !        stat_update_var,    & ! Procedure(s)
@@ -237,8 +259,6 @@ module setup_clubb_pdf_params
       mu_w_2,       & ! Mean of w (2nd PDF component)                    [m/s]
       mu_chi_1,     & ! Mean of chi (old s) (1st PDF component)          [kg/kg]
       mu_chi_2,     & ! Mean of chi (old s) (2nd PDF component)          [kg/kg]
-      varnce_w_1,   & ! Standard deviation of w (1st PDF component)      [m/s]
-      varnce_w_2,   & ! Standard deviation of w (2nd PDF component)      [m/s]
       sigma_w_1,    & ! Standard deviation of w (1st PDF component)      [m/s]
       sigma_w_2,    & ! Standard deviation of w (2nd PDF component)      [m/s]
       sigma_chi_1,  & ! Standard deviation of chi (1st PDF component)    [kg/kg]
@@ -290,7 +310,7 @@ module setup_clubb_pdf_params
     real( kind = core_rknd ), dimension(pdf_dim) :: &
       corr_array_scaling
 
-    real( kind = core_rknd ), dimension(ngrdcol,pdf_dim,nz) :: &
+    real( kind = core_rknd ), dimension(ngrdcol,nz,pdf_dim) :: &
       sigma2_on_mu2_ip_1, & ! Ratio array sigma_hm_1^2/mu_hm_1^2             [-]
       sigma2_on_mu2_ip_2    ! Ratio array sigma_hm_2^2/mu_hm_2^2             [-]
 
@@ -354,8 +374,6 @@ module setup_clubb_pdf_params
       mu_w_2(j,:)       = pdf_params(j)%w_2
       mu_chi_1(j,:)     = pdf_params(j)%chi_1
       mu_chi_2(j,:)     = pdf_params(j)%chi_2
-      varnce_w_1(j,:)   = pdf_params(j)%varnce_w_1
-      varnce_w_2(j,:)   = pdf_params(j)%varnce_w_2
       sigma_w_1(j,:)    = sqrt( pdf_params(j)%varnce_w_1 )
       sigma_w_2(j,:)    = sqrt( pdf_params(j)%varnce_w_2 )
       sigma_chi_1(j,:)  = pdf_params(j)%stdev_chi_1
@@ -386,8 +404,8 @@ module setup_clubb_pdf_params
     ! Calculate the overall variance of vertical velocity on thermodynamic
     ! levels.
     wp2_zt(:,:) = compute_variance_binormal( wm_zt(:,:), mu_w_1(:,:), mu_w_2(:,:), &
-                                            sigma_w_1(:,:), sigma_w_2(:,:), &
-                                            mixt_frac(:,:) )
+                                             sigma_w_1(:,:), sigma_w_2(:,:), &
+                                             mixt_frac(:,:) )
 
     ! Note on hydrometeor PDF shape:
     ! To use a single lognormal over the entire grid level, turn off the
@@ -423,9 +441,9 @@ module setup_clubb_pdf_params
 
     else
 
-      precip_frac(:,:)     = one
-      precip_frac_1(:,:)   = one
-      precip_frac_2(:,:)   = one
+      precip_frac(:,:)   = one
+      precip_frac_1(:,:) = one
+      precip_frac_2(:,:) = one
       precip_frac_tol(:) = cloud_frac_min
 
     end if
@@ -435,17 +453,17 @@ module setup_clubb_pdf_params
     ! based on a prescribed value, and whether the value is constant or varying
     ! over the grid level.
     if ( .not. l_const_Nc_in_cloud ) then
-       ! Ncn varies at each vertical level.
-       do j = 1, ngrdcol
-         const_Ncnp2_on_Ncnm2(j,:) = Ncnp2_on_Ncnm2
-       end do
+      ! Ncn varies at each vertical level.
+      do j = 1, ngrdcol
+       const_Ncnp2_on_Ncnm2(j,:) = Ncnp2_on_Ncnm2
+      end do
        
-       stdev_const_Ncnp2_on_Ncnm2(:,:) = stdev_L2N( const_Ncnp2_on_Ncnm2(:,:) )
+      stdev_const_Ncnp2_on_Ncnm2(:,:) = stdev_L2N( const_Ncnp2_on_Ncnm2(:,:) )
        
     else  ! l_const_Nc_in_cloud
-       ! Ncn is constant at each vertical level.
-       const_Ncnp2_on_Ncnm2(:,:)       = zero
-       stdev_const_Ncnp2_on_Ncnm2(:,:) = zero
+      ! Ncn is constant at each vertical level.
+      const_Ncnp2_on_Ncnm2(:,:)       = zero
+      stdev_const_Ncnp2_on_Ncnm2(:,:) = zero
     end if
 
     do j = 1, ngrdcol
@@ -565,7 +583,7 @@ module setup_clubb_pdf_params
         ! covariance involving Ncn also has a value of 0 at that grid level.
         do k = 1, nz, 1
           if ( Ncnm(j,k) <= Ncn_tol ) then
-             wpNcnp_zt(j,k) = zero
+            wpNcnp_zt(j,k) = zero
           end if
         end do ! k = 1, nz, 1
 
@@ -577,42 +595,42 @@ module setup_clubb_pdf_params
     if ( l_stats_samp ) then
 
       do j = 1, ngrdcol
-         ! Switch back to using stat_update_var once the code is generalized
-         ! to pass in the number of vertical levels.
-         if ( iprecip_frac > 0 ) then
-            ! Overall precipitation fraction.
-            ! call stat_update_var( iprecip_frac, precip_frac, stats_zt )
-            do k = 1, nz, 1
-               call stat_update_var_pt( iprecip_frac, k, precip_frac(j,k), &
-                                        stats_zt )
-            end do ! k = 1, nz, 1
-         end if
+        ! Switch back to using stat_update_var once the code is generalized
+        ! to pass in the number of vertical levels.
+        if ( iprecip_frac > 0 ) then
+          ! Overall precipitation fraction.
+          ! call stat_update_var( iprecip_frac, precip_frac, stats_zt )
+          do k = 1, nz, 1
+            call stat_update_var_pt( iprecip_frac, k, precip_frac(j,k), &
+                                     stats_zt )
+          end do ! k = 1, nz, 1
+       end if
 
-         if ( iprecip_frac_1 > 0 ) then
-            ! Precipitation fraction in PDF component 1.
-            ! call stat_update_var( iprecip_frac_1, precip_frac_1, stats_zt )
-            do k = 1, nz, 1
-               call stat_update_var_pt( iprecip_frac_1, k, precip_frac_1(j,k), &
-                                        stats_zt )
-            end do ! k = 1, nz, 1
-         end if
+        if ( iprecip_frac_1 > 0 ) then
+          ! Precipitation fraction in PDF component 1.
+          ! call stat_update_var( iprecip_frac_1, precip_frac_1, stats_zt )
+          do k = 1, nz, 1
+            call stat_update_var_pt( iprecip_frac_1, k, precip_frac_1(j,k), &
+                                     stats_zt )
+          end do ! k = 1, nz, 1
+        end if
 
-         if ( iprecip_frac_2 > 0 ) then
-            ! Precipitation fraction in PDF component 2.
-            ! call stat_update_var( iprecip_frac_2, precip_frac_2, stats_zt )
-            do k = 1, nz, 1
-               call stat_update_var_pt( iprecip_frac_2, k, precip_frac_2(j,k), &
-                                        stats_zt )
-            end do ! k = 1, nz, 1
-         end if
+        if ( iprecip_frac_2 > 0 ) then
+          ! Precipitation fraction in PDF component 2.
+          ! call stat_update_var( iprecip_frac_2, precip_frac_2, stats_zt )
+          do k = 1, nz, 1
+            call stat_update_var_pt( iprecip_frac_2, k, precip_frac_2(j,k), &
+                                     stats_zt )
+          end do ! k = 1, nz, 1
+        end if
 
-         if ( iNcnm > 0 ) then
-            ! Mean simplified cloud nuclei concentration (overall).
-            ! call stat_update_var( iNcnm, Ncnm, stats_zt )
-            do k = 1, nz, 1
-               call stat_update_var_pt( iNcnm, k, Ncnm(j,k), stats_zt )
-            end do ! k = 1, nz, 1
-         end if
+        if ( iNcnm > 0 ) then
+          ! Mean simplified cloud nuclei concentration (overall).
+          ! call stat_update_var( iNcnm, Ncnm, stats_zt )
+          do k = 1, nz, 1
+            call stat_update_var_pt( iNcnm, k, Ncnm(j,k), stats_zt )
+          end do ! k = 1, nz, 1
+        end if
       end do
     end if
 
@@ -626,8 +644,8 @@ module setup_clubb_pdf_params
                              precip_frac_tol(:),                            & ! Intent(in)
                              mu_w_1(:,:),                                   & ! Intent(in)
                              mu_w_2(:,:),                                   & ! Intent(in)
-                             varnce_w_1(:,:),                               & ! Intent(in)
-                             varnce_w_2(:,:),                               & ! Intent(in)
+                             sigma_w_1(:,:),                                & ! Intent(in)
+                             sigma_w_1(:,:),                                & ! Intent(in)
                              mu_chi_1(:,:),                                 & ! Intent(in)
                              mu_chi_2(:,:),                                 & ! Intent(in)
                              sigma_chi_1(:,:),                              & ! Intent(in)
@@ -672,23 +690,23 @@ module setup_clubb_pdf_params
 
           if ( rcm(j,k) > rc_tol ) then
 
-             call diagnose_correlations( pdf_dim, corr_array_n_cloud, & ! In
-                                         l_calc_w_corr, &               ! In
-                                         corr_array_1_n(j,k,:,:) )        ! Out
+            call diagnose_correlations( pdf_dim, corr_array_n_cloud, & ! In
+                                        l_calc_w_corr, &               ! In
+                                        corr_array_1_n(j,k,:,:) )      ! Out
 
-             call diagnose_correlations( pdf_dim, corr_array_n_cloud, & ! In
-                                         l_calc_w_corr, &               ! In
-                                         corr_array_2_n(j,k,:,:) )        ! Out
+            call diagnose_correlations( pdf_dim, corr_array_n_cloud, & ! In
+                                        l_calc_w_corr, &               ! In
+                                        corr_array_2_n(j,k,:,:) )      ! Out
 
-          else
+         else
 
-             call diagnose_correlations( pdf_dim, corr_array_n_below, & ! In
-                                         l_calc_w_corr, &               ! In
-                                         corr_array_1_n(j,k,:,:) )        ! Out
+            call diagnose_correlations( pdf_dim, corr_array_n_below, & ! In
+                                        l_calc_w_corr, &               ! In
+                                        corr_array_1_n(j,k,:,:) )      ! Out
 
-             call diagnose_correlations( pdf_dim, corr_array_n_below, & ! In
-                                         l_calc_w_corr, &               ! In
-                                         corr_array_2_n(j,k,:,:) )        ! Out
+            call diagnose_correlations( pdf_dim, corr_array_n_below, & ! In
+                                        l_calc_w_corr, &               ! In
+                                        corr_array_2_n(j,k,:,:) )      ! Out
 
           end if
 
@@ -807,20 +825,6 @@ module setup_clubb_pdf_params
                                    precip_frac(:,:), precip_frac_1(:,:), & ! In
                                    precip_frac_2(:,:),              & ! In
                                    hydromet_pdf_params(:,:)         ) ! Out
-
-    !!! Setup PDF parameters loop.
-    ! Loop over all model thermodynamic level above the model lower boundary.
-    ! Now also including "model lower boundary" -- Eric Raut Aug 2013
-    ! Now not  including "model lower boundary" -- Eric Raut Aug 2014
-
-    ! For ease of use later in the code, we make the correlation arrays
-    ! symmetrical
-    do k = 2, nz, 1
-      do j = 1, ngrdcol
-        call mirror_lower_triangular_matrix( pdf_dim, corr_array_1_n(j,k,:,:) )
-        call mirror_lower_triangular_matrix( pdf_dim, corr_array_2_n(j,k,:,:) )
-      end do
-    end do
     
     ! Interpolate the overall variance of a hydrometeor, <hm'^2>, to its home on
     ! momentum grid levels.
@@ -849,8 +853,8 @@ module setup_clubb_pdf_params
 !          call stat_update_var( irtp2_from_chi, zt2zm( rtp2_zt_from_chi ), &
 !                                stats_zm )
           do k = 1, nz, 1
-             call stat_update_var_pt( irtp2_from_chi, k, zt2zm( rtp2_zt_from_chi, k ), &
-                                      stats_zm )
+            call stat_update_var_pt( irtp2_from_chi, k, zt2zm( rtp2_zt_from_chi, k ), &
+                                     stats_zm )
           end do ! k = 1, nz, 1
         end do
         
@@ -891,7 +895,7 @@ module setup_clubb_pdf_params
                                  precip_frac_1, precip_frac_2,  & ! Intent(in)
                                  precip_frac_tol,               & ! Intent(in)
                                  w_1, w_2,                      & ! Intent(in)
-                                 varnce_w_1, varnce_w_2,        & ! Intent(in)
+                                 stdev_w_1, stdev_w_2,          & ! Intent(in)
                                  chi_1, chi_2,                  & ! Intent(in)
                                  stdev_chi_1, stdev_chi_2,      & ! Intent(in)
                                  stdev_eta_1, stdev_eta_2,      & ! Intent(in)
@@ -965,8 +969,8 @@ module setup_clubb_pdf_params
     real( kind = core_rknd ), dimension(ngrdcol,nz), intent(in) :: &  
       w_1,         & ! Mean of w (1st PDF component)                  [m/s]
       w_2,         & ! Mean of w (2nd PDF component)                  [m/s]
-      varnce_w_1,  & ! Variance of w (1st PDF component)              [m^2/s^2]
-      varnce_w_2,  & ! Variance of w (2nd PDF component)              [m^2/s^2]
+      stdev_w_1,  & ! Variance of w (1st PDF component)              [m^2/s^2]
+      stdev_w_2,  & ! Variance of w (2nd PDF component)              [m^2/s^2]
       chi_1,       & ! Mean of chi (1st PDF component)                [kg/kg]
       chi_2,       & ! Mean of chi (2nd PDF component)                [kg/kg]
       stdev_chi_1, & ! Standard deviation of chi (1st PDF component)  [kg/kg]
@@ -997,7 +1001,7 @@ module setup_clubb_pdf_params
       hm_1, & ! Mean of a precip. hydrometeor (1st PDF component)   [units vary]
       hm_2    ! Mean of a precip. hydrometeor (2nd PDF component)   [units vary]
 
-    real( kind = core_rknd ), dimension(ngrdcol,pdf_dim,nz), intent(out) :: &
+    real( kind = core_rknd ), dimension(ngrdcol,nz,pdf_dim), intent(out) :: &
       sigma_hm_1_sqd_on_mu_hm_1_sqd, & ! Ratio sigma_hm_1^2 / mu_hm_1^2      [-]
       sigma_hm_2_sqd_on_mu_hm_2_sqd    ! Ratio sigma_hm_2^2 / mu_hm_2^2      [-]
 
@@ -1007,10 +1011,6 @@ module setup_clubb_pdf_params
 
 
     !!! Initialize output variables.
-    mu_x_1(:,:,:)     = zero
-    mu_x_2(:,:,:)     = zero
-    sigma_x_1(:,:,:)  = zero
-    sigma_x_2(:,:,:)  = zero
     hm_1(:,:,:)       = zero
     hm_2(:,:,:)       = zero
     sigma_hm_1_sqd_on_mu_hm_1_sqd(:,:,:) = zero
@@ -1028,10 +1028,10 @@ module setup_clubb_pdf_params
     mu_x_2(:,:,iiPDF_w) = w_2(:,:)
 
     ! Standard deviation of vertical velocity, w, in PDF component 1.
-    sigma_x_1(:,:,iiPDF_w) = sqrt( varnce_w_1(:,:) )
+    sigma_x_1(:,:,iiPDF_w) = stdev_w_1(:,:)
 
     ! Standard deviation of vertical velocity, w, in PDF component 2.
-    sigma_x_2(:,:,iiPDF_w) = sqrt( varnce_w_2(:,:) )
+    sigma_x_2(:,:,iiPDF_w) = stdev_w_2(:,:)
 
 
     !!! Extended liquid water mixing ratio, chi.
@@ -1088,31 +1088,31 @@ module setup_clubb_pdf_params
     ! in PDF component 1.
     if ( .not. l_const_Nc_in_cloud ) then
 
-       ! Ncn varies in both PDF components.
-       sigma_x_1(:,:,iiPDF_Ncn) = sqrt( Ncnp2_on_Ncnm2 ) * Ncnm(:,:)
+      ! Ncn varies in both PDF components.
+      sigma_x_1(:,:,iiPDF_Ncn) = sqrt( Ncnp2_on_Ncnm2 ) * Ncnm(:,:)
 
-       sigma_x_2(:,:,iiPDF_Ncn) = sqrt( Ncnp2_on_Ncnm2 ) * Ncnm(:,:)
+      sigma_x_2(:,:,iiPDF_Ncn) = sqrt( Ncnp2_on_Ncnm2 ) * Ncnm(:,:)
 
-       ! Ncn is not an official hydrometeor.  However, both the
-       ! sigma_hm_1_sqd_on_mu_hm_1_sqd and sigma_hm_2_sqd_on_mu_hm_2_sqd arrays
-       ! have size pdf_dim, and both sigma_Ncn_1^2/mu_Ncn_1^2 and
-       ! sigma_Ncn_2^2/mu_Ncn_2^2 need to be output as part of these arrays.
-       sigma_hm_1_sqd_on_mu_hm_1_sqd(:,iiPDF_Ncn,:) = Ncnp2_on_Ncnm2
-       sigma_hm_2_sqd_on_mu_hm_2_sqd(:,iiPDF_Ncn,:) = Ncnp2_on_Ncnm2
+      ! Ncn is not an official hydrometeor.  However, both the
+      ! sigma_hm_1_sqd_on_mu_hm_1_sqd and sigma_hm_2_sqd_on_mu_hm_2_sqd arrays
+      ! have size pdf_dim, and both sigma_Ncn_1^2/mu_Ncn_1^2 and
+      ! sigma_Ncn_2^2/mu_Ncn_2^2 need to be output as part of these arrays.
+      sigma_hm_1_sqd_on_mu_hm_1_sqd(:,:,iiPDF_Ncn) = Ncnp2_on_Ncnm2
+      sigma_hm_2_sqd_on_mu_hm_2_sqd(:,:,iiPDF_Ncn) = Ncnp2_on_Ncnm2
 
     else ! l_const_Nc_in_cloud
 
-       ! Ncn is constant in both PDF components.
-       sigma_x_1(:,:,iiPDF_Ncn) = zero
+      ! Ncn is constant in both PDF components.
+      sigma_x_1(:,:,iiPDF_Ncn) = zero
 
-       sigma_x_2(:,:,iiPDF_Ncn) = zero
+      sigma_x_2(:,:,iiPDF_Ncn) = zero
 
-       ! Ncn is not an official hydrometeor.  However, both the
-       ! sigma_hm_1_sqd_on_mu_hm_1_sqd and sigma_hm_2_sqd_on_mu_hm_2_sqd arrays
-       ! have size pdf_dim, and both sigma_Ncn_1^2/mu_Ncn_1^2 and
-       ! sigma_Ncn_2^2/mu_Ncn_2^2 need to be output as part of these arrays.
-       sigma_hm_1_sqd_on_mu_hm_1_sqd(:,iiPDF_Ncn,:) = zero
-       sigma_hm_2_sqd_on_mu_hm_2_sqd(:,iiPDF_Ncn,:) = zero
+      ! Ncn is not an official hydrometeor.  However, both the
+      ! sigma_hm_1_sqd_on_mu_hm_1_sqd and sigma_hm_2_sqd_on_mu_hm_2_sqd arrays
+      ! have size pdf_dim, and both sigma_Ncn_1^2/mu_Ncn_1^2 and
+      ! sigma_Ncn_2^2/mu_Ncn_2^2 need to be output as part of these arrays.
+      sigma_hm_1_sqd_on_mu_hm_1_sqd(:,:,iiPDF_Ncn) = zero
+      sigma_hm_2_sqd_on_mu_hm_2_sqd(:,:,iiPDF_Ncn) = zero
 
     end if ! .not. l_const_Nc_in_cloud
 
@@ -1133,8 +1133,8 @@ module setup_clubb_pdf_params
                                      mu_x_1(:,:,ivar), mu_x_2(:,:,ivar),                & ! Out
                                      sigma_x_1(:,:,ivar), sigma_x_2(:,:,ivar),          & ! Out
                                      hm_1(:,:,hm_idx), hm_2(:,:,hm_idx),                & ! Out
-                                     sigma_hm_1_sqd_on_mu_hm_1_sqd(:,ivar,:),           & ! Out
-                                     sigma_hm_2_sqd_on_mu_hm_2_sqd(:,ivar,:) )            ! Out
+                                     sigma_hm_1_sqd_on_mu_hm_1_sqd(:,:,ivar),           & ! Out
+                                     sigma_hm_2_sqd_on_mu_hm_2_sqd(:,:,ivar) )            ! Out
 
     end do ! ivar = iiPDF_Ncn+1, pdf_dim, 1
 
@@ -1228,10 +1228,7 @@ module setup_clubb_pdf_params
     real( kind = core_rknd ), dimension(pdf_dim) :: &
       corr_array_scaling    ! Dummy variable that we need for calling Cholesky_factor
 
-    integer :: jvar, j, k ! Indices
-    
-    logical, parameter :: &
-      l_follow_ADG1_PDF_standards = .true.
+    integer :: ivar, jvar, j, k ! Indices
                                     
     !-------------------- Begin Code --------------------
     
@@ -1287,36 +1284,60 @@ module setup_clubb_pdf_params
                           l_corr_array_scaling ) ! Out
                           
     ! Use rc_1 to determine which correlation and Cholesky matrices to assign to 1st PDF 
-    do k = 1, nz
-      do j = 1, ngrdcol
-        
-        if ( rc_1(j,k) > rc_tol ) then
-          ! Assign in cloud matrices to 1st PDF component
-          corr_array_1_n(j,k,:,:)      = corr_array_cloud
-          corr_cholesky_mtx_1(j,k,:,:) = corr_cholesky_mtx_cloud
-        else
-          ! Assign out of cloud matrices to 1st PDF component
-          corr_array_1_n(j,k,:,:)      = corr_array_below
-          corr_cholesky_mtx_1(j,k,:,:) = corr_cholesky_mtx_below
-        end if
-        
+    ! Correlation matrices are symmetric, so we copy ij values to ji indices as well
+    ! Cholesky matrices are lower triangular, so we only copy those values 
+    do ivar = 1, pdf_dim
+      do jvar = ivar, pdf_dim
+        do k = 1, nz
+          do j = 1, ngrdcol
+            
+            if ( rc_1(j,k) > rc_tol ) then
+              ! Assign in cloud matrices to 1st PDF component
+              corr_array_1_n(j,k,jvar,ivar)      = corr_array_cloud(jvar,ivar)
+              corr_array_1_n(j,k,ivar,jvar)      = corr_array_cloud(jvar,ivar)
+              corr_cholesky_mtx_1(j,k,jvar,ivar) = corr_cholesky_mtx_cloud(jvar,ivar)
+            else
+              ! Assign out of cloud matrices to 1st PDF component
+              corr_array_1_n(j,k,jvar,ivar)      = corr_array_below(jvar,ivar)
+              corr_array_1_n(j,k,ivar,jvar)      = corr_array_below(jvar,ivar)
+              corr_cholesky_mtx_1(j,k,jvar,ivar) = corr_cholesky_mtx_below(jvar,ivar)
+            end if
+            
+          end do
+        end do
       end do
     end do
-        
+            
     ! Use rc_1 to determine which correlation and Cholesky matrices to assign to 2nd PDF 
-    do k = 1, nz
-      do j = 1, ngrdcol
-        
-        if ( rc_2(j,k) > rc_tol ) then
-          ! Assign in cloud matrices to 2nd PDF component
-          corr_array_2_n(j,k,:,:)      = corr_array_cloud
-          corr_cholesky_mtx_2(j,k,:,:) = corr_cholesky_mtx_cloud
-        else
-          ! Assign out of cloud matrices to 2nd PDF component
-          corr_array_2_n(j,k,:,:)      = corr_array_below
-          corr_cholesky_mtx_2(j,k,:,:) = corr_cholesky_mtx_below
-        end if
-        
+    ! Correlation matrices are symmetric, so we copy ij values to ji indices as well
+    ! Cholesky matrices are lower triangular, so we only copy those values 
+    do ivar = 1, pdf_dim
+      do jvar = ivar, pdf_dim
+        do k = 1, nz
+          do j = 1, ngrdcol
+            
+            if ( rc_2(j,k) > rc_tol ) then
+              ! Assign in cloud matrices to 2nd PDF component
+              corr_array_2_n(j,k,jvar,ivar)      = corr_array_cloud(jvar,ivar)
+              corr_array_2_n(j,k,ivar,jvar)      = corr_array_cloud(jvar,ivar)
+              corr_cholesky_mtx_2(j,k,jvar,ivar) = corr_cholesky_mtx_cloud(jvar,ivar)
+            else
+              ! Assign out of cloud matrices to 2nd PDF component
+              corr_array_2_n(j,k,jvar,ivar)      = corr_array_below(jvar,ivar)
+              corr_array_2_n(j,k,ivar,jvar)      = corr_array_below(jvar,ivar)
+              corr_cholesky_mtx_2(j,k,jvar,ivar) = corr_cholesky_mtx_below(jvar,ivar)
+            end if
+            
+          end do
+        end do
+      end do
+    end do
+    
+    ! Set upper triangular parts of Cholesky matrices to zero
+    do ivar = 1, pdf_dim
+      do jvar = 1, ivar-1
+        corr_cholesky_mtx_1(:,:,jvar,ivar) = zero
+        corr_cholesky_mtx_2(:,:,jvar,ivar) = zero
       end do
     end do
   
@@ -1368,6 +1389,9 @@ module setup_clubb_pdf_params
 
     use pdf_parameter_module, only: &
         pdf_parameter  ! Variable(s)    
+        
+    use matrix_operations, only: &
+        mirror_lower_triangular_matrix
 
     implicit none
 
@@ -1424,7 +1448,7 @@ module setup_clubb_pdf_params
       corr_array_2_n    ! Corr. array (normal space) of PDF vars. (comp. 2)  [-]
 
     ! Local Variables
-    real( kind = core_rknd ), dimension(ngrdcol,pdf_dim,nz)  :: &
+    real( kind = core_rknd ), dimension(ngrdcol,nz,pdf_dim)  :: &
       corr_w_hm_1_n, & ! Correlation of w and ln hm (1st PDF component) ip   [-]
       corr_w_hm_2_n    ! Correlation of w and ln hm (2nd PDF component) ip   [-]
 
@@ -1495,7 +1519,7 @@ module setup_clubb_pdf_params
                                  sigma_x_1_n(j,:,jvar), sigma_x_2_n(j,:,jvar), &
                                  mixt_frac(j,:), precip_frac_1(j,:), &
                                  precip_frac_2(j,:), hydromet_tol_in(j,:), &
-                                 corr_w_hm_1_n(j,jvar,:), corr_w_hm_2_n(j,jvar,:) )
+                                 corr_w_hm_1_n(j,:,jvar), corr_w_hm_2_n(j,:,jvar) )
         end do
 
       end do ! jvar = iiPDF_Ncn+1, pdf_dim
@@ -1646,8 +1670,8 @@ module setup_clubb_pdf_params
     ! Correlation of w and the natural logarithm of the hydrometeors
     do jvar = iiPDF_Ncn+1, pdf_dim
       call component_corr_w_hm_n_ip( nz, ngrdcol, &
-                                     corr_w_hm_1_n(:,jvar,:), rc_1(:,:), cloud_frac_1(:,:), &
-                                     corr_w_hm_2_n(:,jvar,:), rc_2(:,:), cloud_frac_2(:,:), &
+                                     corr_w_hm_1_n(:,:,jvar), rc_1(:,:), cloud_frac_1(:,:), &
+                                     corr_w_hm_2_n(:,:,jvar), rc_2(:,:), cloud_frac_2(:,:), &
                                      corr_array_n_cloud(jvar,iiPDF_w), &
                                      corr_array_n_below(jvar,iiPDF_w), &
                                      l_calc_w_corr, &
@@ -1682,6 +1706,15 @@ module setup_clubb_pdf_params
 
        end do ! jvar
     end do ! ivar
+    
+    ! For ease of use later in the code, we make the correlation arrays
+    ! symmetrical
+    do k = 2, nz, 1
+      do j = 1, ngrdcol
+        call mirror_lower_triangular_matrix( pdf_dim, corr_array_1_n(j,k,:,:) )
+        call mirror_lower_triangular_matrix( pdf_dim, corr_array_2_n(j,k,:,:) )
+      end do
+    end do
 
     return
 
@@ -3325,33 +3358,7 @@ module setup_clubb_pdf_params
       
     ! Local Variables
     integer :: j, k 
-
-    ! Local Variables
-
-    ! The component correlations of w and r_t and the component correlations of
-    ! w and theta_l must both be 0 when using the ADG1 PDF.  In other words, w
-    ! and r_t (theta_l) have overall covariance w'r_t' (w'theta_l'), but the
-    ! individual component covariance and correlation are defined to be 0.
-    ! Since the component covariances (or correlations) of w and chi (old s) and
-    ! of w and eta (old t) are based on the covariances (or correlations) of w
-    ! and r_t and of w and theta_l, the individual component correlation and
-    ! covariance of w and chi, as well of as w and eta, are defined to be 0.
-    !
-    ! The PDF component correlation of w and x, calculated as part of the PDF
-    ! parameters, comes out to be 0 (within numerical roundoff) when the ADG1
-    ! PDF is used.  However, when l_fix_w_chi_eta_correlations is enabled, the
-    ! component correlations of PDF variables are specified, and the values
-    ! that were calculated as part of the PDF parameters are ignored in the
-    ! correlation array.  When this happens, and when the ADG1 PDF is selected,
-    ! the l_follow_ADG1_PDF_standards flag can be used to force the component
-    ! correlations of w and x to have a value of 0, following the ADG1 standard,
-    ! rather than whatever value might be specified in the correlation array.
-    !
-    ! Note:  the ADG2 PDF follows the same standards as the ADG1 PDF.
-    logical, parameter :: &
-      l_follow_ADG1_PDF_standards = .true.
-
-
+    
     ! Correlation of w and x in the ith PDF component.
 
     ! The PDF variables chi and eta result from a transformation of the PDF
@@ -3963,7 +3970,7 @@ module setup_clubb_pdf_params
       sigma_x_1, & ! Standard deviation array of PDF vars (comp. 1) [units vary]
       sigma_x_2    ! Standard deviation array of PDF vars (comp. 2) [units vary]
 
-    real( kind = core_rknd ), dimension(ngrdcol,pdf_dim,nz), intent(in) :: &
+    real( kind = core_rknd ), dimension(ngrdcol,nz,pdf_dim), intent(in) :: &
       sigma2_on_mu2_ip_1, & ! Prescribed ratio array: sigma_hm_1^2/mu_hm_1^2 [-]
       sigma2_on_mu2_ip_2    ! Prescribed ratio array: sigma_hm_2^2/mu_hm_2^2 [-]
 
@@ -4028,7 +4035,7 @@ module setup_clubb_pdf_params
         if ( Ncnm(j,k) >= Ncn_tol ) then
 
            mu_x_1_n(j,k,iiPDF_Ncn) = mean_L2N( mu_x_1(j,k,iiPDF_Ncn), &
-                                               sigma2_on_mu2_ip_1(j,iiPDF_Ncn,k) )
+                                               sigma2_on_mu2_ip_1(j,k,iiPDF_Ncn) )
 
         else
 
@@ -4052,7 +4059,7 @@ module setup_clubb_pdf_params
         if ( Ncnm(j,k) >= Ncn_tol ) then
 
            mu_x_2_n(j,k,iiPDF_Ncn) = mean_L2N( mu_x_2(j,k,iiPDF_Ncn), &
-                                               sigma2_on_mu2_ip_1(j,iiPDF_Ncn,k) )
+                                               sigma2_on_mu2_ip_1(j,k,iiPDF_Ncn) )
 
         else
 
@@ -4076,8 +4083,8 @@ module setup_clubb_pdf_params
       sigma_x_2_n(:,:,iiPDF_Ncn) = zero
     else
        ! Ncn (perhaps) varies in the grid box.
-       sigma_x_1_n(:,:,iiPDF_Ncn) = stdev_L2N( sigma2_on_mu2_ip_1(:,iiPDF_Ncn,:) )
-       sigma_x_2_n(:,:,iiPDF_Ncn) = stdev_L2N( sigma2_on_mu2_ip_2(:,iiPDF_Ncn,:) )
+       sigma_x_1_n(:,:,iiPDF_Ncn) = stdev_L2N( sigma2_on_mu2_ip_1(:,:,iiPDF_Ncn) )
+       sigma_x_2_n(:,:,iiPDF_Ncn) = stdev_L2N( sigma2_on_mu2_ip_2(:,:,iiPDF_Ncn) )
     end if
 
     ! Normal space precipitating hydrometeor means and standard deviations.
@@ -4093,7 +4100,7 @@ module setup_clubb_pdf_params
           if ( hm_1(j,k,hm_idx) >= hydromet_tol(hm_idx) ) then
 
             mu_x_1_n(j,k,ivar) = mean_L2N( mu_x_1(j,k,ivar), &
-                                           sigma2_on_mu2_ip_1(j,ivar,k) )
+                                           sigma2_on_mu2_ip_1(j,k,ivar) )
 
           else
 
@@ -4113,7 +4120,7 @@ module setup_clubb_pdf_params
 
       ! Normal space standard deviation of a precipitating hydrometeor, hm, in
       ! PDF component 1.
-      sigma_x_1_n(:,:,ivar) = stdev_L2N( sigma2_on_mu2_ip_1(:,ivar,:) )
+      sigma_x_1_n(:,:,ivar) = stdev_L2N( sigma2_on_mu2_ip_1(:,:,ivar) )
 
       ! Normal space mean of a precipitating hydrometeor, hm, in PDF
       ! component 2.
@@ -4123,7 +4130,7 @@ module setup_clubb_pdf_params
           if ( hm_2(j,k,hm_idx) >= hydromet_tol(hm_idx) ) then
 
             mu_x_2_n(j,k,ivar) = mean_L2N( mu_x_2(j,k,ivar), &
-                                         sigma2_on_mu2_ip_2(j,ivar,k) )
+                                         sigma2_on_mu2_ip_2(j,k,ivar) )
 
           else
 
@@ -4143,7 +4150,7 @@ module setup_clubb_pdf_params
 
       ! Normal space standard deviation of a precipitating hydrometeor, hm, in
       ! PDF component 2.
-      sigma_x_2_n(:,:,ivar) = stdev_L2N( sigma2_on_mu2_ip_2(:,ivar,:) )
+      sigma_x_2_n(:,:,ivar) = stdev_L2N( sigma2_on_mu2_ip_2(:,:,ivar) )
 
     end do ! ivar = iiPDF_Ncn+1, pdf_dim, 1
 
@@ -4357,9 +4364,12 @@ module setup_clubb_pdf_params
     ! References:
     !-----------------------------------------------------------------------
 
+    use constants_clubb, only : &
+      one
+
     use pdf_utilities, only: &
-        corr_NN2NL, & ! Procedure(s)
-        corr_NN2LL
+        corr_NN2NL_2D, & ! Procedure(s)
+        corr_NN2LL_2D
 
     use array_index, only: &
         iiPDF_chi, & ! Variable(s)
@@ -4382,7 +4392,7 @@ module setup_clubb_pdf_params
       sigma_x_1_n, & ! Std. dev. array (normal space): PDF vars (comp. 1) [u.v.]
       sigma_x_2_n    ! Std. dev. array (normal space): PDF vars (comp. 2) [u.v.]
 
-    real( kind = core_rknd ), dimension(ngrdcol,pdf_dim,nz), intent(in) :: &
+    real( kind = core_rknd ), dimension(ngrdcol,nz,pdf_dim), intent(in) :: &
       sigma2_on_mu2_ip_1, & ! Ratio array sigma_hm_1^2/mu_hm_1^2             [-]
       sigma2_on_mu2_ip_2    ! Ratio array sigma_hm_2^2/mu_hm_2^2             [-]
 
@@ -4400,14 +4410,26 @@ module setup_clubb_pdf_params
     ! Local Variables
     integer :: ivar, jvar ! Loop indices
 
+    ! ----------- Begin Code -----------
+
+    ! Initialize diagonal elements to one
+    do ivar = 1, pdf_dim
+      corr_array_1(:,:,ivar,ivar) = one
+      corr_array_2(:,:,ivar,ivar) = one
+    end do
 
     ! The correlations in each PDF component between two of w, chi (old s), and
     ! eta (old t) do not need to be transformed to standard space, since w, chi,
     ! and eta follow assumed normal distributions in each PDF component.  The
     ! normal space correlations between any two of these variables are the same
     ! as the actual correlations.    
-    corr_array_1 = corr_array_1_n
-    corr_array_2 = corr_array_2_n
+    corr_array_1(:,:,iiPDF_eta,iiPDF_chi) = corr_array_1_n(:,:,iiPDF_eta,iiPDF_chi)
+    corr_array_1(:,:,iiPDF_w,iiPDF_chi)   = corr_array_1_n(:,:,iiPDF_w,iiPDF_chi)
+    corr_array_1(:,:,iiPDF_w,iiPDF_eta)   = corr_array_1_n(:,:,iiPDF_w,iiPDF_eta)
+    
+    corr_array_2(:,:,iiPDF_eta,iiPDF_chi) = corr_array_2_n(:,:,iiPDF_eta,iiPDF_chi)
+    corr_array_2(:,:,iiPDF_w,iiPDF_chi)   = corr_array_2_n(:,:,iiPDF_w,iiPDF_chi)
+    corr_array_2(:,:,iiPDF_w,iiPDF_eta)   = corr_array_2_n(:,:,iiPDF_w,iiPDF_eta)
 
     !!! Calculate the true correlation of variables that have an assumed normal
     !!! distribution and variables that have an assumed lognormal distribution
@@ -4417,60 +4439,62 @@ module setup_clubb_pdf_params
 
     ! Transform the correlations between chi/eta/w and N_cn to standard space.
 
-    ! Transform the correlation of w and N_cn to standard space in PDF
-    ! component 1.
-    corr_array_1(:,:,iiPDF_Ncn,iiPDF_w) &
-    = corr_NN2NL( corr_array_1_n(:,:,iiPDF_Ncn,iiPDF_w), &
-                  sigma_x_1_n(:,:,iiPDF_Ncn), sigma2_on_mu2_ip_1(:,iiPDF_Ncn,:) )
+    ! Transform the correlation of chi (old s) and N_cn to standard space in PDF component 1.
+    call corr_NN2NL_2D( nz, ngrdcol, &
+                        corr_array_1_n(:,:,iiPDF_Ncn,iiPDF_chi), &
+                        sigma_x_1_n(:,:,iiPDF_Ncn), sigma2_on_mu2_ip_1(:,:,iiPDF_Ncn), &
+                        corr_array_1(:,:,iiPDF_Ncn,iiPDF_chi)  )
+                        
+    ! Transform the correlation of eta (old t) and N_cn to standard space in PDF component 1.
+    call corr_NN2NL_2D( nz, ngrdcol, &
+                        corr_array_1_n(:,:,iiPDF_Ncn,iiPDF_eta), &
+                        sigma_x_1_n(:,:,iiPDF_Ncn), sigma2_on_mu2_ip_1(:,:,iiPDF_Ncn), &
+                        corr_array_1(:,:,iiPDF_Ncn,iiPDF_eta)  )
 
-    ! Transform the correlation of w and N_cn to standard space in PDF
-    ! component 2.
-    corr_array_2(:,:,iiPDF_Ncn,iiPDF_w) &
-    = corr_NN2NL( corr_array_2_n(:,:,iiPDF_Ncn,iiPDF_w), &
-                  sigma_x_2_n(:,:,iiPDF_Ncn), sigma2_on_mu2_ip_1(:,iiPDF_Ncn,:) )
+    ! Transform the correlation of w and N_cn to standard space in PDF component 1.
+    call corr_NN2NL_2D( nz, ngrdcol, &
+                        corr_array_1_n(:,:,iiPDF_Ncn,iiPDF_w), &
+                        sigma_x_1_n(:,:,iiPDF_Ncn), sigma2_on_mu2_ip_1(:,:,iiPDF_Ncn), &
+                        corr_array_1(:,:,iiPDF_Ncn,iiPDF_w)  )
 
-    ! Transform the correlation of chi (old s) and N_cn to standard space in
-    ! PDF component 1.
-    corr_array_1(:,:,iiPDF_Ncn,iiPDF_chi) &
-    = corr_NN2NL( corr_array_1_n(:,:,iiPDF_Ncn,iiPDF_chi), &
-                  sigma_x_1_n(:,:,iiPDF_Ncn), sigma2_on_mu2_ip_1(:,iiPDF_Ncn,:) )
+    ! Transform the correlation of chi (old s) and N_cn to standard space in PDF component 2.
+    call corr_NN2NL_2D( nz, ngrdcol, &
+                        corr_array_2_n(:,:,iiPDF_Ncn,iiPDF_chi), &
+                        sigma_x_2_n(:,:,iiPDF_Ncn), sigma2_on_mu2_ip_1(:,:,iiPDF_Ncn), &
+                        corr_array_2(:,:,iiPDF_Ncn,iiPDF_chi)  )
 
-    ! Transform the correlation of chi (old s) and N_cn to standard space in
-    ! PDF component 2.
-    corr_array_2(:,:,iiPDF_Ncn,iiPDF_chi) &
-    = corr_NN2NL( corr_array_2_n(:,:,iiPDF_Ncn,iiPDF_chi), &
-                  sigma_x_2_n(:,:,iiPDF_Ncn), sigma2_on_mu2_ip_1(:,iiPDF_Ncn,:) )
-
-    ! Transform the correlation of eta (old t) and N_cn to standard space in
-    ! PDF component 1.
-    corr_array_1(:,:,iiPDF_Ncn,iiPDF_eta) &
-    = corr_NN2NL( corr_array_1_n(:,:,iiPDF_Ncn,iiPDF_eta), &
-                  sigma_x_1_n(:,:,iiPDF_Ncn), sigma2_on_mu2_ip_1(:,iiPDF_Ncn,:) )
-
-    ! Transform the correlation of eta (old t) and N_cn to standard space in
-    ! PDF component 2.
-    corr_array_2(:,:,iiPDF_Ncn,iiPDF_eta) &
-    = corr_NN2NL( corr_array_2_n(:,:,iiPDF_Ncn,iiPDF_eta), &
-                  sigma_x_2_n(:,:,iiPDF_Ncn), sigma2_on_mu2_ip_1(:,iiPDF_Ncn,:) )
+    ! Transform the correlation of eta (old t) and N_cn to standard space in PDF component 2.
+    call corr_NN2NL_2D( nz, ngrdcol, &
+                        corr_array_2_n(:,:,iiPDF_Ncn,iiPDF_eta), &
+                        sigma_x_2_n(:,:,iiPDF_Ncn), sigma2_on_mu2_ip_1(:,:,iiPDF_Ncn), &
+                        corr_array_2(:,:,iiPDF_Ncn,iiPDF_eta)  )
+                        
+    ! Transform the correlation of w and N_cn to standard space in PDF component 2.
+    call corr_NN2NL_2D( nz, ngrdcol, &
+                        corr_array_2_n(:,:,iiPDF_Ncn,iiPDF_w), &
+                        sigma_x_2_n(:,:,iiPDF_Ncn), sigma2_on_mu2_ip_1(:,:,iiPDF_Ncn), &
+                        corr_array_2(:,:,iiPDF_Ncn,iiPDF_w)  )
 
     ! Transform the correlations (in-precip) between chi/eta/w and the
     ! precipitating hydrometeors to standard space.
     do ivar = iiPDF_chi, iiPDF_w
-       do jvar = iiPDF_Ncn+1, pdf_dim
+      do jvar = iiPDF_Ncn+1, pdf_dim
 
-          ! Transform the correlation (in-precip) between w, chi, or eta and a
-          ! precipitating hydrometeor, hm, to standard space in PDF component 1.
-          corr_array_1(:,:,jvar,ivar) &
-          = corr_NN2NL( corr_array_1_n(:,:,jvar,ivar), sigma_x_1_n(:,:,jvar), &
-                        sigma2_on_mu2_ip_1(:,jvar,:) )
+        ! Transform the correlation (in-precip) between w, chi, or eta and a
+        ! precipitating hydrometeor, hm, to standard space in PDF component 1.
+        call corr_NN2NL_2D( nz, ngrdcol, &
+                            corr_array_1_n(:,:,jvar,ivar), &
+                            sigma_x_1_n(:,:,jvar), sigma2_on_mu2_ip_1(:,:,jvar), &
+                            corr_array_1(:,:,jvar,ivar)  )
 
-          ! Transform the correlation (in-precip) between w, chi, or eta and a
-          ! precipitating hydrometeor, hm, to standard space in PDF component 2.
-          corr_array_2(:,:,jvar,ivar) &
-          = corr_NN2NL( corr_array_2_n(:,:,jvar,ivar), sigma_x_2_n(:,:,jvar), &
-                        sigma2_on_mu2_ip_2(:,jvar,:) )
+        ! Transform the correlation (in-precip) between w, chi, or eta and a
+        ! precipitating hydrometeor, hm, to standard space in PDF component 2.
+        call corr_NN2NL_2D( nz, ngrdcol, &
+                            corr_array_2_n(:,:,jvar,ivar), &
+                            sigma_x_2_n(:,:,jvar), sigma2_on_mu2_ip_2(:,:,jvar), &
+                            corr_array_2(:,:,jvar,ivar)  )
 
-       end do ! jvar = iiPDF_Ncn+1, pdf_dim
+      end do ! jvar = iiPDF_Ncn+1, pdf_dim
     end do ! ivar = iiPDF_chi, iiPDF_w
 
 
@@ -4481,49 +4505,51 @@ module setup_clubb_pdf_params
 
     ! Transform the correlations (in-precip) between N_cn and the precipitating
     ! hydrometeors to standard space.
-    ivar = iiPDF_Ncn
-    do jvar = ivar+1, pdf_dim
+    do jvar = iiPDF_Ncn+1, pdf_dim
 
-       ! Transform the correlation (in-precip) between N_cn and a precipitating
-       ! hydrometeor, hm, to standard space in PDF component 1.
-       corr_array_1(:,:,jvar,ivar) &
-       = corr_NN2LL( corr_array_1_n(:,:,jvar,ivar), &
-                     sigma_x_1_n(:,:,ivar), sigma_x_1_n(:,:,jvar), &
-                     sigma2_on_mu2_ip_1(:,ivar,:), sigma2_on_mu2_ip_1(:,jvar,:) )
+      ! Transform the correlation (in-precip) between N_cn and a precipitating
+      ! hydrometeor, hm, to standard space in PDF component 1.
+      call corr_NN2LL_2D( nz, ngrdcol, &
+                          corr_array_1_n(:,:,jvar,iiPDF_Ncn), &
+                          sigma_x_1_n(:,:,iiPDF_Ncn), sigma_x_1_n(:,:,jvar), &
+                          sigma2_on_mu2_ip_1(:,:,iiPDF_Ncn), sigma2_on_mu2_ip_1(:,:,jvar), &
+                          corr_array_1(:,:,jvar,iiPDF_Ncn))
 
-       ! Transform the correlation (in-precip) between N_cn and a precipitating
-       ! hydrometeor, hm, to standard space in PDF component 2.
-       corr_array_2(:,:,jvar,ivar) &
-       = corr_NN2LL( corr_array_2_n(:,:,jvar,ivar), &
-                     sigma_x_2_n(:,:,ivar), sigma_x_2_n(:,:,jvar), &
-                     sigma2_on_mu2_ip_1(:,ivar,:), sigma2_on_mu2_ip_2(:,jvar,:) )
+      ! Transform the correlation (in-precip) between N_cn and a precipitating
+      ! hydrometeor, hm, to standard space in PDF component 2.
+      call corr_NN2LL_2D( nz, ngrdcol, &
+                          corr_array_2_n(:,:,jvar,iiPDF_Ncn), &
+                          sigma_x_2_n(:,:,iiPDF_Ncn), sigma_x_2_n(:,:,jvar), &
+                          sigma2_on_mu2_ip_1(:,:,iiPDF_Ncn), sigma2_on_mu2_ip_2(:,:,jvar), &
+                          corr_array_2(:,:,jvar,iiPDF_Ncn))
 
     end do ! jvar = ivar+1, pdf_dim
 
     ! Transform the correlations (in-precip) between two precipitating
     ! hydrometeors to standard space.
     do ivar = iiPDF_Ncn+1, pdf_dim-1
-       do jvar = ivar+1, pdf_dim
+      do jvar = ivar+1, pdf_dim
 
-          ! Transform the correlation (in-precip) between two precipitating
-          ! hydrometeors (for example, r_r and N_r) to standard space in PDF
-          ! component 1.
-          corr_array_1(:,:,jvar,ivar) &
-          = corr_NN2LL( corr_array_1_n(:,:,jvar,ivar), &
-                        sigma_x_1_n(:,:,ivar), sigma_x_1_n(:,:,jvar), &
-                        sigma2_on_mu2_ip_1(:,ivar,:), sigma2_on_mu2_ip_1(:,jvar,:) )
+        ! Transform the correlation (in-precip) between two precipitating
+        ! hydrometeors (for example, r_r and N_r) to standard space in PDF
+        ! component 1.
+        call corr_NN2LL_2D( nz, ngrdcol, &
+                            corr_array_1_n(:,:,jvar,ivar), &
+                            sigma_x_1_n(:,:,ivar), sigma_x_1_n(:,:,jvar), &
+                            sigma2_on_mu2_ip_1(:,:,ivar), sigma2_on_mu2_ip_1(:,:,jvar), &
+                            corr_array_1(:,:,jvar,ivar))
 
-          ! Transform the correlation (in-precip) between two precipitating
-          ! hydrometeors (for example, r_r and N_r) to standard space in PDF
-          ! component 2.
-          corr_array_2(:,:,jvar,ivar) &
-          = corr_NN2LL( corr_array_2_n(:,:,jvar,ivar), &
-                        sigma_x_2_n(:,:,ivar), sigma_x_2_n(:,:,jvar), &
-                        sigma2_on_mu2_ip_2(:,ivar,:), sigma2_on_mu2_ip_2(:,jvar,:) )
+        ! Transform the correlation (in-precip) between two precipitating
+        ! hydrometeors (for example, r_r and N_r) to standard space in PDF
+        ! component 2.
+        call corr_NN2LL_2D( nz, ngrdcol, &
+                            corr_array_2_n(:,:,jvar,ivar), &
+                            sigma_x_2_n(:,:,ivar), sigma_x_2_n(:,:,jvar), &
+                            sigma2_on_mu2_ip_2(:,:,ivar), sigma2_on_mu2_ip_2(:,:,jvar), &
+                            corr_array_2(:,:,jvar,ivar))
 
-       end do ! jvar = ivar+1, pdf_dim
+      end do ! jvar = ivar+1, pdf_dim
     end do ! ivar = iiPDF_Ncn+1, pdf_dim-1
-
 
     return
 
@@ -5829,80 +5855,80 @@ module setup_clubb_pdf_params
     ! Pack remaining means and standard deviations into hydromet_pdf_params.
     do ivar = 1, hydromet_dim, 1
 
-       pdf_idx = hydromet2pdf_idx(ivar)
+      pdf_idx = hydromet2pdf_idx(ivar)
 
-       ! Mean of a hydrometeor (overall) in the 1st PDF component.
-       hydromet_pdf_params(:,:)%hm_1(ivar) = hm_1(:,:,ivar)
-       ! Mean of a hydrometeor (overall) in the 2nd PDF component.
-       hydromet_pdf_params(:,:)%hm_2(ivar) = hm_2(:,:,ivar)
+      ! Mean of a hydrometeor (overall) in the 1st PDF component.
+      hydromet_pdf_params(:,:)%hm_1(ivar) = hm_1(:,:,ivar)
+      ! Mean of a hydrometeor (overall) in the 2nd PDF component.
+      hydromet_pdf_params(:,:)%hm_2(ivar) = hm_2(:,:,ivar)
 
-       ! Mean of a hydrometeor (in-precip) in the 1st PDF component.
-       hydromet_pdf_params(:,:)%mu_hm_1(ivar) = mu_x_1(:,:,pdf_idx)
-       ! Mean of a hydrometeor (in-precip) in the 2nd PDF component.
-       hydromet_pdf_params(:,:)%mu_hm_2(ivar) = mu_x_2(:,:,pdf_idx)
+      ! Mean of a hydrometeor (in-precip) in the 1st PDF component.
+      hydromet_pdf_params(:,:)%mu_hm_1(ivar) = mu_x_1(:,:,pdf_idx)
+      ! Mean of a hydrometeor (in-precip) in the 2nd PDF component.
+      hydromet_pdf_params(:,:)%mu_hm_2(ivar) = mu_x_2(:,:,pdf_idx)
 
-       ! Standard deviation of a hydrometeor (in-precip) in the
-       ! 1st PDF component.
-       hydromet_pdf_params(:,:)%sigma_hm_1(ivar) = sigma_x_1(:,:,pdf_idx)
-       ! Standard deviation of a hydrometeor (in-precip) in the
-       ! 2nd PDF component.
-       hydromet_pdf_params(:,:)%sigma_hm_2(ivar) = sigma_x_2(:,:,pdf_idx)
+      ! Standard deviation of a hydrometeor (in-precip) in the
+      ! 1st PDF component.
+      hydromet_pdf_params(:,:)%sigma_hm_1(ivar) = sigma_x_1(:,:,pdf_idx)
+      ! Standard deviation of a hydrometeor (in-precip) in the
+      ! 2nd PDF component.
+      hydromet_pdf_params(:,:)%sigma_hm_2(ivar) = sigma_x_2(:,:,pdf_idx)
 
-       ! Correlation (in-precip) of w and a hydrometeor in the 1st PDF
-       ! component.
-       hydromet_pdf_params(:,:)%corr_w_hm_1(ivar) = corr_array_1(:,:,pdf_idx,iiPDF_w)
+      ! Correlation (in-precip) of w and a hydrometeor in the 1st PDF
+      ! component.
+      hydromet_pdf_params(:,:)%corr_w_hm_1(ivar) = corr_array_1(:,:,pdf_idx,iiPDF_w)
 
-       ! Correlation (in-precip) of w and a hydrometeor in the 2nd PDF
-       ! component.
-       hydromet_pdf_params(:,:)%corr_w_hm_2(ivar) = corr_array_2(:,:,pdf_idx,iiPDF_w)
+      ! Correlation (in-precip) of w and a hydrometeor in the 2nd PDF
+      ! component.
+      hydromet_pdf_params(:,:)%corr_w_hm_2(ivar) = corr_array_2(:,:,pdf_idx,iiPDF_w)
 
-       ! Correlation (in-precip) of chi and a hydrometeor in the 1st PDF
-       ! component.
-       hydromet_pdf_params(:,:)%corr_chi_hm_1(ivar) &
-       = corr_array_1(:,:,pdf_idx,iiPDF_chi)
+      ! Correlation (in-precip) of chi and a hydrometeor in the 1st PDF
+      ! component.
+      hydromet_pdf_params(:,:)%corr_chi_hm_1(ivar) &
+      = corr_array_1(:,:,pdf_idx,iiPDF_chi)
 
-       ! Correlation (in-precip) of chi and a hydrometeor in the 2nd PDF
-       ! component.
-       hydromet_pdf_params(:,:)%corr_chi_hm_2(ivar) &
-       = corr_array_2(:,:,pdf_idx,iiPDF_chi)
+      ! Correlation (in-precip) of chi and a hydrometeor in the 2nd PDF
+      ! component.
+      hydromet_pdf_params(:,:)%corr_chi_hm_2(ivar) &
+      = corr_array_2(:,:,pdf_idx,iiPDF_chi)
 
-       ! Correlation (in-precip) of eta and a hydrometeor in the 1st PDF
-       ! component.
-       hydromet_pdf_params(:,:)%corr_eta_hm_1(ivar) &
-       = corr_array_1(:,:,pdf_idx,iiPDF_eta)
+      ! Correlation (in-precip) of eta and a hydrometeor in the 1st PDF
+      ! component.
+      hydromet_pdf_params(:,:)%corr_eta_hm_1(ivar) &
+      = corr_array_1(:,:,pdf_idx,iiPDF_eta)
 
-       ! Correlation (in-precip) of eta and a hydrometeor in the 2nd PDF
-       ! component.
-       hydromet_pdf_params(:,:)%corr_eta_hm_2(ivar) &
-       = corr_array_2(:,:,pdf_idx,iiPDF_eta)
+      ! Correlation (in-precip) of eta and a hydrometeor in the 2nd PDF
+      ! component.
+      hydromet_pdf_params(:,:)%corr_eta_hm_2(ivar) &
+      = corr_array_2(:,:,pdf_idx,iiPDF_eta)
 
-       ! Correlation (in-precip) of two hydrometeors, hmx and hmy, in the 1st
-       ! PDF component.
-       hydromet_pdf_params(:,:)%corr_hmx_hmy_1(ivar,ivar) = one
+      ! Correlation (in-precip) of two hydrometeors, hmx and hmy, in the 1st
+      ! PDF component.
+      hydromet_pdf_params(:,:)%corr_hmx_hmy_1(ivar,ivar) = one
 
-       do jvar = ivar+1, hydromet_dim, 1
+      do jvar = ivar+1, hydromet_dim, 1
 
-          hydromet_pdf_params(:,:)%corr_hmx_hmy_1(jvar,ivar) &
-          = corr_array_1(:,:,hydromet2pdf_idx(jvar),pdf_idx)
+        hydromet_pdf_params(:,:)%corr_hmx_hmy_1(jvar,ivar) &
+        = corr_array_1(:,:,hydromet2pdf_idx(jvar),pdf_idx)
 
-          hydromet_pdf_params(:,:)%corr_hmx_hmy_1(ivar,jvar) &
-          = hydromet_pdf_params(:,:)%corr_hmx_hmy_1(jvar,ivar)
+        hydromet_pdf_params(:,:)%corr_hmx_hmy_1(ivar,jvar) &
+        = hydromet_pdf_params(:,:)%corr_hmx_hmy_1(jvar,ivar)
 
-       end do ! jvar = ivar+1, hydromet_dim, 1
+      end do ! jvar = ivar+1, hydromet_dim, 1
 
-       ! Correlation (in-precip) of two hydrometeors, hmx and hmy, in the 2nd
-       ! PDF component.
-       hydromet_pdf_params(:,:)%corr_hmx_hmy_2(ivar,ivar) = one
+      ! Correlation (in-precip) of two hydrometeors, hmx and hmy, in the 2nd
+      ! PDF component.
+      hydromet_pdf_params(:,:)%corr_hmx_hmy_2(ivar,ivar) = one
 
-       do jvar = ivar+1, hydromet_dim, 1
+      do jvar = ivar+1, hydromet_dim, 1
 
-          hydromet_pdf_params(:,:)%corr_hmx_hmy_2(jvar,ivar) &
-          = corr_array_2(:,:,hydromet2pdf_idx(jvar),pdf_idx)
+        hydromet_pdf_params(:,:)%corr_hmx_hmy_2(jvar,ivar) &
+        = corr_array_2(:,:,hydromet2pdf_idx(jvar),pdf_idx)
 
-          hydromet_pdf_params(:,:)%corr_hmx_hmy_2(ivar,jvar) &
-          = hydromet_pdf_params(:,:)%corr_hmx_hmy_2(jvar,ivar)
+        hydromet_pdf_params(:,:)%corr_hmx_hmy_2(ivar,jvar) &
+        = hydromet_pdf_params(:,:)%corr_hmx_hmy_2(jvar,ivar)
 
-       end do ! jvar = ivar+1, hydromet_dim, 1
+      end do ! jvar = ivar+1, hydromet_dim, 1
 
     end do ! ivar = 1, hydromet_dim, 1
 
