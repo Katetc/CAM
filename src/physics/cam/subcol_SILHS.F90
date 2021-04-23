@@ -9,17 +9,19 @@ module subcol_SILHS
 
    use shr_kind_mod,     only: r8=>shr_kind_r8, r4=>shr_kind_r4, i4=>shr_kind_i4
    use physics_types,    only: physics_state, physics_tend, physics_ptend
-   use ppgrid,           only: pcols, psubcols, pver, pverp
+   use ppgrid,           only: pcols, psubcols, pver, pverp, begchunk, endchunk
    use constituents,     only: pcnst, cnst_get_ind
    use cam_abortutils,   only: endrun
    use cam_logfile,      only: iulog
    use cam_history,      only: addfld, add_default, outfld, horiz_only
+   use ref_pres,         only: top_lev => trop_cloud_top_lev
 #ifdef CLUBB_SGS
 #ifdef SILHS
    use clubb_intr,       only: pdf_params_chnk
    use clubb_api_module, only: &
         hmp2_ip_on_hmm2_ip_slope_type, &
-        hmp2_ip_on_hmm2_ip_intrcpt_type
+        hmp2_ip_on_hmm2_ip_intrcpt_type, &
+        precipitation_fractions
 
    use silhs_api_module, only: &
         silhs_config_flags_type
@@ -104,6 +106,9 @@ module subcol_SILHS
     type(hmp2_ip_on_hmm2_ip_intrcpt_type) :: subcol_SILHS_hmp2_ip_on_hmm2_ip_intrcpt
 
     type(silhs_config_flags_type) :: silhs_config_flags
+    
+    type(precipitation_fractions), dimension(:), allocatable :: precip_fracs
+    
 #endif
 #endif
 
@@ -331,6 +336,7 @@ contains
                                          setup_corr_varnce_array_api, &
                                          init_pdf_hydromet_arrays_api, &
                                          Ncnp2_on_Ncnm2, &
+                                         init_precip_fracs_api, &
                                          set_clubb_debug_level_api
 
       use clubb_intr,              only: init_clubb_config_flags, &
@@ -362,6 +368,8 @@ contains
           iiNs,         & ! Hydrometeor array index for snow concentration, Ns
           iiNi,         & ! Hydrometeor array index for ice concentration, Ni
           iiNg            ! Hydrometeor array index for graupel concentration, Ng
+
+      integer :: l  ! Loop variable
 
       ! Set CLUBB's debug level
       ! This is called in module clubb_intr; no need to do it here.
@@ -395,6 +403,15 @@ contains
 !      mu = subcol_SILHS_mu
 
       !call set_clubb_debug_level( 0 )  !#KTCtodo: Add a namelist variable to set debug level
+      
+      ! Allocate a precip_fracs variable for each chunk
+      allocate( precip_fracs(begchunk:endchunk) )
+      
+      ! Allocate 2D arrays in precip_fracs for all grid columns and vertical levels in each chunk
+      do l = begchunk, endchunk
+        call init_precip_fracs_api( pverp-top_lev+1, pcols, &
+                                    precip_fracs(l) )
+      end do
      
 
       ! Get constituent indices
@@ -594,8 +611,6 @@ contains
 
       use physics_buffer,         only : physics_buffer_desc, pbuf_get_index, &
                                          pbuf_get_field
-      use ppgrid,                 only : pver, pverp, pcols
-      use ref_pres,               only : top_lev => trop_cloud_top_lev
       use time_manager,           only : get_nstep
       use subcol_utils,           only : subcol_set_subcols, subcol_set_weight
       use phys_control,           only : phys_getopts
@@ -1133,27 +1148,25 @@ contains
         end do
       end do
        
-      do i = 1, ngrdcol
-        ! make the call
-        call setup_pdf_parameters_api( pverp-top_lev+1, pdf_dim, ztodt, &                 ! In
-                                       Nc_in_cloud(i,:), rcm_in(i,:), cld_frac_in(i,:), khzm(i,:), &          ! In
-                                       ice_supersat_frac_in(i,:), hydromet(i,:,:), wphydrometp(i,:,:), &     ! In
-                                       corr_array_n_cloud, corr_array_n_below, &          ! In
-                                       pdf_params_chnk(i,lchnk), l_stats_samp, &          ! In
-                                       clubb_config_flags%iiPDF_type, &                   ! In
-                                       clubb_config_flags%l_use_precip_frac, &            ! In
-                                       clubb_config_flags%l_predict_upwp_vpwp, &          ! In
-                                       clubb_config_flags%l_diagnose_correlations, &      ! In
-                                       clubb_config_flags%l_calc_w_corr, &                ! In
-                                       clubb_config_flags%l_const_Nc_in_cloud, &          ! In
-                                       clubb_config_flags%l_fix_w_chi_eta_correlations, & ! In
-                                       hydrometp2(i,:,:), &                                      ! Out
-                                       mu_x_1(i,:,:), mu_x_2(i,:,:), &                                  ! Out
-                                       sigma_x_1(i,:,:), sigma_x_2(i,:,:), &                            ! Out
-                                       corr_array_1(i,:,:,:), corr_array_2(i,:,:,:), &                      ! Out
-                                       corr_cholesky_mtx_1(i,:,:,:), corr_cholesky_mtx_2(i,:,:,:), &        ! Out
-                                       hydromet_pdf_params(i,:) )                              ! Out
-      end do
+      call setup_pdf_parameters_api( pverp-top_lev+1, ngrdcol, pdf_dim, ztodt, &        ! In
+                                     Nc_in_cloud, rcm_in, cld_frac_in, khzm, &          ! In
+                                     ice_supersat_frac_in, hydromet, wphydrometp, &     ! In
+                                     corr_array_n_cloud, corr_array_n_below, &          ! In
+                                     pdf_params_chnk(:,lchnk), l_stats_samp, &          ! In
+                                     clubb_config_flags%iiPDF_type, &                   ! In
+                                     clubb_config_flags%l_use_precip_frac, &            ! In
+                                     clubb_config_flags%l_predict_upwp_vpwp, &          ! In
+                                     clubb_config_flags%l_diagnose_correlations, &      ! In
+                                     clubb_config_flags%l_calc_w_corr, &                ! In
+                                     clubb_config_flags%l_const_Nc_in_cloud, &          ! In
+                                     clubb_config_flags%l_fix_w_chi_eta_correlations, & ! In
+                                     hydrometp2, &                                      ! Out
+                                     mu_x_1, mu_x_2, &                                  ! Out
+                                     sigma_x_1, sigma_x_2, &                            ! Out
+                                     corr_array_1, corr_array_2, &                      ! Out
+                                     corr_cholesky_mtx_1, corr_cholesky_mtx_2, &        ! Out
+                                     precip_fracs(lchnk), &                             ! Out
+                                     hydromet_pdf_params )                              ! Out
       
       ! In order for Lscale to be used properly, it needs to be passed out of
       ! advance_clubb_core, saved to the pbuf, and then pulled out of the
@@ -1227,7 +1240,7 @@ contains
                     rho_ds_zt, &                                          ! In 
                     mu_x_1, mu_x_2, sigma_x_1, sigma_x_2, &               ! In 
                     corr_cholesky_mtx_1, corr_cholesky_mtx_2, &           ! In
-                    hydromet_pdf_params, silhs_config_flags, &            ! In
+                    precip_fracs(lchnk), silhs_config_flags, &            ! In
                     clubb_config_flags%l_uv_nudge, &                      ! In
                     clubb_config_flags%l_tke_aniso, &                     ! In
                     clubb_config_flags%l_standard_term_ta, &              ! In
@@ -1638,7 +1651,7 @@ contains
         ! Pack precip_frac for output
         do k = 2, pverp-top_lev+1
           do i = 1, ngrdcol
-            precip_frac_out(i,pver-k+2) = hydromet_pdf_params(i,k)%precip_frac
+            precip_frac_out(i,pver-k+2) = precip_fracs(lchnk)%precip_frac(i,k)
           end do
         end do
         
@@ -1722,7 +1735,6 @@ contains
      use physics_buffer,          only: physics_buffer_desc, pbuf_get_index, pbuf_get_field
 #ifdef CLUBB_SGS
 #ifdef SILHS
-     use ref_pres,                only: top_lev => trop_cloud_top_lev
      use subcol_utils,            only: subcol_get_weight
      use subcol_pack_mod,         only: subcol_unpack, subcol_get_nsubcol
      use clubb_api_module,        only: T_in_K2thlm_api
