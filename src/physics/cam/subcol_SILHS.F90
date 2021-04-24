@@ -704,9 +704,6 @@ contains
       ! Required for set_up_pdf_params_incl_hydromet
       !----------------
       real(r8), dimension(state%ngrdcol,pverp-top_lev+1) :: cld_frac_in  ! Cloud fraction
-      
-      type(hydromet_pdf_parameter), dimension(state%ngrdcol, pverp-top_lev+1) :: &
-                                    hydromet_pdf_params  ! Hydrometeor PDF parameters
                                     
       real(r8), dimension(state%ngrdcol, pverp-top_lev+1, pdf_dim, pdf_dim) :: &       
                           corr_array_1, corr_array_2  ! Correlation matrix for pdf components
@@ -1165,8 +1162,7 @@ contains
                                      sigma_x_1, sigma_x_2, &                            ! Out
                                      corr_array_1, corr_array_2, &                      ! Out
                                      corr_cholesky_mtx_1, corr_cholesky_mtx_2, &        ! Out
-                                     precip_fracs(lchnk), &                             ! Out
-                                     hydromet_pdf_params )                              ! Out
+                                     precip_fracs(lchnk) )                              ! Out
       
       ! In order for Lscale to be used properly, it needs to be passed out of
       ! advance_clubb_core, saved to the pbuf, and then pulled out of the
