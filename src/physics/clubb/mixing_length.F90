@@ -1037,26 +1037,26 @@ module mixing_length
           sign_rtpthlp(k) = sign(1.0_core_rknd, rtpthlp(k))
         end do
 
-        where ( pdf_params%rt_1 > pdf_params%rt_2 )
-          rtm_pert_pos_rt = pdf_params%rt_1 &
-                     + Lscale_pert_coef * sqrt( max( pdf_params%varnce_rt_1, rt_tol**2 ) )
-          thlm_pert_pos_rt = pdf_params%thl_1 + ( sign_rtpthlp * Lscale_pert_coef &
-                     * sqrt( max( pdf_params%varnce_thl_1, thl_tol**2 ) ) )
-          thlm_pert_neg_rt = pdf_params%thl_2 - ( sign_rtpthlp * Lscale_pert_coef &
-                     * sqrt( max( pdf_params%varnce_thl_2, thl_tol**2 ) ) )
-          rtm_pert_neg_rt = pdf_params%rt_2 &
-                     - Lscale_pert_coef * sqrt( max( pdf_params%varnce_rt_2, rt_tol**2 ) )
-          !Lscale_weight = pdf_params%mixt_frac
+        where ( pdf_params%rt_1(1,:) > pdf_params%rt_2(1,:) )
+          rtm_pert_pos_rt = pdf_params%rt_1(1,:) &
+                     + Lscale_pert_coef * sqrt( max( pdf_params%varnce_rt_1(1,:), rt_tol**2 ) )
+          thlm_pert_pos_rt = pdf_params%thl_1(1,:) + ( sign_rtpthlp * Lscale_pert_coef &
+                     * sqrt( max( pdf_params%varnce_thl_1(1,:), thl_tol**2 ) ) )
+          thlm_pert_neg_rt = pdf_params%thl_2(1,:) - ( sign_rtpthlp * Lscale_pert_coef &
+                     * sqrt( max( pdf_params%varnce_thl_2(1,:), thl_tol**2 ) ) )
+          rtm_pert_neg_rt = pdf_params%rt_2(1,:) &
+                     - Lscale_pert_coef * sqrt( max( pdf_params%varnce_rt_2(1,:), rt_tol**2 ) )
+          !Lscale_weight = pdf_params%mixt_frac(1,:)
         elsewhere
-          rtm_pert_pos_rt = pdf_params%rt_2 &
-                     + Lscale_pert_coef * sqrt( max( pdf_params%varnce_rt_2, rt_tol**2 ) )
-          thlm_pert_pos_rt = pdf_params%thl_2 + ( sign_rtpthlp * Lscale_pert_coef &
-                     * sqrt( max( pdf_params%varnce_thl_2, thl_tol**2 ) ) )
-          thlm_pert_neg_rt = pdf_params%thl_1 - ( sign_rtpthlp * Lscale_pert_coef &
-                     * sqrt( max( pdf_params%varnce_thl_1, thl_tol**2 ) ) )
-          rtm_pert_neg_rt = pdf_params%rt_1 &
-                     - Lscale_pert_coef * sqrt( max( pdf_params%varnce_rt_1, rt_tol**2 ) )
-          !Lscale_weight = 1.0_core_rknd - pdf_params%mixt_frac
+          rtm_pert_pos_rt = pdf_params%rt_2(1,:) &
+                     + Lscale_pert_coef * sqrt( max( pdf_params%varnce_rt_2(1,:), rt_tol**2 ) )
+          thlm_pert_pos_rt = pdf_params%thl_2(1,:) + ( sign_rtpthlp * Lscale_pert_coef &
+                     * sqrt( max( pdf_params%varnce_thl_2(1,:), thl_tol**2 ) ) )
+          thlm_pert_neg_rt = pdf_params%thl_1(1,:) - ( sign_rtpthlp * Lscale_pert_coef &
+                     * sqrt( max( pdf_params%varnce_thl_1(1,:), thl_tol**2 ) ) )
+          rtm_pert_neg_rt = pdf_params%rt_1(1,:) &
+                     - Lscale_pert_coef * sqrt( max( pdf_params%varnce_rt_1(1,:), rt_tol**2 ) )
+          !Lscale_weight = 1.0_core_rknd - pdf_params%mixt_frac(1,:)
         endwhere
 
         mu_pert_pos_rt  = newmu / Lscale_mu_coef
@@ -1123,31 +1123,32 @@ module mixing_length
 
 !===============================================================================
 
- subroutine diagnose_Lscale_from_tau(upwp_sfc, vpwp_sfc, um, vm, & !intent in
-                                      exner, p_in_Pa, & !intent in
-                                      rtm, thlm, thvm, & !intent in
-                                      rcm, ice_supersat_frac, &! intent in
-                                      em, sqrt_em_zt, & ! intent in
-                                      ufmin, z_displace, tau_const, & ! intent in
-                                      sfc_elevation, Lscale_max, & ! intent in
-                                      l_e3sm_config, & ! intent in
-                                      l_brunt_vaisala_freq_moist, & !intent in
-                                      l_use_thvm_in_bv_freq, &! intent in
-                                      brunt_vaisala_freq_sqd, brunt_vaisala_freq_sqd_mixed, & ! intent out
-                                      brunt_vaisala_freq_sqd_dry, brunt_vaisala_freq_sqd_moist, & ! intent out
-                                      brunt_vaisala_freq_sqd_plus, & !intent out
-                                      sqrt_Ri_zm, & ! intent out
-                                      invrs_tau_zt, invrs_tau_zm, & ! intent out
-                                      invrs_tau_sfc, invrs_tau_no_N2_zm, invrs_tau_bkgnd, & ! intent out
-                                      invrs_tau_shear, invrs_tau_wp2_zm, invrs_tau_xp2_zm, & ! intent out
-                                      invrs_tau_wp3_zm, invrs_tau_wp3_zt, invrs_tau_wpxp_zm, & ! intent out
-                                      tau_max_zm, tau_max_zt, tau_zm, tau_zt, & !intent out
-                                      Lscale, Lscale_up, Lscale_down)! intent out
+ subroutine diagnose_Lscale_from_tau( &
+                        upwp_sfc, vpwp_sfc, um, vm, & !intent in
+                        exner, p_in_Pa, & !intent in
+                        rtm, thlm, thvm, & !intent in
+                        rcm, ice_supersat_frac, &! intent in
+                        em, sqrt_em_zt, & ! intent in
+                        ufmin, z_displace, tau_const, & ! intent in
+                        sfc_elevation, Lscale_max, & ! intent in
+                        l_e3sm_config, & ! intent in
+                        l_brunt_vaisala_freq_moist, & !intent in
+                        l_use_thvm_in_bv_freq, &! intent in
+                        brunt_vaisala_freq_sqd, brunt_vaisala_freq_sqd_mixed, & ! intent out
+                        brunt_vaisala_freq_sqd_dry, brunt_vaisala_freq_sqd_moist, & ! intent out
+                        brunt_vaisala_freq_sqd_plus, & !intent out
+                        sqrt_Ri_zm, & ! intent out
+                        invrs_tau_zt, invrs_tau_zm, & ! intent out
+                        invrs_tau_sfc, invrs_tau_no_N2_zm, invrs_tau_bkgnd, & ! intent out
+                        invrs_tau_shear, invrs_tau_wp2_zm, invrs_tau_xp2_zm, & ! intent out
+                        invrs_tau_wp3_zm, invrs_tau_wp3_zt, invrs_tau_wpxp_zm, & ! intent out
+                        tau_max_zm, tau_max_zt, tau_zm, tau_zt, & !intent out
+                        Lscale, Lscale_up, Lscale_down)! intent out
 ! Description:
 !     Diagnose inverse damping time scales (invrs_tau_...) and turbulent mixing length (Lscale)
 ! References:
 !     Guo et al.(2021, JAMES)
-!-----------------------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
 
   use advance_helper_module, only: &
     calc_brunt_vaisala_freq_sqd
@@ -1254,7 +1255,7 @@ module mixing_length
     ustar
 
 
-!-----------------------------------Begin Code---------------------------------------------------------!
+!-----------------------------------Begin Code---------------------------------------------------!
   call calc_brunt_vaisala_freq_sqd( zm2zt( zt2zm( thlm )), exner, rtm, rcm, p_in_Pa, thvm, &
                                           ice_supersat_frac, &
                                           l_brunt_vaisala_freq_moist, &
