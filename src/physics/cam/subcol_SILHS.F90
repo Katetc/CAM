@@ -613,6 +613,7 @@ contains
                                          pbuf_get_field
       use time_manager,           only : get_nstep
       use subcol_utils,           only : subcol_set_subcols, subcol_set_weight
+      use subcol_pack_mod,        only : subcol_pack
       use phys_control,           only : phys_getopts
       use spmd_utils,             only : masterproc
       use shr_const_mod,          only : SHR_CONST_PI, SHR_CONST_RHOFW
@@ -1324,24 +1325,12 @@ contains
           end do
         end do
       end if
-       
-         
-      if (subcol_SILHS_weight) then 
-        ! Pack up weights for output
-        do j = 1, num_subcols      
-          do i = 1, ngrdcol
-            weights(ngrdcol*(j-1)+i) = lh_sample_point_weights(i,j,2) ! Using grid level 2 always won't work 
-                                                                          !   if weights vary with height.
-          end do
-        end do
-      else
-        weights(:) = 1._r8
-      endif
-      
-      ! Only use weights if namelist variable turned on
-      call subcol_set_weight(state_sc%lchnk, weights)
-      
 
+      ! Pack up weights
+      ! Using grid level 2 always won't work if weights vary with height.
+      call subcol_pack(lchnk, lh_sample_point_weights(:,:,2), weights )
+      call subcol_set_weight(lchnk, weights)
+      
       ! Constrain the sample distribution of cloud water and ice to the same mean
       ! as the grid to prevent negative condensate errors
       if(subcol_SILHS_constrainmn) then
