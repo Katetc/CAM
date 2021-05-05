@@ -274,9 +274,6 @@ module clubb_intr
   type(pdf_parameter), target, allocatable, public, protected :: &
                               pdf_params_chnk(:)    ! PDF parameters (thermo. levs.) [units vary]
                                               
-  type(pdf_parameter) :: pdf_params_single_col, &
-                         pdf_params_zm_single_col
-                                              
   type(pdf_parameter), target, allocatable :: pdf_params_zm_chnk(:) ! PDF parameters on momentum levs. [units vary]
   
   type(implicit_coefs_terms), target, allocatable :: pdf_implicit_coefs_terms_chnk(:,:) ! PDF impl. coefs. & expl. terms      [units vary]
@@ -863,10 +860,6 @@ end subroutine clubb_init_cnst
        pdf_params_chnk(begchunk:endchunk),   &
        pdf_params_zm_chnk(begchunk:endchunk), &
        pdf_implicit_coefs_terms_chnk(pcols,begchunk:endchunk) )
-
-    ! Allocate arrays in single column versions of pdf_params
-    call init_pdf_params_api( pverp+1-top_lev, 1, pdf_params_single_col )
-    call init_pdf_params_api( pverp+1-top_lev, 1, pdf_params_zm_single_col )
     
     ! Allocate arrays in multi column version of pdf_params
     do l = begchunk, endchunk, 1
@@ -1410,7 +1403,9 @@ end subroutine clubb_init_cnst
         hydromet_dim, calculate_thlp2_rad_api, mu, update_xp2_mc_api, &
         sat_mixrat_liq_api, &
         fstderr, &
-        copy_single_pdf_params_to_multi
+        copy_single_pdf_params_to_multi, &
+        pdf_parameter, &
+        init_pdf_params_api
 
    use clubb_api_module, only: &
        clubb_fatal_error    ! Error code value to indicate a fatal error
@@ -1736,6 +1731,9 @@ end subroutine clubb_init_cnst
    intrinsic :: max
 
    character(len=*), parameter :: subr='clubb_tend_cam'
+   
+   type(pdf_parameter) :: pdf_params_single_col, &
+                          pdf_params_zm_single_col
 
 #endif
    det_s(:)   = 0.0_r8
@@ -1863,6 +1861,11 @@ end subroutine clubb_init_cnst
    call pbuf_get_field(pbuf, wprtp_mc_zt_idx,   wprtp_mc_zt)
    call pbuf_get_field(pbuf, wpthlp_mc_zt_idx,  wpthlp_mc_zt)
    call pbuf_get_field(pbuf, rtpthlp_mc_zt_idx, rtpthlp_mc_zt)
+   
+   
+   ! Allocate arrays in single column versions of pdf_params
+   call init_pdf_params_api( pverp+1-top_lev, 1, pdf_params_single_col )
+   call init_pdf_params_api( pverp+1-top_lev, 1, pdf_params_zm_single_col )
 
    ! Initialize the apply_const variable (note special logic is due to eularian backstepping)
    if (clubb_do_adv .and. (is_first_step() .or. all(wpthlp(1:ncol,1:pver)  ==  0._r8))) then
