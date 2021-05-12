@@ -410,7 +410,8 @@ module stats_variables
      iwp3_tp  = 0, & 
      iwp3_ac  = 0, & 
      iwp3_bp1 = 0, & 
-     iwp3_pr_turb = 0, & 
+     iwp3_pr_turb = 0, &
+     iwp3_pr_dfsn = 0, & 
      iwp3_pr1 = 0, & 
      iwp3_pr2 = 0, & 
      iwp3_pr3 = 0, &
@@ -420,7 +421,7 @@ module stats_variables
      iwp3_splat = 0
 
 !$omp   threadprivate(iwp3_bt, iwp3_ma, iwp3_ta, iwp3_tp, iwp3_ac, iwp3_bp1)
-!$omp   threadprivate(iwp3_pr_turb, iwp3_pr1, iwp3_pr2, iwp3_pr3, iwp3_dp1)
+!$omp   threadprivate(iwp3_pr_turb, iwp3_pr_dfsn, iwp3_pr1, iwp3_pr2, iwp3_pr3, iwp3_dp1)
 !$omp   threadprivate(iwp3_sdmp, iwp3_cl, iwp3_splat)
 
   integer, public :: &
@@ -1000,7 +1001,9 @@ module stats_variables
      ithlp2 = 0, & 
      irtpthlp = 0, & 
      iwprtp = 0, & 
-     iwpthlp = 0, & 
+     iwpthlp = 0, &
+     iwp2up2 = 0, &
+     iwp2vp2 = 0, & 
      iwp4 = 0, & 
      iwpthvp = 0, & 
      irtpthvp = 0, & 
@@ -1051,7 +1054,7 @@ module stats_variables
 
 !$omp   threadprivate(istability_correction)
 !$omp   threadprivate(iwp2, irtp2, ithlp2, irtpthlp, iwprtp, iwpthlp)
-!$omp   threadprivate(iwp4, iwpthvp, irtpthvp, ithlpthvp, itau_zm, iKh_zm)
+!$omp   threadprivate(iwp2up2, iwp2vp2, iwp4, iwpthvp, irtpthvp, ithlpthvp, itau_zm, iKh_zm)
 !$omp   threadprivate(iwprcp, irc_coef_zm, ithlprcp, irtprcp, ircp2)
 !$omp   threadprivate(iupwp, ivpwp)
 !$omp   threadprivate(iupthlp, iuprtp, ivpthlp, ivprtp)
