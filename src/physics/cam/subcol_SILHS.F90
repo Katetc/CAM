@@ -658,8 +658,8 @@ contains
                                          est_kessler_microphys_api, &
                                          vert_decorr_coef
 
-      use clubb_intr, only:              clubb_config_flags
-      use clubb_driver, only: gr !variable
+      use clubb_intr, only:              clubb_config_flags, gr
+
 #endif
 #endif
       

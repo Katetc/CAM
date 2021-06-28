@@ -29,9 +29,15 @@ module clubb_intr
 #ifdef CLUBB_SGS
   use clubb_api_module, only: pdf_parameter, implicit_coefs_terms
   use clubb_api_module, only: clubb_config_flags_type
+  use grid_class, only: grid ! Type
 #endif
 
   implicit none
+#ifdef CLUBB_SGS
+  type(grid), target :: gr
+!$omp threadprivate(gr)
+#endif
+
   private
   save
 
@@ -44,6 +50,7 @@ module clubb_intr
             ! This utilizes CLUBB specific variables in its interface
             stats_init_clubb, &
             init_clubb_config_flags, &
+            gr, &
 #endif
             stats_end_timestep_clubb, & 
             clubb_readnl, &
@@ -791,8 +798,6 @@ end subroutine clubb_init_cnst
          rt_tol, &
          thl_tol
 
-    use clubb_driver, only: gr ! Variable
-
     !  These are only needed if we're using a passive scalar
     use clubb_api_module, only: &
          iisclr_rt, &
@@ -1408,8 +1413,6 @@ end subroutine clubb_init_cnst
         copy_single_pdf_params_to_multi, &
         pdf_parameter, &
         init_pdf_params_api
-
-   use clubb_driver, only: gr ! Variable
 
    use clubb_api_module, only: &
        clubb_fatal_error    ! Error code value to indicate a fatal error
