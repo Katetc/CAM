@@ -17,10 +17,16 @@ pipeline {
         sh 'rm -rf /home/pub/cam_output'
       }
     }
-    stage('Run CAM') {
+    stage('Run atex') {
       steps {
         sh '''source /opt/intel/bin/ifortvars.sh intel64
               run_scripts/run_scam.bash atex'''
+      }
+    }
+    stage('Run arm97 with SILHS') {
+      steps {
+        sh '''source /opt/intel/bin/ifortvars.sh intel64
+              run_scripts/run_scam.bash -s arm97'''
       }
     }
   }
