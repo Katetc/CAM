@@ -2218,7 +2218,7 @@ end subroutine clubb_init_cnst
       call setup_grid_heights_api( gr, l_implemented, grid_type, zi_g(2), &
            zi_g(1), zi_g, zt_g )
 
-      call setup_parameters_api( zi_g(2), clubb_params, nlev+1, grid_type, &
+      call setup_parameters_api( gr, zi_g(2), clubb_params, nlev+1, grid_type, &
                                  zi_g, zt_g, &
                                  clubb_config_flags%l_prescribed_avg_deltaz, &
                                  err_code )
