@@ -628,7 +628,7 @@ contains
 
                                          hydromet_pdf_parameter, &
 
-                                         zm2zt_api, setup_grid_heights_api, gr, &
+                                         zm2zt_api, setup_grid_heights_api, &
 
                                          iirr, iiNr, iirs, iiri, &
                                          iirg, iiNs, &
@@ -658,7 +658,8 @@ contains
                                          est_kessler_microphys_api, &
                                          vert_decorr_coef
 
-      use clubb_intr, only:              clubb_config_flags
+      use clubb_intr, only:              clubb_config_flags, gr
+
 #endif
 #endif
       
@@ -1146,7 +1147,7 @@ contains
         end do
       end do
        
-      call setup_pdf_parameters_api( pverp-top_lev+1, ngrdcol, pdf_dim, ztodt, &        ! In
+      call setup_pdf_parameters_api( gr, pverp-top_lev+1, ngrdcol, pdf_dim, ztodt, &        ! In
                                      Nc_in_cloud, rcm_in, cld_frac_in, khzm, &          ! In
                                      ice_supersat_frac_in, hydromet, wphydrometp, &     ! In
                                      corr_array_n_cloud, corr_array_n_below, &          ! In
@@ -1247,7 +1248,7 @@ contains
                     lh_sample_point_weights)                              ! Out
 
       ! Extract clipped variables from subcolumns
-      call clip_transform_silhs_output_api( pverp-top_lev+1, ngrdcol, num_subcols, &   ! In
+      call clip_transform_silhs_output_api( gr, pverp-top_lev+1, ngrdcol, num_subcols, &   ! In
                                             pdf_dim, hydromet_dim, & ! In
                                             X_mixt_comp_all_levs, & ! In
                                             X_nl_all_levs, &        ! In
