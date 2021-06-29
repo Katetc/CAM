@@ -428,14 +428,12 @@ contains
   ! stats_accumulate_lh - Clips subcolumns from latin hypercube and creates stats.
   !================================================================================================
 
-  subroutine stats_accumulate_lh_api( gr, &
+  subroutine stats_accumulate_lh_api( &
     nz, num_samples, pdf_dim, rho_ds_zt, &
     lh_sample_point_weights, X_nl_all_levs, &
     lh_rt_clipped, lh_thl_clipped, & 
     lh_rc_clipped, lh_rv_clipped, & 
     lh_Nc_clipped )
-
-    use grid_class, only: grid
 
     use latin_hypercube_driver_module, only : stats_accumulate_lh
 
@@ -443,8 +441,6 @@ contains
       core_rknd    ! Constant
 
     implicit none
-
-    type(grid), target, intent(in) :: gr
 
     ! Input Variables
     integer, intent(in) :: &
@@ -468,7 +464,7 @@ contains
       lh_rv_clipped,  & ! rv generated from silhs sample points
       lh_Nc_clipped     ! Nc generated from silhs sample points
 
-    call stats_accumulate_lh( gr, &
+    call stats_accumulate_lh( &
       nz, num_samples, pdf_dim, rho_ds_zt, &
       lh_sample_point_weights, X_nl_all_levs, &
       lh_rt_clipped, lh_thl_clipped, & 
@@ -553,7 +549,7 @@ contains
   ! clip_transform_silhs_output - Computes extra SILHS sample variables, such as rt and thl.
   !================================================================================================
 
-  subroutine clip_transform_silhs_output_api_single_col( gr, &
+  subroutine clip_transform_silhs_output_api_single_col( &
                                               nz, num_samples,                & ! In
                                               pdf_dim, hydromet_dim,          & ! In
                                               X_mixt_comp_all_levs,           & ! In
@@ -562,8 +558,6 @@ contains
                                               lh_rt_clipped, lh_thl_clipped,  & ! Out
                                               lh_rc_clipped, lh_rv_clipped,   & ! Out
                                               lh_Nc_clipped                   ) ! Out
-
-    use grid_class, only: grid ! Type
 
     use latin_hypercube_driver_module, only : clip_transform_silhs_output
 
@@ -574,8 +568,6 @@ contains
       pdf_parameter
 
     implicit none
-
-    type(grid), target, intent(in) :: gr
 
     ! Input Variables
     logical, intent(in) :: l_use_Ncn_to_Nc
@@ -625,7 +617,7 @@ contains
     X_nl_all_levs_col(1,:,:,:)      = X_nl_all_levs
 
 
-    call clip_transform_silhs_output( gr, nz, 1, num_samples,                     & ! In
+    call clip_transform_silhs_output( nz, 1, num_samples,                     & ! In
                                       pdf_dim, hydromet_dim,                  & ! In
                                       X_mixt_comp_all_levs_col,               & ! In
                                       X_nl_all_levs_col,                      & ! In
@@ -641,8 +633,8 @@ contains
     lh_Nc_clipped     = lh_Nc_clipped_col(1,:,:)
                                       
   end subroutine clip_transform_silhs_output_api_single_col
-!=======================================================================================!
-  subroutine clip_transform_silhs_output_api_multi_col( gr, &
+  
+  subroutine clip_transform_silhs_output_api_multi_col( &
                                               nz, ngrdcol, num_samples,       & ! In
                                               pdf_dim, hydromet_dim,          & ! In
                                               X_mixt_comp_all_levs,           & ! In
@@ -651,8 +643,6 @@ contains
                                               lh_rt_clipped, lh_thl_clipped,  & ! Out
                                               lh_rc_clipped, lh_rv_clipped,   & ! Out
                                               lh_Nc_clipped                   ) ! Out
-
-    use grid_class, only: grid ! Type
 
     use latin_hypercube_driver_module, only : clip_transform_silhs_output
 
@@ -663,8 +653,6 @@ contains
       pdf_parameter
 
     implicit none
-
-    type(grid), target, intent(in) :: gr
 
     ! Input Variables
     logical, intent(in) :: l_use_Ncn_to_Nc
@@ -693,7 +681,7 @@ contains
       lh_rv_clipped,  & ! rv generated from silhs sample points
       lh_Nc_clipped     ! Nc generated from silhs sample points
 
-    call clip_transform_silhs_output( gr, nz, ngrdcol, num_samples,       & ! In
+    call clip_transform_silhs_output( nz, ngrdcol, num_samples,       & ! In
                                       pdf_dim, hydromet_dim,          & ! In
                                       X_mixt_comp_all_levs,           & ! In
                                       X_nl_all_levs,                  & ! In
