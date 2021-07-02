@@ -28,8 +28,8 @@ module clubb_intr
   use zm_conv_intr,  only: zmconv_microp
 #ifdef CLUBB_SGS
   use clubb_api_module, only: pdf_parameter, implicit_coefs_terms
-  use clubb_api_module, only: clubb_config_flags_type
-  use grid_class, only: grid ! Type
+  use clubb_api_module, only: clubb_config_flags_type, grid
+
 #endif
 
   implicit none
@@ -1068,7 +1068,7 @@ end subroutine clubb_init_cnst
     !  as they are immediately overwrote.
 !$OMP PARALLEL
     call setup_clubb_core_api &
-         ( gr, nlev+1, theta0, ts_nudge, &                                ! In
+         ( nlev+1, theta0, ts_nudge, &                                ! In
            hydromet_dim,  sclr_dim, &                                 ! In
            sclr_tol, edsclr_dim, clubb_params, &                      ! In
            l_host_applies_sfc_fluxes, &                               ! In
@@ -1082,7 +1082,7 @@ end subroutine clubb_init_cnst
            clubb_config_flags%l_prescribed_avg_deltaz, &              ! In
            clubb_config_flags%l_damp_wp2_using_em, &                  ! In
            clubb_config_flags%l_stability_correct_tau_zm, &           ! In
-           err_code )
+           gr, err_code )
 
     if ( err_code == clubb_fatal_error ) then
        call endrun('clubb_ini_cam:  FATAL ERROR CALLING SETUP_CLUBB_CORE')
@@ -2215,8 +2215,8 @@ end subroutine clubb_init_cnst
       !  Important note:  do not make any calls that use CLUBB grid-height
       !                   operators (such as zt2zm_api, etc.) until AFTER the
       !                   call to setup_grid_heights_api.
-      call setup_grid_heights_api( gr, l_implemented, grid_type, zi_g(2), &
-           zi_g(1), zi_g, zt_g )
+      call setup_grid_heights_api( l_implemented, grid_type, zi_g(2), &
+           zi_g(1), zi_g, gr, zt_g )
 
       call setup_parameters_api( gr, zi_g(2), clubb_params, nlev+1, grid_type, &
                                  zi_g, zt_g, &
