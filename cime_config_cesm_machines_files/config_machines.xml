@@ -1405,11 +1405,11 @@ This allows using a different mpirun command to launch unit tests
     <OS>Linux</OS>
     <COMPILERS>gnu</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
-    <CIME_OUTPUT_ROOT>/home/pub/cam_output/scratch</CIME_OUTPUT_ROOT>
+    <CIME_OUTPUT_ROOT>$ENV{HOME}/cam_output/scratch</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/home/pub/cam_inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/home/pub/cam_output/ptclm-data</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/home/pub/cam_output/scratch/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/home/pub/cam_output/baselines</BASELINE_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>$ENV{HOME}/cam_output/ptclm-data</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$ENV{HOME}cam_output/scratch/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>$ENV{HOME}/cam_output/baselines</BASELINE_ROOT>
     <CCSM_CPRNC>$CIMEROOT/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE>make</GMAKE>
     <GMAKE_J>4</GMAKE_J>
