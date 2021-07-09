@@ -1418,7 +1418,7 @@ This allows using a different mpirun command to launch unit tests
     <MAX_TASKS_PER_NODE>1</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>1</MAX_MPITASKS_PER_NODE>
     <mpirun mpilib="default">
-      <executable>/usr/local/mpi/MPICH-3.3.1-gfortran/bin/mpirun</executable>
+      <executable>$ENV{GFORTRAN_MPICH}/bin/mpirun</executable>
       <arguments>
         <arg name="anum_tasks"> -np $TOTALPES</arg>
         <arg name="labelstdout">-prepend-rank</arg>
@@ -1426,8 +1426,8 @@ This allows using a different mpirun command to launch unit tests
     </mpirun>
     <module_system type="none"/>
     <environment_variables>
-      <env name="NETCDF_FORTRAN_PATH">/usr/local/NETCDF-Fortran-4.4.5-gfortran</env>
-      <env name="NETCDF_C_PATH">/usr/local/NETCDF-C-4.7.0-gfortran</env>
+      <env name="NETCDF_FORTRAN_PATH">$ENV{GFORTRAN_NETCDF_FORTRAN}</env>
+      <env name="NETCDF_C_PATH">$ENV{GFORTRAN_NETCDF_C}</env>
     </environment_variables>
 
   </machine>
@@ -1453,7 +1453,7 @@ This allows using a different mpirun command to launch unit tests
     <MAX_TASKS_PER_NODE>1</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>1</MAX_MPITASKS_PER_NODE>
     <mpirun mpilib="default">
-      <executable>/usr/local/mpi/MPICH-3.3.1-pgi/bin/mpirun</executable>
+      <executable>$ENV{PGIFORTRAN_MPICH}/bin/mpirun</executable>
       <arguments>
         <arg name="anum_tasks"> -np $TOTALPES</arg>
         <arg name="labelstdout">-prepend-rank</arg>
@@ -1461,8 +1461,8 @@ This allows using a different mpirun command to launch unit tests
     </mpirun>
     <module_system type="none"/>
     <environment_variables>
-      <env name="NETCDF_FORTRAN_PATH">/usr/local/NETCDF-Fortran-4.4.5-pgi</env>
-      <env name="NETCDF_C_PATH">/usr/local/NETCDF-C-4.7.0-pgi</env>
+      <env name="NETCDF_FORTRAN_PATH">$ENV{PGI_NETCDF_FORTRAN}</env>
+      <env name="NETCDF_C_PATH">$ENV{PGI_NETCDF_C}</env>
     </environment_variables>
 
   </machine>
@@ -1488,7 +1488,7 @@ This allows using a different mpirun command to launch unit tests
     <MAX_TASKS_PER_NODE>1</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>1</MAX_MPITASKS_PER_NODE>
     <mpirun mpilib="default">
-      <executable>/usr/local/mpi/MPICH-3.3.1-gfortran/bin/mpirun</executable>
+      <executable>$ENV{GFORTRAN_MPICH}/bin/mpirun</executable>
       <arguments>
         <arg name="anum_tasks"> -np $TOTALPES</arg>
         <arg name="labelstdout">-prepend-rank</arg>
@@ -1496,8 +1496,8 @@ This allows using a different mpirun command to launch unit tests
     </mpirun>
     <module_system type="none"/>
     <environment_variables>
-      <env name="NETCDF_FORTRAN_PATH">/usr/local/NETCDF-Fortran-4.4.5-gfortran</env>
-      <env name="NETCDF_C_PATH">/usr/local/NETCDF-C-4.7.0-gfortran</env>
+      <env name="NETCDF_FORTRAN_PATH">$ENV{GFORTRAN_NETCDF_FORTRAN}</env>
+      <env name="NETCDF_C_PATH">$ENV{GFORTRAN_NETCDF_C}</env>
     </environment_variables>
   </machine>
 
@@ -1522,7 +1522,7 @@ This allows using a different mpirun command to launch unit tests
     <MAX_TASKS_PER_NODE>1</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>1</MAX_MPITASKS_PER_NODE>
     <mpirun mpilib="default">
-      <executable>/usr/local/mpi/MPICH-3.3.1-gfortran/bin/mpirun</executable>
+      <executable>$ENV{GFORTRAN_MPICH}/bin/mpirun</executable>
       <arguments>
         <arg name="anum_tasks"> -np $TOTALPES</arg>
         <arg name="labelstdout">-prepend-rank</arg>
@@ -1530,8 +1530,8 @@ This allows using a different mpirun command to launch unit tests
     </mpirun>
     <module_system type="none"/>
     <environment_variables>
-      <env name="NETCDF_FORTRAN_PATH">/usr/local/NETCDF-Fortran-4.4.5-gfortran</env>
-      <env name="NETCDF_C_PATH">/usr/local/NETCDF-C-4.7.0-gfortran</env>
+      <env name="NETCDF_FORTRAN_PATH">$ENV{GFORTRAN_NETCDF_FORTRAN}</env>
+      <env name="NETCDF_C_PATH">$ENV{GFORTRAN_NETCDF_C}</env>
     </environment_variables>
   </machine>
 
@@ -1556,7 +1556,7 @@ This allows using a different mpirun command to launch unit tests
     <MAX_TASKS_PER_NODE>1</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>1</MAX_MPITASKS_PER_NODE>
     <mpirun mpilib="default">
-      <executable>/usr/local/mpi/MPICH-3.3.1-gfortran/bin/mpirun</executable>
+      <executable>$ENV{GFORTRAN_MPICH}/bin/mpirun</executable>
       <arguments>
         <arg name="anum_tasks"> -np $TOTALPES</arg>
         <arg name="labelstdout">-prepend-rank</arg>
@@ -1564,8 +1564,8 @@ This allows using a different mpirun command to launch unit tests
     </mpirun>
     <module_system type="none"/>
     <environment_variables>
-      <env name="NETCDF_FORTRAN_PATH">/usr/local/NETCDF-Fortran-4.4.5-gfortran</env>
-      <env name="NETCDF_C_PATH">/usr/local/NETCDF-C-4.7.0-gfortran</env>
+      <env name="NETCDF_FORTRAN_PATH">$ENV{GFORTRAN_NETCDF_FORTRAN}</env>
+      <env name="NETCDF_C_PATH">$ENV{GFORTRAN_NETCDF_C}</env>
     </environment_variables>
   </machine>
 

@@ -985,32 +985,32 @@ using a fortran linker.
  <!-- UWM larson-group configurations -->
 
 <compiler MACH="homebrew">
-  <SCC> /usr/local/mpi/MPICH-3.3.1-gfortran/bin/mpicc </SCC>
-  <SFC> /usr/local/mpi/MPICH-3.3.1-gfortran/bin/mpif90 </SFC>
-  <MPICC> /usr/local/mpi/MPICH-3.3.1-gfortran/bin/mpicc  </MPICC>
-  <MPIFC> /usr/local/mpi/MPICH-3.3.1-gfortran/bin/mpif90 </MPIFC>
+  <SCC> $ENV{GFORTRAN_MPICH}/bin/mpicc </SCC>
+  <SFC> $ENV{GFORTRAN_MPICH}/bin/mpif90 </SFC>
+  <MPICC> $ENV{GFORTRAN_MPICH}/bin/mpicc  </MPICC>
+  <MPIFC> $ENV{GFORTRAN_MPICH}/bin/mpif90 </MPIFC>
   <SLIBS>
-   <base> -L/usr/local/NETCDF-Fortran-4.4.5-gfortran/lib -lnetcdff -L/usr/local/NETCDF-C-4.7.0-gfortran/lib -lnetcdf -L/usr/local/lapack-3.8.0 -llapack -lrefblas </base>
+   <base> -L$ENV{GFORTRAN_NETCDF_FORTRAN}/lib -lnetcdff -L$ENV{GFORTRAN_NETCDF_C}/lib -lnetcdf -L/usr/local/lapack-3.8.0 -llapack -lrefblas </base>
   </SLIBS>
 </compiler>
 
 <compiler MACH="carson">
-  <SCC> /usr/local/mpi/MPICH-3.3.1-gfortran/bin/mpicc </SCC>
-  <SFC> /usr/local/mpi/MPICH-3.3.1-gfortran/bin/mpif90 </SFC>
-  <MPICC> /usr/local/mpi/MPICH-3.3.1-gfortran/bin/mpicc  </MPICC>
-  <MPIFC> /usr/local/mpi/MPICH-3.3.1-gfortran/bin/mpif90 </MPIFC>
+  <SCC> $ENV{GFORTRAN_MPICH}/bin/mpicc </SCC>
+  <SFC> $ENV{GFORTRAN_MPICH}/bin/mpif90 </SFC>
+  <MPICC> $ENV{GFORTRAN_MPICH}/bin/mpicc  </MPICC>
+  <MPIFC> $ENV{GFORTRAN_MPICH}/bin/mpif90 </MPIFC>
   <SLIBS>
-   <base> -L/usr/local/NETCDF-Fortran-4.4.5-gfortran/lib -lnetcdff -L/usr/local/NETCDF-C-4.7.0-gfortran/lib -lnetcdf -L/usr/local/lapack-3.8.0 -llapack -lrefblas </base>
+   <base> -L$ENV{GFORTRAN_NETCDF_FORTRAN}/lib -lnetcdff -L$ENV{GFORTRAN_NETCDF_C}/lib -lnetcdf -L/usr/local/lapack-3.8.0 -llapack -lrefblas </base>
   </SLIBS>
 </compiler>
 
 <compiler MACH="nelson">
-  <SCC> /usr/local/mpi/MPICH-3.3.1-gfortran/bin/mpicc </SCC>
-  <SFC> /usr/local/mpi/MPICH-3.3.1-gfortran/bin/mpif90 </SFC>
-  <MPICC> /usr/local/mpi/MPICH-3.3.1-gfortran/bin/mpicc  </MPICC>
-  <MPIFC> /usr/local/mpi/MPICH-3.3.1-gfortran/bin/mpif90 </MPIFC>
+  <SCC> $ENV{GFORTRAN_MPICH}/bin/mpicc </SCC>
+  <SFC> $ENV{GFORTRAN_MPICH}/bin/mpif90 </SFC>
+  <MPICC> $ENV{GFORTRAN_MPICH}/bin/mpicc  </MPICC>
+  <MPIFC> $ENV{GFORTRAN_MPICH}/bin/mpif90 </MPIFC>
   <SLIBS>
-   <base> -L/usr/local/NETCDF-Fortran-4.4.5-gfortran/lib -lnetcdff -L/usr/local/NETCDF-C-4.7.0-gfortran/lib -lnetcdf -L/usr/local/lapack-3.8.0 -llapack -lrefblas </base>
+   <base> -L$ENV{GFORTRAN_NETCDF_FORTRAN}/lib -lnetcdff -L$ENV{GFORTRAN_NETCDF_C}/lib -lnetcdf -L/usr/local/lapack-3.8.0 -llapack -lrefblas </base>
   </SLIBS>
 </compiler>
 
@@ -1018,12 +1018,12 @@ using a fortran linker.
   <FFLAGS>
     <append>-O0 -g -fbacktrace</append>
   </FFLAGS>
-  <SCC> /usr/local/mpi/MPICH-3.3.1-gfortran/bin/mpicc </SCC>
-  <SFC> /usr/local/mpi/MPICH-3.3.1-gfortran/bin/mpif90 </SFC>
-  <MPICC> /usr/local/mpi/MPICH-3.3.1-gfortran/bin/mpicc  </MPICC>
-  <MPIFC> /usr/local/mpi/MPICH-3.3.1-gfortran/bin/mpif90 </MPIFC>
+  <SCC> $ENV{GFORTRAN_MPICH}/bin/mpicc </SCC>
+  <SFC> $ENV{GFORTRAN_MPICH}/bin/mpif90 </SFC>
+  <MPICC> $ENV{GFORTRAN_MPICH}/bin/mpicc  </MPICC>
+  <MPIFC> $ENV{GFORTRAN_MPICH}/bin/mpif90 </MPIFC>
   <SLIBS>
-   <base> -L/usr/local/NETCDF-Fortran-4.4.5-gfortran/lib -lnetcdff -L/usr/local/NETCDF-C-4.7.0-gfortran/lib -lnetcdf -L/usr/local/lapack-3.8.0 -llapack -lblas </base>
+   <base> -L$ENV{GFORTRAN_NETCDF_FORTRAN}/lib -lnetcdff -L$ENV{GFORTRAN_NETCDF_C}/lib -lnetcdf -L/usr/local/lapack-3.8.0 -llapack -lblas </base>
   </SLIBS>
 </compiler>
 
@@ -1034,12 +1034,12 @@ using a fortran linker.
   <FFLAGS>
     <append>-O0 -g -traceback -acc</append>
   </FFLAGS>
-  <SCC> /usr/local/mpi/MPICH-3.3.1-pgi/bin/mpicc </SCC>
-  <SFC> /usr/local/mpi/MPICH-3.3.1-pgi/bin/mpif90 </SFC>
-  <MPICC> /usr/local/mpi/MPICH-3.3.1-pgi/bin/mpicc  </MPICC>
-  <MPIFC> /usr/local/mpi/MPICH-3.3.1-pgi/bin/mpif90 </MPIFC>
+  <SCC> $ENV{PGIFORTRAN_MPICH}/bin/mpicc </SCC>
+  <SFC> $ENV{PGIFORTRAN_MPICH}/bin/mpif90 </SFC>
+  <MPICC> $ENV{PGIFORTRAN_MPICH}/bin/mpicc  </MPICC>
+  <MPIFC> $ENV{PGIFORTRAN_MPICH}/bin/mpif90 </MPIFC>
   <SLIBS>
-   <base> -L/usr/local/NETCDF-Fortran-4.4.5-pgi/lib -lnetcdff -L/usr/local/NETCDF-C-4.7.0-pgi/lib -lnetcdf -L/usr/local/lapack-3.8.0 -llapack -lblas </base>
+   <base> -L$ENV{PGI_NETCDF_FORTRAN}/lib -lnetcdff -L$ENV{PGI_NETCDF_C}/lib -lnetcdf -L/usr/local/lapack-3.8.0 -llapack -lblas </base>
   </SLIBS>
 </compiler>
 
