@@ -14,7 +14,7 @@ pipeline {
     }
     stage('Remove Old Output') {
       steps {
-        sh 'rm -rf /home/pub/cam_output'
+        sh 'rm -rf /home/jenkins/cam_output'
       }
     }
     stage('Run atex') {
