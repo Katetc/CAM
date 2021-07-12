@@ -14,7 +14,7 @@ pipeline {
     }
     stage('Remove Old Output') {
       steps {
-        sh 'rm -rf /home/jenkins/cam_output'
+        sh 'rm -rf /home/jenkins/cam_output/scratch/test_scam_atex /home/jenkins/cam_output/scratch/test_scam_arm97'
       }
     }
     stage('Run atex') {
@@ -35,6 +35,7 @@ pipeline {
       script {
       if ( "${env.JOB_NAME}" == "cam_run_intel_test" )
       	cleanWs(cleanWhenSuccess: true, cleanWhenFailure: true)
+        sh 'chmod -R 755 /home/jenkins/cam_output/'
       }
     }
     failure {
