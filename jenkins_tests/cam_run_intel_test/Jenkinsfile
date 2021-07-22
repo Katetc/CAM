@@ -15,6 +15,10 @@ pipeline {
     stage('Remove Old Output') {
       steps {
         sh 'rm -rf /home/jenkins/cam_output/scratch/test_scam_atex /home/jenkins/cam_output/scratch/test_scam_arm97'
+        script {
+          if ("${env.JOB_NAME}" == "branch_cam_test")
+            sh "rm -rf ${env.WORKSPACE}/cime/scripts/test_scam_atex ${env.WORKSPACE}/cime/scripts/test_scam_arm97"
+        }
       }
     }
     stage('Run atex') {
@@ -33,15 +37,15 @@ pipeline {
   post {
     always {
       script {
-      if ( "${env.JOB_NAME}" == "cam_run_intel_test" )
-      	cleanWs(cleanWhenSuccess: true, cleanWhenFailure: true)
+        if ( "${env.JOB_NAME}" == "cam_run_intel_test" )
+      	  cleanWs(cleanWhenSuccess: true, cleanWhenFailure: true)
         sh 'chmod -R 755 /home/jenkins/cam_output/'
       }
     }
     failure {
       script {
-      if ( "${env.JOB_NAME}" ==	"cam_run_intel_test" )
-      	emailext(to: 'messnermet@uwm.edu', subject: "${env.JOB_NAME} build ${env.BUILD_NUMBER} has Failed", attachLog: true, body: "${env.JOB_NAME} build ${env.BUILD_NUMBER} has failed. See the attached build log and the build results (${env.BUILD_URL}) for help troubleshooting.")
+        if ( "${env.JOB_NAME}" ==	"cam_run_intel_test" )
+      	  emailext(to: 'messnermet@uwm.edu', subject: "${env.JOB_NAME} build ${env.BUILD_NUMBER} has Failed", attachLog: true, body: "${env.JOB_NAME} build ${env.BUILD_NUMBER} has failed. See the attached build log and the build results (${env.BUILD_URL}) for help troubleshooting.")
       }
     }
   }
