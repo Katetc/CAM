@@ -15,7 +15,8 @@ module stats_zm_module
   contains
 
 !-----------------------------------------------------------------------
-  subroutine stats_init_zm( vars_zm, l_error )
+  subroutine stats_init_zm( vars_zm, l_error, & !intent(in)
+                            stats_zm ) ! intent(inout)
 
 ! Description:
 !   Initializes array indices for stats_zm
@@ -31,7 +32,6 @@ module stats_zm_module
         fstderr ! Constant(s)
 
     use stats_variables, only: &
-        stats_zm, &
         iwp2, &
         irtp2, &
         ithlp2, &
@@ -346,7 +346,12 @@ module stats_zm_module
         hydromet_list, & ! Variable(s)
         l_mix_rat_hm
 
+    use stats_type, only: stats ! Type
+
     implicit none
+
+    type (stats), target, intent(inout) :: &
+      stats_zm
 
     ! External
     intrinsic :: trim

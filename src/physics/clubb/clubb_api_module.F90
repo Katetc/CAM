@@ -63,6 +63,15 @@ module clubb_api_module
     stat_rknd, &
     dp  ! Double Precision
 
+  use stats_variables, only: &
+    stats_zt,     &
+    stats_zm,     &
+    stats_sfc,    &
+    stats_lh_zt,  &
+    stats_lh_sfc, &
+    stats_rad_zt, &
+    stats_rad_zm
+
   use constants_clubb, only : &
     cloud_frac_min, & ! Threshold for cloud fractions
     cm3_per_m3, & ! Cubic centimeters per cubic meter
@@ -195,11 +204,6 @@ module clubb_api_module
     nvarmax_rad_zt  ! Maximum variables allowed
 
   use stats_variables, only : &
-    stats_zt, & ! zt grid
-    stats_zm, & ! zm grid
-    stats_rad_zt, & ! rad_zt grid
-    stats_rad_zm, & ! rad_zm grid
-    stats_sfc, &
     l_stats_last, & ! Last time step of output period
     stats_tsamp, & ! Sampling interval   [s]
     stats_tout, & ! Output interval     [s]
@@ -300,6 +304,13 @@ module clubb_api_module
         iiedsclr_CO2, &
         l_frozen_hm, &
         l_mix_rat_hm, &
+        stats_zt, &
+        stats_zm, &
+        stats_sfc, &
+        stats_lh_zt, &
+        stats_lh_sfc, &
+        stats_rad_zt, &
+        stats_rad_zm, &
     cleanup_clubb_core_api
 
   public &
@@ -449,13 +460,10 @@ module clubb_api_module
     nvarmax_rad_zt, &
     nvarmax_sfc, &
     nvarmax_zm, &
-    nvarmax_zt, &
-    stats_rad_zm, &
-    stats_rad_zt
+    nvarmax_zt
     public &
     nparams, &
     setup_parameters_api, &
-    stats_sfc, &
     stat_nknd, &
     stat_rknd, &
     stats_accumulate_hydromet_api, &
@@ -464,14 +472,12 @@ module clubb_api_module
     stats_init_sfc_api, &
     stats_init_zm_api, &
     stats_init_zt_api, &
-    stats_zm, &
     zmscr01, zmscr02, zmscr03, &
     zmscr04, zmscr05, zmscr06, &
     zmscr07, zmscr08, zmscr09, &
     zmscr10, zmscr11, zmscr12, &
     zmscr13, zmscr14, zmscr15, &
     zmscr16, zmscr17, &
-    stats_zt, &
     ztscr01, ztscr02, ztscr03, &
     ztscr04, ztscr05, ztscr06, &
     ztscr07, ztscr08, ztscr09, &
@@ -791,6 +797,7 @@ contains
       wphydrometp, wp2hmp, rtphmp, thlphmp, &                 ! intent(in)
       host_dx, host_dy, &                                     ! intent(in)
       clubb_config_flags, &                                   ! intent(in)
+      stats_zt, stats_zm, stats_sfc, &                        ! intent(inout)
       um, vm, upwp, vpwp, up2, vp2, up3, vp3, &               ! intent(inout)
       thlm, rtm, wprtp, wpthlp, &                             ! intent(inout)
       wp2, wp3, rtp2, rtp3, thlp2, thlp3, rtpthlp, &          ! intent(inout)
@@ -1209,6 +1216,7 @@ contains
       nz, dt, hydromet_dim,        & ! Intent(in)
       l_fill_holes_hm,             & ! Intent(in)
       rho_ds_zm, rho_ds_zt, exner, & ! Intent(in)
+      stats_zt,                    & ! intent(inout)
       thlm_mc, rvm_mc, hydromet )    ! Intent(inout)
   end subroutine fill_holes_driver_api
 
@@ -2071,6 +2079,7 @@ contains
       l_calc_w_corr, &                                        ! Intent(in)
       l_const_Nc_in_cloud, &                                  ! Intent(in)
       l_fix_w_chi_eta_correlations, &                         ! Intent(in)
+      stats_zt, stats_zm, stats_sfc, &                        ! intent(inout)
       hydrometp2_col, &                                       ! Intent(inout)
       mu_x_1_n_col, mu_x_2_n_col, &                           ! Intent(out)
       sigma_x_1_n_col, sigma_x_2_n_col, &                     ! Intent(out)
@@ -2225,6 +2234,7 @@ contains
       l_calc_w_corr, &                            ! Intent(in)
       l_const_Nc_in_cloud, &                      ! Intent(in)
       l_fix_w_chi_eta_correlations, &             ! Intent(in)
+      stats_zt, stats_zm, stats_sfc, &            ! intent(inout)
       hydrometp2, &                               ! Intent(inout)
       mu_x_1_n, mu_x_2_n, &                       ! Intent(out)
       sigma_x_1_n, sigma_x_2_n, &                 ! Intent(out)
@@ -2310,7 +2320,10 @@ contains
       stats_fmt_in, stats_tsamp_in, stats_tout_in, fnamelist, &
       nzmax, nlon, nlat, gzt, gzm, nnrad_zt, &
       grad_zt, nnrad_zm, grad_zm, day, month, year, &
-      lon_vals, lat_vals, time_current, delt, l_silhs_out_in )
+      lon_vals, lat_vals, time_current, delt, l_silhs_out_in, &
+      stats_zt, stats_zm, stats_sfc, & ! intent(inout)
+      stats_lh_zt, stats_lh_sfc, & ! intent(inout)
+      stats_rad_zt, stats_rad_zm ) ! intent(inout)
 
     if ( err_code == clubb_fatal_error ) error stop
     
@@ -2372,8 +2385,11 @@ contains
 #endif
 
     call stats_end_timestep( &
+                             stats_zt, stats_zm, stats_sfc, & ! intent(inout)
+                             stats_lh_zt, stats_lh_sfc, & ! intent(inout)
+                             stats_rad_zt, stats_rad_zm & ! intent(inout)
 #ifdef NETCDF
-                             l_uv_nudge, & ! Intent(in)
+                             , l_uv_nudge, & ! Intent(in)
                              l_tke_aniso, & ! Intent(in)
                              l_standard_term_ta, & ! Intent(in)
                              l_single_C2_Skw & ! Intent(in)
@@ -2407,7 +2423,8 @@ contains
       rho_ds_zt ! Dry, static density (thermo. levs.)      [kg/m^3]
 
     call stats_accumulate_hydromet( gr, &
-      hydromet, rho_ds_zt )
+      hydromet, rho_ds_zt, &
+      stats_zt, stats_sfc ) ! intent(inout)
   end subroutine stats_accumulate_hydromet_api
 
   !================================================================================================
@@ -2420,7 +2437,9 @@ contains
 
     implicit none
 
-    call stats_finalize
+    call stats_finalize ( stats_zt, stats_zm, stats_sfc, &
+                          stats_lh_zt, stats_lh_sfc, &
+                          stats_rad_zt, stats_rad_zm ) ! intent(inout)
 
   end subroutine stats_finalize_api
 
@@ -2442,7 +2461,8 @@ contains
     logical, intent(inout) :: l_error
 
     call stats_init_rad_zm( &
-      vars_rad_zm, l_error )
+      vars_rad_zm, l_error, &
+      stats_rad_zm ) ! intent(inout)
   end subroutine stats_init_rad_zm_api
 
   !================================================================================================
@@ -2463,7 +2483,9 @@ contains
     logical, intent(inout) :: l_error
 
     call stats_init_rad_zt( &
-      vars_rad_zt, l_error )
+      vars_rad_zt, l_error, &
+      stats_rad_zt ) ! intent(inout)
+
   end subroutine stats_init_rad_zt_api
 
   !================================================================================================
@@ -2484,7 +2506,8 @@ contains
     logical, intent(inout) :: l_error
 
     call stats_init_zm( &
-      vars_zm, l_error )
+      vars_zm, l_error, &
+      stats_zm ) ! intent(inout)
 
   end subroutine stats_init_zm_api
 
@@ -2506,7 +2529,8 @@ contains
     logical, intent(inout) :: l_error
 
     call stats_init_zt( &
-      vars_zt, l_error )
+      vars_zt, l_error, &
+      stats_zt ) ! intent(inout)
 
   end subroutine stats_init_zt_api
 
@@ -2528,7 +2552,8 @@ contains
     logical, intent(inout) :: l_error
 
     call stats_init_sfc( &
-      vars_sfc, l_error )
+      vars_sfc, l_error, &
+      stats_sfc ) ! intent(inout)
 
   end subroutine stats_init_sfc_api
 

@@ -28,6 +28,7 @@ module precipitation_fraction
                               cloud_frac_2, ice_supersat_frac, &
                               ice_supersat_frac_1, ice_supersat_frac_2, &
                               mixt_frac, l_stats_samp, &
+                              stats_sfc, & 
                               precip_frac, &
                               precip_frac_1, &
                               precip_frac_2, &
@@ -56,7 +57,6 @@ module precipitation_fraction
         hydromet_tol
 
     use stats_variables, only: &
-        stats_sfc,        & ! Variable(s)
         iprecip_frac_tol
 
     use stats_type_utilities, only: &
@@ -70,7 +70,12 @@ module precipitation_fraction
         err_code, &                     ! Error Indicator
         clubb_fatal_error               ! Constant
 
+    use stats_type, only: stats ! Type
+
     implicit none
+
+    type (stats), target, intent(inout) :: &
+      stats_sfc
 
     ! Input Variables
     integer, intent(in) :: &

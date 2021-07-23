@@ -491,6 +491,7 @@ module advance_helper_module
                                         l_brunt_vaisala_freq_moist, &
                                         l_use_thvm_in_bv_freq, &
                                         l_use_shear_Richardson, &
+                                        stats_zm, & 
                                         Cx_fnc_Richardson )
 
   ! Description:
@@ -524,13 +525,17 @@ module advance_helper_module
     use stats_variables, only: &
         iRichardson_num, &    ! Variable(s)
         ishear_sqd, &
-        stats_zm,       &
         l_stats_samp
 
     use stats_type_utilities, only: &
         stat_update_var      ! Procedure
 
+    use stats_type, only: stats ! Type
+
     implicit none
+
+    type (stats), target, intent(inout) :: &
+      stats_zm
 
     type (grid), target, intent(in) :: gr
 

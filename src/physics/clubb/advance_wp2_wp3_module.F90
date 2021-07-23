@@ -40,7 +40,7 @@ module advance_wp2_wp3_module
   contains
 
   !=============================================================================
-  subroutine advance_wp2_wp3( gr, dt, sfc_elevation, sigma_sqd_w, wm_zm,         & ! In
+  subroutine advance_wp2_wp3( gr, dt, sfc_elevation, sigma_sqd_w, wm_zm,     & ! In
                               wm_zt, a3, a3_zt, wp3_on_wp2,                  & ! In
                               wp2up2, wp2vp2, wp4,                           & ! In
                               wpthvp, wp2thvp, um, vm, upwp, vpwp,           & ! In
@@ -63,6 +63,7 @@ module advance_wp2_wp3_module
                               l_damp_wp3_Skw_squared,                        & ! In
                               l_lmm_stepping,                                & ! In
                               l_use_tke_in_wp3_pr_turb_term,                 & ! In
+                              stats_zt, stats_zm, stats_sfc,                 & ! intent(inout)
                               wp2, wp3, wp3_zm, wp2_zt )                       ! Inout
 
     ! Description:
@@ -114,8 +115,6 @@ module advance_wp2_wp3_module
         iC11_Skw_fnc, &
         iwp2_sdmp, &
         iwp3_sdmp, &
-        stats_zm, &
-        stats_zt, &
         l_stats_samp
 
     use constants_clubb, only:  & 
@@ -137,7 +136,14 @@ module advance_wp2_wp3_module
         err_code,                    & ! Error Indicator
         clubb_fatal_error              ! Constant
 
+    use stats_type, only: stats ! Type
+
     implicit none
+
+    type (stats), target, intent(inout) :: &
+      stats_zt, &
+      stats_zm, &
+      stats_sfc
 
     type (grid), target, intent(in) :: gr
 
@@ -370,7 +376,7 @@ module advance_wp2_wp3_module
     endif ! l_lmm_stepping
 
     ! Solve semi-implicitly
-    call wp23_solve( gr, dt, sfc_elevation, sigma_sqd_w, wm_zm,                   & ! Intent(in)
+    call wp23_solve( gr, dt, sfc_elevation, sigma_sqd_w, wm_zm,               & ! Intent(in)
                      wm_zt, a3, a3_zt, wp3_on_wp2,                            & ! Intent(in)
                      wp2up2, wp2vp2, wp4,                                     & ! Intent(in)
                      wpthvp, wp2thvp, um, vm, upwp, vpwp,                     & ! Intent(in)
@@ -392,6 +398,7 @@ module advance_wp2_wp3_module
                      l_damp_wp2_using_em,                                     & ! Intent(in)
                      l_damp_wp3_Skw_squared,                                  & ! Intent(in)
                      l_use_tke_in_wp3_pr_turb_term,                           & ! Intent(in)
+                     stats_zt, stats_zm, stats_sfc,                           & ! intent(inout)
                      wp2, wp3, wp3_zm, wp2_zt )                                 ! Intent(inout)
 
     if ( l_lmm_stepping ) then
@@ -497,7 +504,7 @@ module advance_wp2_wp3_module
   end subroutine advance_wp2_wp3
 
   !=============================================================================
-  subroutine wp23_solve( gr, dt, sfc_elevation, sigma_sqd_w, wm_zm,                   & ! Intent(in)
+  subroutine wp23_solve( gr, dt, sfc_elevation, sigma_sqd_w, wm_zm,               & ! Intent(in)
                          wm_zt, a3, a3_zt, wp3_on_wp2,                            & ! Intent(in)
                          wp2up2, wp2vp2, wp4,                                     & ! Intent(in)
                          wpthvp, wp2thvp, um, vm, upwp, vpwp,                     & ! Intent(in)
@@ -519,6 +526,7 @@ module advance_wp2_wp3_module
                          l_damp_wp2_using_em,                                     & ! Intent(in)
                          l_damp_wp3_Skw_squared,                                  & ! Intent(in)
                          l_use_tke_in_wp3_pr_turb_term,                           & ! Intent(in)
+                         stats_zt, stats_zm, stats_sfc,                           & ! intent(inout)
                          wp2, wp3, wp3_zm, wp2_zt )                                 ! Intent(inout)
 
     ! Description:
@@ -582,9 +590,6 @@ module advance_wp2_wp3_module
         stat_end_update_pt
 
     use stats_variables, only:  & 
-        stats_zm, & ! Variable(s)
-        stats_zt, & 
-        stats_sfc, & 
         l_stats_samp, &
         icoef_wp4_implicit, &
         iwp2_ta, & 
@@ -637,7 +642,14 @@ module advance_wp2_wp3_module
         ztscr15, &
         ztscr16
 
+    use stats_type, only: stats ! Type
+
     implicit none
+
+    type (stats), target, intent(inout) :: &
+      stats_zt, &
+      stats_zm, &
+      stats_sfc
 
     type (grid), target, intent(in) :: gr
 
@@ -851,6 +863,7 @@ module advance_wp2_wp3_module
                    l_damp_wp2_using_em, &                                            ! intent(in)
                    l_damp_wp3_Skw_squared, &                                         ! intent(in)
                    l_use_tke_in_wp3_pr_turb_term, &                                  ! intent(in)
+                   stats_zt, stats_zm, &                                             ! intent(inout)
                    rhs )                                                             ! intent(out)
 
     ! Save the value of rhs, which will be overwritten with the solution as
@@ -1170,6 +1183,7 @@ module advance_wp2_wp3_module
                  wpthlp(k)**2 / ( thlp2(k) * max_mag_correlation_flux**2 ) )
 
           call clip_variance_level( clip_wp2, dt, threshold, k, & ! intent(in)
+                                    stats_zm, &                   ! intent(inout)
                                     wp2(k) )                      ! intent(inout)
 
        enddo ! k = 1, gr%nz, 1
@@ -1180,6 +1194,7 @@ module advance_wp2_wp3_module
        threshold = w_tol_sqd
 
        call clip_variance( gr, clip_wp2, dt, threshold, & ! Intent(in)
+                           stats_zm, &                ! intent(inout)
                            wp2 )                      ! Intent(inout)
 
     endif ! l_min_wp2_from_corr_wx
@@ -1191,7 +1206,8 @@ module advance_wp2_wp3_module
 
     ! Clip w'^3 by limiting skewness.
     call clip_skewness( gr, dt, sfc_elevation, wp2_zt, & ! intent(in)
-                        wp3 )                        ! intent(inout)
+                        stats_zt, &                      ! intent(inout)
+                        wp3 )                            ! intent(inout)
 
     ! Compute wp3_zm for output purposes
     wp3_zm = zt2zm( gr, wp3 )
@@ -1868,6 +1884,7 @@ module advance_wp2_wp3_module
                        l_damp_wp2_using_em, &
                        l_damp_wp3_Skw_squared, &
                        l_use_tke_in_wp3_pr_turb_term, &
+                       stats_zt, stats_zm, &
                        rhs )
 
     ! Description:
@@ -1938,9 +1955,9 @@ module advance_wp2_wp3_module
         core_rknd ! Variable
 
     use stats_variables, only:  & 
-        l_stats_samp, iwp2_dp1, iwp2_dp2, stats_zm, iwp2_bp,   & ! Variable(s)
+        l_stats_samp, iwp2_dp1, iwp2_dp2, iwp2_bp,   & ! Variable(s)
         iwp2_pr1, iwp2_pr2, iwp2_pr3, iwp2_splat, iwp3_splat, &
-        iwp3_ta, stats_zt, & 
+        iwp3_ta, & 
         iwp3_tp, iwp3_bp1, iwp3_pr2, iwp3_pr1, iwp3_dp1, iwp3_pr_turb, &
         iwp3_pr_dfsn, iwp3_pr3
         
@@ -1952,7 +1969,13 @@ module advance_wp2_wp3_module
     use advance_helper_module, only: set_boundary_conditions_rhs
 
 
+    use stats_type, only: stats ! Type
+
     implicit none
+
+    type (stats), target, intent(inout) :: &
+      stats_zt, &
+      stats_zm
 
     type (grid), target, intent(in) :: gr
 

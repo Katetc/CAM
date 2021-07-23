@@ -137,6 +137,7 @@ module advance_clubb_core_module
                wphydrometp, wp2hmp, rtphmp_zt, thlphmp_zt, &        ! intent(in)
                host_dx, host_dy, &                                  ! intent(in)
                clubb_config_flags, &                                ! intent(in)
+               stats_zt, stats_zm, stats_sfc, &                     ! intent(inout)
                um, vm, upwp, vpwp, up2, vp2, up3, vp3, &            ! intent(inout)
                thlm, rtm, wprtp, wpthlp, &                          ! intent(inout)
                wp2, wp3, rtp2, rtp3, thlp2, thlp3, rtpthlp, &       ! intent(inout)
@@ -354,9 +355,6 @@ module advance_clubb_core_module
         iwp2_sf,       &
         l_stats_samp,  &
         l_stats,       &
-        stats_zt,      &
-        stats_zm,      &
-        stats_sfc,     &
         irtm_spur_src, &
         ithlm_spur_src
 
@@ -377,7 +375,14 @@ module advance_clubb_core_module
     use interpolation, only: &
         pvertinterp
 
+    use stats_type, only: stats ! Type
+
     implicit none
+
+    type (stats), target, intent(inout) :: &
+      stats_zt, &
+      stats_zm, &
+      stats_sfc
 
     type (grid), target, intent(in) :: gr
 
@@ -993,6 +998,7 @@ module advance_clubb_core_module
                                 clubb_config_flags%l_use_cloud_cover,        & ! Intent(in)
                                 clubb_config_flags%l_rcm_supersat_adj,       & ! Intent(in)
                                 rtm,                                         & ! Intent(i/o)
+                                stats_zt, stats_zm,                          & ! intent(inout)
 #ifdef GFDL
                                 RH_crit(k, : , :),                           & ! Intent(i/o)
                                 do_liquid_only_in_clubb,                     & ! Intent(in)
@@ -1128,11 +1134,12 @@ module advance_clubb_core_module
                                                                   ! buoyant parcel calc
 
 
-        call calc_Lscale_directly ( gr, l_implemented, p_in_Pa, exner, & ! intent(in)
-                  rtm, thlm, thvm, &                                 ! intent(in)  
+        call calc_Lscale_directly ( gr, l_implemented, p_in_Pa, exner, rtm, & ! intent(in)
+                  thlm, thvm, &                                 ! intent(in)  
                   newmu, rtp2, thlp2, rtpthlp, pdf_params, em, &     ! intent(in)
                   thv_ds_zt, Lscale_max, &                           ! intent(in)
                   clubb_config_flags%l_Lscale_plume_centered, &      ! intent(in)
+                  stats_zt, &                                        ! intent(inout)
                   Lscale, Lscale_up, Lscale_down )                   ! intent(out)
 
         if ( clubb_at_least_debug_level( 0 ) ) then
@@ -1427,6 +1434,7 @@ module advance_clubb_core_module
                                        clubb_config_flags%l_brunt_vaisala_freq_moist, & ! intent(in)
                                        clubb_config_flags%l_use_thvm_in_bv_freq,      & ! intent(in
                                        clubb_config_flags%l_use_shear_Richardson,     & ! intent(in)
+                                       stats_zm,                                      & ! intent(inout)
                                        Cx_fnc_Richardson )                             ! intent(out)
       else
           Cx_fnc_Richardson = 0.0
@@ -1437,7 +1445,7 @@ module advance_clubb_core_module
       !   scalar turbulent fluxes (wprtp, wpthlp, and wpsclrp)
       !   by one time step.
       ! advance_xm_wpxp_bad_wp2 ! Test error comment, DO NOT modify or move
-      call advance_xm_wpxp( gr, dt_advance, sigma_sqd_w, wm_zm, wm_zt, wp2,           & ! intent(in)
+      call advance_xm_wpxp( gr, dt_advance, sigma_sqd_w, wm_zm, wm_zt, wp2,       & ! intent(in)
                             Lscale, wp3_on_wp2, wp3_on_wp2_zt, Kh_zt, Kh_zm,      & ! intent(in)
                             invrs_tau_C6_zm, tau_max_zm, Skw_zm, wp2rtp, rtpthvp, & ! intent(in)
                             rtm_forcing, wprtp_forcing, rtm_ref, wp2thlp,         & ! intent(in)
@@ -1467,6 +1475,7 @@ module advance_clubb_core_module
                             clubb_config_flags%l_brunt_vaisala_freq_moist,        & ! intent(in)
                             clubb_config_flags%l_use_thvm_in_bv_freq,             & ! intent(in)
                             clubb_config_flags%l_lmm_stepping,                    & ! intent(in)
+                            stats_zt, stats_zm, stats_sfc,                        & ! intent(inout)
                             rtm, wprtp, thlm, wpthlp,                             & ! intent(inout)
                             sclrm, wpsclrp, um, upwp, vm, vpwp )                    ! intent(inout)
 
@@ -1506,7 +1515,7 @@ module advance_clubb_core_module
       ! Advance the prognostic equations
       !   for scalar variances and covariances,
       !   plus the horizontal wind variances by one time step, by one time step.
-      call advance_xp2_xpyp( gr, invrs_tau_xp2_zm, invrs_tau_wp2_zm, wm_zm,   & ! intent(in)
+      call advance_xp2_xpyp( gr, invrs_tau_xp2_zm, invrs_tau_wp2_zm, wm_zm, & ! intent(in)
                              rtm, wprtp, thlm, wpthlp, wpthvp, um, vm,    & ! intent(in)
                              wp2, wp2_zt, wp3, upwp, vpwp,                & ! intent(in)
                              sigma_sqd_w, Skw_zm, wprtp2, wpthlp2,        & ! intent(in)
@@ -1528,6 +1537,7 @@ module advance_clubb_core_module
                              clubb_config_flags%l_godunov_upwind_xpyp_ta, & ! intent(in)
                              clubb_config_flags%l_single_C2_Skw,          & ! intent(in)
                              clubb_config_flags%l_lmm_stepping,           & ! intent(in)
+                             stats_zt, stats_zm, stats_sfc,               & ! intent(inout)
                              rtp2, thlp2, rtpthlp, up2, vp2,              & ! intent(inout)
                              sclrp2, sclrprtp, sclrpthlp)                   ! intent(inout)
 
@@ -1555,11 +1565,12 @@ module advance_clubb_core_module
          vpwp_cl_num = 1 ! First instance of v'w' clipping.
       endif ! l_predict_upwp_vpwp
 
-      call clip_covars_denom( gr, dt, rtp2, thlp2, up2, vp2, wp2,           & ! intent(in)
+      call clip_covars_denom( gr, dt, rtp2, thlp2, up2, vp2, wp2,       & ! intent(in)
                               sclrp2, wprtp_cl_num, wpthlp_cl_num,      & ! intent(in)
                               wpsclrp_cl_num, upwp_cl_num, vpwp_cl_num, & ! intent(in)
                               clubb_config_flags%l_predict_upwp_vpwp,   & ! intent(in)
                               clubb_config_flags%l_tke_aniso,           & ! intent(in)
+                              stats_zm,                                 & ! intent(inout)
                               wprtp, wpthlp, upwp, vpwp, wpsclrp )        ! intent(inout)
 
 
@@ -1570,7 +1581,7 @@ module advance_clubb_core_module
 
       ! advance_wp2_wp3_bad_wp2 ! Test error comment, DO NOT modify or move
       call advance_wp2_wp3 &
-           ( gr, dt_advance, sfc_elevation, sigma_sqd_w, wm_zm,             & ! intent(in)
+           ( gr, dt_advance, sfc_elevation, sigma_sqd_w, wm_zm,         & ! intent(in)
              wm_zt, a3_coef, a3_coef_zt, wp3_on_wp2,                    & ! intent(in)
              wp2up2, wp2vp2, wp4,                                       & ! intent(in)
              wpthvp, wp2thvp, um, vm, upwp, vpwp,                       & ! intent(in)
@@ -1578,7 +1589,7 @@ module advance_clubb_core_module
              invrs_tau_wp3_zt, invrs_tau_C1_zm, Skw_zm,                 & ! intent(in)
              Skw_zt, rho_ds_zm, rho_ds_zt, invrs_rho_ds_zm,             & ! intent(in)
              invrs_rho_ds_zt, radf, thv_ds_zm,                          & ! intent(in)
-             thv_ds_zt, pdf_params%mixt_frac(1,:), Cx_fnc_Richardson,        & ! intent(in)
+             thv_ds_zt, pdf_params%mixt_frac(1,:), Cx_fnc_Richardson,   & ! intent(in)
              wp2_splat, wp3_splat,                                      & ! intent(in)
              pdf_implicit_coefs_terms,                                  & ! intent(in)
              wprtp, wpthlp, rtp2, thlp2,                                & ! intent(in)
@@ -1593,6 +1604,7 @@ module advance_clubb_core_module
              clubb_config_flags%l_damp_wp3_Skw_squared,                 & ! intent(in)
              clubb_config_flags%l_lmm_stepping,                         & ! intent(in)
              clubb_config_flags%l_use_tke_in_wp3_pr_turb_term,          & ! intent(in)
+             stats_zt, stats_zm, stats_sfc,                             & ! intent(inout)
              wp2, wp3, wp3_zm, wp2_zt )                                   ! intent(inout)
 
       if ( clubb_at_least_debug_level( 0 ) ) then
@@ -1620,11 +1632,12 @@ module advance_clubb_core_module
          vpwp_cl_num = 2 ! Second instance of v'w' clipping.
       endif ! l_predict_upwp_vpwp
 
-      call clip_covars_denom( gr, dt, rtp2, thlp2, up2, vp2, wp2,           & ! intent(in)
+      call clip_covars_denom( gr, dt, rtp2, thlp2, up2, vp2, wp2,       & ! intent(in)
                               sclrp2, wprtp_cl_num, wpthlp_cl_num,      & ! intent(in)
                               wpsclrp_cl_num, upwp_cl_num, vpwp_cl_num, & ! intent(in)
                               clubb_config_flags%l_predict_upwp_vpwp,   & ! intent(in)
                               clubb_config_flags%l_tke_aniso,           & ! intent(in)
+                              stats_zm,                                 & ! intent(inout)
                               wprtp, wpthlp, upwp, vpwp, wpsclrp )        ! intent(inout)
 
       !----------------------------------------------------------------
@@ -1643,6 +1656,7 @@ module advance_clubb_core_module
                            invrs_rho_ds_zt, invrs_tau_zt, tau_max_zt,  & ! Intent(in)
                            sclrm, sclrp2, wpsclrp, wpsclrp2,           & ! Intent(in)
                            clubb_config_flags%l_lmm_stepping,          & ! intent(in)
+                           stats_zt,                                   & ! intent(inout)
                            rtp3, thlp3, sclrp3 )                         ! Intent(inout)
 
          ! Use a modified form of the Larson and Golaz (2005) ansatz for the
@@ -1815,6 +1829,7 @@ module advance_clubb_core_module
                                   clubb_config_flags%l_uv_nudge,                & ! intent(in)
                                   clubb_config_flags%l_tke_aniso,               & ! intent(in)
                                   clubb_config_flags%l_lmm_stepping,            & ! intent(in)
+                                  stats_zt, stats_zm, stats_sfc,                & ! intent(inout)
                                   um, vm, edsclrm,                              & ! intent(inout)
                                   upwp, vpwp, wpedsclrp )                         ! intent(inout)
 
@@ -1895,6 +1910,7 @@ module advance_clubb_core_module
                                 clubb_config_flags%l_use_cloud_cover,        & ! Intent(in)
                                 clubb_config_flags%l_rcm_supersat_adj,       & ! Intent(in)
                                 rtm,                                         & ! Intent(i/o)
+                                stats_zt, stats_zm,                          & ! intent(inout)
 #ifdef GFDL
                                 RH_crit(k, : , :),                           & ! Intent(i/o)
                                 do_liquid_only_in_clubb,                     & ! Intent(in)
@@ -1998,7 +2014,7 @@ module advance_clubb_core_module
       end if
 
       call stats_accumulate &
-           ( gr, um, vm, upwp, vpwp, up2, vp2,                          & ! intent(in)
+           ( gr, um, vm, upwp, vpwp, up2, vp2,                      & ! intent(in)
              thlm, rtm, wprtp, wpthlp,                              & ! intent(in)
              wp2, wp3, rtp2, rtp3, thlp2, thlp3, rtpthlp,           & ! intent(in)
              wpthvp, wp2thvp, rtpthvp, thlpthvp,                    & ! intent(in)
@@ -2019,7 +2035,8 @@ module advance_clubb_core_module
              pdf_params, pdf_params_zm, sclrm, sclrp2,              & ! intent(in)
              sclrprtp, sclrpthlp, sclrm_forcing, sclrpthvp,         & ! intent(in)
              wpsclrp, sclrprcp, wp2sclrp, wpsclrp2, wpsclrprtp,     & ! intent(in)
-             wpsclrpthlp, wpedsclrp, edsclrm, edsclrm_forcing       ) ! intent(in)
+             wpsclrpthlp, wpedsclrp, edsclrm, edsclrm_forcing,      & ! intent(in)
+             stats_zt, stats_zm, stats_sfc )                          ! intent(inout)
 
 
       if ( clubb_at_least_debug_level( 2 ) ) then
@@ -2115,7 +2132,7 @@ module advance_clubb_core_module
     end subroutine advance_clubb_core
 
   !=============================================================================
-  subroutine pdf_closure_driver( gr, dt, hydromet_dim, wprtp,       & ! Intent(in)
+  subroutine pdf_closure_driver( gr, dt, hydromet_dim, wprtp,   & ! Intent(in)
                                  thlm, wpthlp, rtp2, rtp3,      & ! Intent(in)
                                  thlp2, thlp3, rtpthlp, wp2,    & ! Intent(in)
                                  wp3, wm_zm, wm_zt,             & ! Intent(in)
@@ -2138,6 +2155,7 @@ module advance_clubb_core_module
                                  l_use_cloud_cover,             & ! Intent(in)
                                  l_rcm_supersat_adj,            & ! Intent(in)
                                  rtm,                           & ! Intent(i/o)
+                                 stats_zt, stats_zm,            & ! intent(inout)
 #ifdef GFDL
                                  RH_crit(k, : , :),             & ! Intent(i/o)
                                  do_liquid_only_in_clubb,       & ! Intent(in)
@@ -2231,8 +2249,6 @@ module advance_clubb_core_module
 
     use stats_variables, only: &
         l_stats_samp,        & ! Variable(s)
-        stats_zt,            &
-        stats_zm,            &
         iSkw_zm,             &
         iSkw_zt,             &
         iSkrt_zm,            &
@@ -2257,7 +2273,13 @@ module advance_clubb_core_module
     use clubb_precision, only: &
         core_rknd    ! Variable(s)
 
+    use stats_type, only: stats ! Type
+
     implicit none
+
+    type (stats), target, intent(inout) :: &
+      stats_zt, &
+      stats_zm
 
     type (grid), target, intent(in) :: gr
 

@@ -26,11 +26,12 @@ module advance_xp3_module
   contains
 
   !=============================================================================
-  subroutine advance_xp3( gr, dt, rtm, thlm, rtp2, thlp2, wprtp,         & ! Intent(in)
+  subroutine advance_xp3( gr, dt, rtm, thlm, rtp2, thlp2, wprtp,     & ! Intent(in)
                           wpthlp, wprtp2, wpthlp2, rho_ds_zm,        & ! Intent(in)
                           invrs_rho_ds_zt, invrs_tau_zt, tau_max_zt, & ! Intent(in)
                           sclrm, sclrp2, wpsclrp, wpsclrp2,          & ! Intent(in)
                           l_lmm_stepping,                            & ! Intent(in)
+                          stats_zt,                                  & ! intent(inout)
                           rtp3, thlp3, sclrp3 )                        ! Intent(inout)
 
     ! Description:
@@ -56,7 +57,12 @@ module advance_xp3_module
     use clubb_precision, only: &
         core_rknd    ! Variable(s)
 
+    use stats_type, only: stats ! Type
+
     implicit none
+
+    type (stats), target, intent(inout) :: &
+      stats_zt
 
     type (grid), target, intent(in) :: gr
 
@@ -107,16 +113,18 @@ module advance_xp3_module
                                  invrs_rho_ds_zt,          & ! Intent(in)
                                  invrs_tau_zt, tau_max_zt, & ! Intent(in) 
                                  rt_tol, l_lmm_stepping,   & ! Intent(in)
+                                 stats_zt,                 & ! intent(inout)
                                  rtp3                      ) ! Intent(inout)
 
     ! Advance <thl'^3> one model timestep or calculate <thl'^3> using a
     ! steady-state approximation.
-    call advance_xp3_simplified( gr, xp3_thlp3, dt, thlm,      & ! Intent(in)
+    call advance_xp3_simplified( gr, xp3_thlp3, dt, thlm,  & ! Intent(in)
                                  thlp2, wpthlp,            & ! Intent(in)
                                  wpthlp2, rho_ds_zm,       & ! Intent(in)
                                  invrs_rho_ds_zt,          & ! Intent(in)
                                  invrs_tau_zt, tau_max_zt, & ! Intent(in) 
                                  thl_tol, l_lmm_stepping,  & ! Intent(in)
+                                 stats_zt,                 & ! intent(inout)
                                  thlp3                     ) ! Intent(inout)
 
     ! Advance <sclr'^3> one model timestep or calculate <sclr'^3> using a
@@ -129,6 +137,7 @@ module advance_xp3_module
                                     invrs_rho_ds_zt,             & ! In
                                     invrs_tau_zt, tau_max_zt,    & ! In 
                                     sclr_tol(i), l_lmm_stepping, & ! In
+                                    stats_zt,                    & ! intent(inout)
                                     sclrp3(:,i)                  ) ! In/Out
 
     enddo ! i = 1, sclr_dim
@@ -139,13 +148,14 @@ module advance_xp3_module
   end subroutine advance_xp3
 
   !=============================================================================
-  subroutine advance_xp3_simplified( gr, solve_type, dt, xm,       & ! Intent(in)
+  subroutine advance_xp3_simplified( gr, solve_type, dt, xm,   & ! Intent(in)
                                      xp2, wpxp,                & ! Intent(in)
                                      wpxp2, rho_ds_zm,         & ! Intent(in)
                                      invrs_rho_ds_zt,          & ! Intent(in)
                                      invrs_tau_zt, tau_max_zt, & ! Intent(in) 
                                      x_tol, l_lmm_stepping,    & ! Intent(in)
-                                     xp3                       ) ! Intent(inout)
+                                     stats_zt,                 & ! intent(inout)
+                                     xp3 )                       ! Intent(inout)
 
     ! Description:
     ! Predicts the value of <x'^3> using a simplified form of the <x'^3>
@@ -270,13 +280,17 @@ module advance_xp3_module
         ithlp3_tp,    &
         ithlp3_ac,    &
         ithlp3_dp,    &
-        stats_zt,     &
         l_stats_samp
 
     use clubb_precision, only: &
         core_rknd    ! Variable(s)
 
+    use stats_type, only: stats ! Type
+
     implicit none
+
+    type (stats), target, intent(inout) :: &
+      stats_zt
 
     type (grid), target, intent(in) :: gr
 
