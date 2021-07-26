@@ -35,6 +35,22 @@ module clubb_intr
   implicit none
 #ifdef CLUBB_SGS
   type(grid), target :: gr
+
+  ! Variables that contains all the statistics
+
+  type (stats), target, public, save :: stats_zt,   &    ! stats_zt grid
+                                        stats_zm,   &    ! stats_zm grid
+                                        stats_lh_zt,  &  ! stats_lh_zt grid
+                                        stats_lh_sfc,  & ! stats_lh_sfc grid
+                                        stats_rad_zt,  & ! stats_rad_zt grid
+                                        stats_rad_zm,  & ! stats_rad_zm grid
+                                        stats_sfc        ! stats_sfc
+
+!$omp threadprivate(stats_zt, stats_zm, stats_lh_zt, stats_lh_sfc)
+!$omp threadprivate(stats_rad_zt, stats_rad_zm, stats_sfc)
+
+
+
 !$omp threadprivate(gr)
 #endif
 
@@ -789,11 +805,6 @@ end subroutine clubb_init_cnst
          l_stats, &
          l_stats_samp, &
          l_grads, &
-         stats_zt, &
-         stats_zm, &
-         stats_sfc, &
-         stats_rad_zt, &
-         stats_rad_zm, &
          w_tol_sqd, &
          rt_tol, &
          thl_tol
@@ -2403,6 +2414,7 @@ end subroutine clubb_init_cnst
             wphydrometp, wp2hmp, rtphmp_zt, thlphmp_zt, &
             host_dx, host_dy, &
             clubb_config_flags, &
+            stats_zt, stats_zm, stats_sfc, &
             um_in, vm_in, upwp_in, vpwp_in, up2_in, vp2_in, up3_in, vp3_in, &
             thlm_in, rtm_in, wprtp_in, wpthlp_in, &
             wp2_in, wp3_in, rtp2_in, rtp3_in, thlp2_in, thlp3_in, rtpthlp_in, &
@@ -3451,7 +3463,6 @@ end function diag_ustar
 
 
     use clubb_api_module, only: &
-      stats_zt,      & ! Variables
       ztscr01, & 
       ztscr02, & 
       ztscr03, & 
@@ -3475,7 +3486,6 @@ end function diag_ustar
       ztscr21
 
     use clubb_api_module, only: &
-      stats_zm,      & 
       zmscr01, & 
       zmscr02, & 
       zmscr03, & 
@@ -3493,9 +3503,6 @@ end function diag_ustar
       zmscr15, &
       zmscr16, &
       zmscr17, &
-      stats_rad_zt,  &
-      stats_rad_zm,  &
-      stats_sfc,     & 
       l_stats, &
       l_output_rad_files, & 
       stats_tsamp,   & 
@@ -3710,7 +3717,8 @@ end function diag_ustar
 
     !  Default initialization for array indices for zt
 
-    call stats_init_zt_api( clubb_vars_zt, l_error )
+    call stats_init_zt_api( clubb_vars_zt, l_error, &
+                            stats_zt )
 
     !  Initialize zm (momentum points)
 
@@ -3782,7 +3790,8 @@ end function diag_ustar
     zmscr16 = 0.0_r8
     zmscr17 = 0.0_r8
 
-    call stats_init_zm_api( clubb_vars_zm, l_error )
+    call stats_init_zm_api( clubb_vars_zm, l_error, &
+                            stats_zm )
 
     !  Initialize rad_zt (radiation points)
 
@@ -3819,7 +3828,8 @@ end function diag_ustar
       allocate( stats_rad_zt%file%grid_avg_var( stats_rad_zt%num_output_fields ) )
       allocate( stats_rad_zt%file%z( stats_rad_zt%kk ) )
 
-       call stats_init_rad_zt_api( clubb_vars_rad_zt, l_error )
+       call stats_init_rad_zt_api( clubb_vars_rad_zt, l_error, &
+                                   stats_rad_zt )
 
        !  Initialize rad_zm (radiation points)
  
@@ -3854,7 +3864,8 @@ end function diag_ustar
        allocate( stats_rad_zm%file%grid_avg_var( stats_rad_zm%num_output_fields ) )
        allocate( stats_rad_zm%file%z( stats_rad_zm%kk ) )
    
-       call stats_init_rad_zm_api( clubb_vars_rad_zm, l_error )
+       call stats_init_rad_zm_api( clubb_vars_rad_zm, l_error, &
+                                   stats_rad_zm )
     end if ! l_output_rad_files
 
 
@@ -3891,7 +3902,8 @@ end function diag_ustar
     allocate( stats_sfc%file%grid_avg_var( stats_sfc%num_output_fields ) )
     allocate( stats_sfc%file%z( stats_sfc%kk ) )
 
-    call stats_init_sfc_api( clubb_vars_sfc, l_error )
+    call stats_init_sfc_api( clubb_vars_sfc, l_error, &
+                             stats_sfc )
 
     ! Check for errors
 
@@ -3965,11 +3977,6 @@ end function diag_ustar
 
     use clubb_api_module, only: &
         fstderr, & ! Constant(s)
-        stats_zt,  & ! Variable(s)
-        stats_zm, & 
-        stats_rad_zt, &
-        stats_rad_zm, &
-        stats_sfc, & 
         l_stats_last, & 
         stats_tsamp, & 
         stats_tout, &
