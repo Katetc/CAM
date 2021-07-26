@@ -579,7 +579,7 @@ contains
 #endif
 #endif
    end subroutine subcol_init_SILHS
-   
+!==============================================================!
    subroutine init_state_subcol(state, tend, state_sc, tend_sc)
      
      use ppgrid,                 only : pver, pverp, pcols
@@ -600,7 +600,7 @@ contains
      call subcol_set_subcols(state, tend, numsubcol_arr, state_sc, tend_sc)
      
    end subroutine init_state_subcol
-   
+!==================================================================!
    subroutine subcol_gen_SILHS(state, tend, state_sc, tend_sc, pbuf)
       !-------------------------------
       ! This is where the subcolumns are created, and the call to
@@ -658,7 +658,7 @@ contains
                                          est_kessler_microphys_api, &
                                          vert_decorr_coef
 
-      use clubb_intr, only:              clubb_config_flags, gr
+      use clubb_intr, only:              clubb_config_flags, gr, stats_zt, stats_zm, stats_sfc
 
 #endif
 #endif
@@ -1147,7 +1147,7 @@ contains
         end do
       end do
        
-      call setup_pdf_parameters_api( gr, pverp-top_lev+1, ngrdcol, pdf_dim, ztodt, &        ! In
+      call setup_pdf_parameters_api( gr, pverp-top_lev+1, ngrdcol, pdf_dim, ztodt, &    ! In
                                      Nc_in_cloud, rcm_in, cld_frac_in, khzm, &          ! In
                                      ice_supersat_frac_in, hydromet, wphydrometp, &     ! In
                                      corr_array_n_cloud, corr_array_n_below, &          ! In
@@ -1159,6 +1159,7 @@ contains
                                      clubb_config_flags%l_calc_w_corr, &                ! In
                                      clubb_config_flags%l_const_Nc_in_cloud, &          ! In
                                      clubb_config_flags%l_fix_w_chi_eta_correlations, & ! In
+                                     stats_zt, stats_zm, stats_sfc, &                   ! intent(inout)
                                      hydrometp2, &                                      ! Inout
                                      mu_x_1, mu_x_2, &                                  ! Out
                                      sigma_x_1, sigma_x_2, &                            ! Out
@@ -1244,6 +1245,7 @@ contains
                     clubb_config_flags%l_standard_term_ta, &              ! In
                     clubb_config_flags%l_single_C2_Skw, &                 ! In
                     vert_decorr_coef, &                                   ! In
+                    stats_lh_zt, stats_lh_sfc, &                          ! intent(inout)
                     X_nl_all_levs, X_mixt_comp_all_levs, &                ! Out
                     lh_sample_point_weights)                              ! Out
 
