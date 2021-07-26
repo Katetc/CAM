@@ -69,6 +69,7 @@ module clubb_intr
             gr, &
             stats_zt, stats_zm, stats_sfc, &
             stats_rad_zt, stats_rad_zm, &
+            stats_lh_zt, stats_lh_sfc, &
 #endif
             stats_end_timestep_clubb, & 
             clubb_readnl, &
