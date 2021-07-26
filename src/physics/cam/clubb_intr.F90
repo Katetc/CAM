@@ -28,7 +28,7 @@ module clubb_intr
   use zm_conv_intr,  only: zmconv_microp
 #ifdef CLUBB_SGS
   use clubb_api_module, only: pdf_parameter, implicit_coefs_terms
-  use clubb_api_module, only: clubb_config_flags_type, grid
+  use clubb_api_module, only: clubb_config_flags_type, grid, stats
 
 #endif
 
@@ -38,15 +38,13 @@ module clubb_intr
 
   ! Variables that contains all the statistics
 
-  type (stats), target, public, save :: stats_zt,   &    ! stats_zt grid
-                                        stats_zm,   &    ! stats_zm grid
-                                        stats_lh_zt,  &  ! stats_lh_zt grid
-                                        stats_lh_sfc,  & ! stats_lh_sfc grid
-                                        stats_rad_zt,  & ! stats_rad_zt grid
-                                        stats_rad_zm,  & ! stats_rad_zm grid
-                                        stats_sfc        ! stats_sfc
+  type (stats), target, save :: stats_zt,   &    ! stats_zt grid
+                                stats_zm,   &    ! stats_zm grid
+                                stats_rad_zt,  & ! stats_rad_zt grid
+                                stats_rad_zm,  & ! stats_rad_zm grid
+                                stats_sfc        ! stats_sfc
 
-!$omp threadprivate(stats_zt, stats_zm, stats_lh_zt, stats_lh_sfc)
+!$omp threadprivate(stats_zt, stats_zm)
 !$omp threadprivate(stats_rad_zt, stats_rad_zm, stats_sfc)
 
 
@@ -1411,11 +1409,6 @@ end subroutine clubb_init_cnst
         l_stats, &
         stats_tsamp, &
         stats_tout, &
-        stats_zt, &
-        stats_sfc, &
-        stats_zm, &
-        stats_rad_zt, &
-        stats_rad_zm, &
         l_output_rad_files, &
         stats_begin_timestep_api, &
         hydromet_dim, calculate_thlp2_rad_api, mu, update_xp2_mc_api, &
