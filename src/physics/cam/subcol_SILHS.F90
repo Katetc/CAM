@@ -658,7 +658,8 @@ contains
                                          est_kessler_microphys_api, &
                                          vert_decorr_coef
 
-      use clubb_intr, only:              clubb_config_flags, gr, stats_zt, stats_zm, stats_sfc
+      use clubb_intr, only:              clubb_config_flags, gr, stats_zt, stats_zm, stats_sfc, &
+                                                                 stats_lh_zt, stats_lh_sfc
 
 #endif
 #endif

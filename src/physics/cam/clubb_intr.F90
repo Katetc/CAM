@@ -38,13 +38,15 @@ module clubb_intr
 
   ! Variables that contains all the statistics
 
-  type (stats), target, save :: stats_zt,   &    ! stats_zt grid
-                                stats_zm,   &    ! stats_zm grid
+  type (stats), target, save :: stats_zt,      & ! stats_zt grid
+                                stats_zm,      & ! stats_zm grid
+                                stats_lh_zt,   &
+                                stats_lh_sfc,  &
                                 stats_rad_zt,  & ! stats_rad_zt grid
                                 stats_rad_zm,  & ! stats_rad_zm grid
                                 stats_sfc        ! stats_sfc
 
-!$omp threadprivate(stats_zt, stats_zm)
+!$omp threadprivate(stats_zt, stats_zm, stats_lh_zt, stats_lh_sfc)
 !$omp threadprivate(stats_rad_zt, stats_rad_zm, stats_sfc)
 
 
@@ -65,6 +67,8 @@ module clubb_intr
             stats_init_clubb, &
             init_clubb_config_flags, &
             gr, &
+            stats_zt, stats_zm, stats_sfc, &
+            stats_rad_zt, stats_rad_zm, &
 #endif
             stats_end_timestep_clubb, & 
             clubb_readnl, &
