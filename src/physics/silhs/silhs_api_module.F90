@@ -143,7 +143,6 @@ contains
     l_standard_term_ta, & ! In
     l_single_C2_Skw, & ! In
     vert_decorr_coef, & ! In
-    stats_lh_zt, stats_lh_sfc, & ! intent(inout)
     X_nl_all_levs, X_mixt_comp_all_levs, & ! Out
     lh_sample_point_weights ) ! Out
 
@@ -164,13 +163,7 @@ contains
     use mt95, only: &
       genrand_intg
 
-    use stats_type, only: stats ! Type
-
     implicit none
-
-    type(stats), target, intent(inout) :: &
-      stats_lh_zt, &
-      stats_lh_sfc
 
     ! Input Variables
     integer, intent(in) :: &
@@ -299,7 +292,6 @@ contains
       l_standard_term_ta, & ! In
       l_single_C2_Skw, & ! In
       vert_decorr_coef, & ! In
-      stats_lh_zt, stats_lh_sfc, & ! intent(inout)
       X_nl_all_levs_col, X_mixt_comp_all_levs_col, & ! Out
       lh_sample_point_weights_col ) ! Out
       
@@ -308,7 +300,7 @@ contains
     lh_sample_point_weights = lh_sample_point_weights_col(1,:,:)
 
   end subroutine generate_silhs_sample_api_single_col
-!============================================================================================================!
+  
   subroutine generate_silhs_sample_api_multi_col( &
     iter, pdf_dim, num_samples, sequence_length, nz, ngrdcol, & ! In
     l_calc_weights_all_levs_itime, &
@@ -323,7 +315,6 @@ contains
     l_standard_term_ta, & ! In
     l_single_C2_Skw, & ! In
     vert_decorr_coef, & ! In
-    stats_lh_zt, stats_lh_sfc, & ! intent(inout)
     X_nl_all_levs, X_mixt_comp_all_levs, & ! Out
     lh_sample_point_weights ) ! Out
 
@@ -344,13 +335,7 @@ contains
     use mt95, only: &
       genrand_intg
 
-    use stats_type, only: stats ! Type
-
     implicit none
-
-    type(stats), target, intent(inout) :: &
-      stats_lh_zt, &
-      stats_lh_sfc
 
     ! Input Variables
     integer, intent(in) :: &
@@ -434,7 +419,6 @@ contains
       l_standard_term_ta, & ! In
       l_single_C2_Skw, & ! In
       vert_decorr_coef, & ! In
-      stats_lh_zt, stats_lh_sfc, & ! intent(inout)
       X_nl_all_levs, X_mixt_comp_all_levs, & ! Out
       lh_sample_point_weights ) ! Out
 
@@ -449,12 +433,9 @@ contains
     lh_sample_point_weights, X_nl_all_levs, &
     lh_rt_clipped, lh_thl_clipped, & 
     lh_rc_clipped, lh_rv_clipped, & 
-    lh_Nc_clipped, &
-    stats_lh_zt, stats_lh_sfc )
+    lh_Nc_clipped )
 
     use grid_class, only: grid
-
-    use stats_type, only: stats
 
     use latin_hypercube_driver_module, only : stats_accumulate_lh
 
@@ -462,10 +443,6 @@ contains
       core_rknd    ! Constant
 
     implicit none
-
-    type(stats), target, intent(inout) :: &
-      stats_lh_zt, &
-      stats_lh_sfc
 
     type(grid), target, intent(in) :: gr
 
@@ -496,8 +473,7 @@ contains
       lh_sample_point_weights, X_nl_all_levs, &
       lh_rt_clipped, lh_thl_clipped, & 
       lh_rc_clipped, lh_rv_clipped, & 
-      lh_Nc_clipped, &
-      stats_lh_zt, stats_lh_sfc )
+      lh_Nc_clipped )
 
   end subroutine stats_accumulate_lh_api
 
