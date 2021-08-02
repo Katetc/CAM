@@ -24,8 +24,8 @@ pipeline {
       steps {
         sh '''source /opt/intel/bin/ifortvars.sh intel64
               rm -rf /home/jenkins/cam_output/scratch/ERP_Ln9.f10_f10_mg37.F2000climo.nelson_gnu.cam-outfrq9s.*
-              sed -i \'s|clubb_params(iC14) = clubb_c14|clubb_params(iC14) = clubb_c1|\' /home/pub/bitten/tmp/cam/src/physics/cam/clubb_intr.F90
-              sed -i \'s|clubb_config_flags%l_stability_correct_tau_zm = clubb_l_stability_correct_tau_zm|clubb_config_flags%l_stability_correct_tau_zm = .false.|\' /home/pub/bitten/tmp/cam/src/physics/cam/clubb_intr.F90
+              sed -i \'s|clubb_params(iC14) = clubb_c14|clubb_params(iC14) = clubb_c1|\' src/physics/cam/clubb_intr.F90
+              sed -i \'s|clubb_config_flags%l_stability_correct_tau_zm = clubb_l_stability_correct_tau_zm|clubb_config_flags%l_stability_correct_tau_zm = .false.|\' src/physics/cam/clubb_intr.F90
               cime/scripts/create_test ERP_Ln9.f10_f10_mg37.F2000climo.nelson_gnu.cam-outfrq9s'''
       }
     }
