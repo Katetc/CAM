@@ -9,7 +9,8 @@ pipeline {
     }
     stage('Run Python Test') {
       steps {
-        sh '''python3 /home/jenkins/cam_bit_diff_test_workspace/sys_admin/python_nightly_test_suite/run_test.py -c /home/jenkins/cam_bit_diff_test_workspace/bit_diff_cam_config'''
+        sh '''source /opt/intel/bin/ifortvars.sh intel64
+              python3 /home/jenkins/cam_bit_diff_test_workspace/sys_admin/python_nightly_test_suite/run_test.py -c /home/jenkins/cam_bit_diff_test_workspace/bit_diff_cam_config'''
       }
     }
   }
