@@ -2284,7 +2284,7 @@ end subroutine clubb_init_cnst
       
       !  Need to flip arrays around for CLUBB core
       do k=1,nlev+1
-         um_in(k)      = um(i,pverp-k+1)
+         um_in(k)      = um(i,pverp-k+1) 
          vm_in(k)      = vm(i,pverp-k+1)
          upwp_in(k)    = upwp(i,pverp-k+1)
          vpwp_in(k)    = vpwp(i,pverp-k+1)
