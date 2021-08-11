@@ -210,7 +210,6 @@ module advance_clubb_core_module
     use parameters_model, only: &
         sclr_dim, & ! Variable(s)
         edsclr_dim, &
-        T0, &
         sclr_tol
 
     use model_flags, only: &
@@ -390,9 +389,6 @@ module advance_clubb_core_module
     intrinsic :: sqrt, min, max, exp, mod, real
 
     ! Constant Parameters
-
-    logical, parameter :: &
-      l_iter_xp2_xpyp = .true. ! Set to true when rtp2/thlp2/rtpthlp, et cetera are prognostic
 
     real( kind = core_rknd ), parameter :: &
       tau_const = 1000._core_rknd
@@ -681,14 +677,6 @@ module advance_clubb_core_module
     real( kind = core_rknd ), dimension(gr%nz) :: &
       Km_zm, & ! Eddy diffusivity for momentum on zm grid levels [m^2/s]
       Kmh_zm   ! Eddy diffusivity for thermodynamic variables [m^2/s]
-
-    logical, parameter ::  &
-      l_use_buoy_mod_Km_zm = .false. ! .true. if we use a buoyancy-modified expression for Km_zm
-
-    real( kind = core_rknd ), dimension(gr%nz) :: &
-      tau_factor, &         ! factor that includes tau_zm in expression for Km_zm [s]
-      Km_zm_denom_term, &   ! term in denominator of Km_zm [-]
-      Km_zm_numerator_term  ! term in numerator of Km_zm [-]
 
     real( kind = core_rknd ), dimension(gr%nz) :: &
       gamma_Skw_fnc,  & ! Gamma as a function of skewness               [-]
@@ -1528,7 +1516,7 @@ module advance_clubb_core_module
                              thv_ds_zm, cloud_frac, Lscale,               & ! intent(in)
                              wp3_on_wp2, wp3_on_wp2_zt,                   & ! intent(in)
                              pdf_implicit_coefs_terms,                    & ! intent(in)
-                             l_iter_xp2_xpyp, dt_advance,                 & ! intent(in)
+                             dt_advance,                 & ! intent(in)
                              sclrm, wpsclrp,                              & ! intent(in)
                              wpsclrp2, wpsclrprtp, wpsclrpthlp,           & ! intent(in)
                              wp2_splat,                                   & ! intent(in)
@@ -1793,26 +1781,9 @@ module advance_clubb_core_module
       !   and their fluxes (upwp, vpwp, wpedsclrp) by one time step.
       !----------------------------------------------------------------
 
-      if ( l_use_buoy_mod_Km_zm ) then
+      
 
-         tau_factor = ( ( one - C_uu_shr ) / C4 ) * tau_zm
-         Km_zm_denom_term = tau_factor * ( grav / T0 ) * &
-                              wpthvp / max( 10._core_rknd*w_tol_sqd, wp2 )
-         Km_zm_numerator_term = 0.02_core_rknd * 0.5_core_rknd * ( grav / T0 ) &
-                                * tau_zm**2 * ddzt( gr, thlm )
-         Km_zm = c_K10 * tau_factor * wp2 * &
-                           ( one - min( 0.9_core_rknd, Km_zm_numerator_term ) ) / &
-                           ( one - min( 0.9_core_rknd, Km_zm_denom_term ) )
-         ! Old method to account for upgradient contribution due to cumuli
-         !Km_Skw_factor = exp( - (Skw_zm - Km_Skw_thresh) / Km_Skw_factor_efold )
-         !Km_Skw_factor = max( Km_Skw_factor_min, Km_Skw_factor )
-         !Km_Skw_factor = min( one, Km_Skw_factor )
-         !Km_zm = Km_zm * Km_Skw_factor
-      else
-
-        Km_zm = Kh_zm * c_K10   ! Coefficient for momentum
-
-      end if
+      Km_zm = Kh_zm * c_K10   ! Coefficient for momentum
 
       Kmh_zm = Kh_zm * c_K10h ! Coefficient for thermo
 
