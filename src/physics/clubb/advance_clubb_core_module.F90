@@ -1513,10 +1513,10 @@ module advance_clubb_core_module
                              wprtpthlp, Kh_zt, rtp2_forcing,              & ! intent(in)
                              thlp2_forcing, rtpthlp_forcing,              & ! intent(in)
                              rho_ds_zm, rho_ds_zt, invrs_rho_ds_zm,       & ! intent(in)
-                             thv_ds_zm, cloud_frac, Lscale,               & ! intent(in)
+                             thv_ds_zm, cloud_frac,                       & ! intent(in)
                              wp3_on_wp2, wp3_on_wp2_zt,                   & ! intent(in)
                              pdf_implicit_coefs_terms,                    & ! intent(in)
-                             dt_advance,                 & ! intent(in)
+                             dt_advance,                                  & ! intent(in)
                              sclrm, wpsclrp,                              & ! intent(in)
                              wpsclrp2, wpsclrprtp, wpsclrpthlp,           & ! intent(in)
                              wp2_splat,                                   & ! intent(in)
@@ -2243,9 +2243,7 @@ module advance_clubb_core_module
         imax_F_rt,           &
         imin_F_thl,          &
         imax_F_thl,          &
-        ircp2,               &
-        ircm_refined,        &
-        icloud_frac_refined
+        ircp2               
 
     use clubb_precision, only: &
         core_rknd    ! Variable(s)
@@ -2262,16 +2260,6 @@ module advance_clubb_core_module
 
     !!! External
     intrinsic :: sqrt, min, max, exp, mod, real
-
-    logical, parameter :: &
-      l_refine_grid_in_cloud = .false., & ! Compute cloud_frac and rcm on a refined grid
-
-      l_interactive_refined  = .false.    ! Should the refined grid code feed into the model?
-                                          ! Only has meaning if l_refined_grid_in_cloud is .true.
-
-    real( kind = core_rknd ), parameter :: &
-      chi_at_liq_sat = 0._core_rknd  ! Value of chi(s) at saturation with
-                                     ! respect to ice (zero for liquid)
 
     !!! Input Variables
     real( kind = core_rknd ), intent(in) ::  &
@@ -2559,14 +2547,6 @@ module advance_clubb_core_module
     type(implicit_coefs_terms) :: &
       pdf_implicit_coefs_terms_zm
 
-    real( kind = core_rknd ) :: &
-      cloud_frac_1_refined, & ! cloud_frac_1 computed on refined grid
-      cloud_frac_2_refined, & ! cloud_frac_2 computed on refined grid
-      rc_1_refined, &         ! rc_1 computed on refined grid
-      rc_2_refined, &         ! rc_2 computed on refined grid
-      cloud_frac_refined, &   ! cloud_frac gridbox mean on refined grid
-      rcm_refined             ! rcm gridbox mean on refined grid
-
     real( kind = core_rknd ), dimension(gr%nz) :: &
       rsat,             & ! Saturation mixing ratio from mean rt and thl.
       rel_humidity        ! Relative humidity after PDF closure [-]
@@ -2774,66 +2754,6 @@ module advance_clubb_core_module
                              stats_zt )               ! intent(inout)
     endif
 
-    if ( l_refine_grid_in_cloud ) then
-
-      ! Compute cloud_frac and rcm on a refined grid to improve parameterization
-      ! of subgrid clouds
-      do k=1, gr%nz
-
-        if ( pdf_params%chi_1(1,k)/pdf_params%stdev_chi_1(1,k) > -1._core_rknd ) then
-
-          ! Recalculate cloud_frac and r_c for each PDF component
-
-          call calc_vert_avg_cf_component &
-               ( gr%nz, k, gr%zt, pdf_params%chi_1(1,:), &                    ! Intent(in)
-                 pdf_params%stdev_chi_1(1,:), (/(chi_at_liq_sat,i=1,gr%nz)/), & ! Intent(in)
-                 cloud_frac_1_refined, rc_1_refined )                   ! Intent(out)
-
-          call calc_vert_avg_cf_component &
-               ( gr%nz, k, gr%zt, pdf_params%chi_2(1,:), &                     ! Intent(in)
-                 pdf_params%stdev_chi_2(1,:), (/(chi_at_liq_sat,i=1,gr%nz)/), &  ! Intent(in)
-                 cloud_frac_2_refined, rc_2_refined )                    ! Intent(out)
-
-          cloud_frac_refined = compute_mean_binormal &
-                               ( cloud_frac_1_refined, cloud_frac_2_refined, &
-                                 pdf_params%mixt_frac(1,k) )
-
-          rcm_refined = compute_mean_binormal &
-                        ( rc_1_refined, rc_2_refined, pdf_params%mixt_frac(1,k) )
-
-          if ( l_interactive_refined ) then
-            ! I commented out the lines that modify the values in pdf_params, as it seems that
-            ! these values need to remain consistent with the rest of the PDF.
-            ! Eric Raut Jun 2014
-            ! Replace pdf_closure estimates with refined estimates
-            ! pdf_params%rc_1(1,k) = rc_1_refined
-            ! pdf_params%rc_2(1,k) = rc_2_refined
-            rcm(k) = rcm_refined
-
-            ! pdf_params%cloud_frac_1(1,k) = cloud_frac_1_refined
-            ! pdf_params%cloud_frac_2(1,k) = cloud_frac_2_refined
-            cloud_frac(k) = cloud_frac_refined
-          end if
-
-        else
-          ! Set these equal to the non-refined values so we have something to
-          ! output to stats!
-          cloud_frac_refined = cloud_frac(k)
-          rcm_refined = rcm(k)
-        end if ! pdf_params%chi_1(1,k)/pdf_params%stdev_chi_1(1,k) > -1._core_rknd
-
-        ! Stats output
-        if ( l_stats_samp .and. l_samp_stats_in_pdf_call ) then
-          call stat_update_var_pt( icloud_frac_refined, k, cloud_frac_refined, & ! intent(in)
-                                   stats_zt )                                    ! intent(inout)
-          call stat_update_var_pt( ircm_refined, k, rcm_refined, & ! intent(in)
-                                   stats_zt )                      ! intent(inout)
-        end if
-
-      end do ! k=1, gr%nz
-
-    end if ! l_refine_grid_in_cloud
-
     if( l_rtm_nudge ) then
       ! Nudge rtm to prevent excessive drying
       where( rtm < rtm_min .and. gr%zt < rtm_nudge_max_altitude )
@@ -3001,12 +2921,11 @@ module advance_clubb_core_module
              wprtp2, wpthlp2,                             & ! intent(inout)
              wprtpthlp, cloud_frac, ice_supersat_frac,    & ! intent(inout)
              rcm, wp2thvp, wpsclrprtp, wpsclrp2,          & ! intent(inout)
-             wpsclrpthlp, pdf_params,                     & ! intent(inout)
+             wpsclrpthlp,                                 & ! intent(inout)
              wprtp2_zm, wpthlp2_zm,                       & ! intent(inout)
              wprtpthlp_zm, cloud_frac_zm,                 & ! intent(inout)
              ice_supersat_frac_zm, rcm_zm, wp2thvp_zm,    & ! intent(inout)
-             wpsclrprtp_zm, wpsclrp2_zm, wpsclrpthlp_zm,  & ! intent(inout)
-             pdf_params_zm )                                ! intent(inout)
+             wpsclrprtp_zm, wpsclrp2_zm, wpsclrpthlp_zm )   ! intent(inout)
     end if ! l_trapezoidal_rule_zt
 
     ! If l_trapezoidal_rule_zm is true, call trapezoidal_rule_zm for
@@ -3574,12 +3493,12 @@ module advance_clubb_core_module
                  wprtp2, wpthlp2,                             & ! intent(inout)
                  wprtpthlp, cloud_frac, ice_supersat_frac,    & ! intent(inout)
                  rcm, wp2thvp, wpsclrprtp, wpsclrp2,          & ! intent(inout)
-                 wpsclrpthlp, pdf_params,                     & ! intent(inout)
+                 wpsclrpthlp,                                 & ! intent(inout)
                  wprtp2_zm, wpthlp2_zm,                       & ! intent(inout)
                  wprtpthlp_zm, cloud_frac_zm,                 & ! intent(inout)
                  ice_supersat_frac_zm, rcm_zm, wp2thvp_zm,    & ! intent(inout)
-                 wpsclrprtp_zm, wpsclrp2_zm, wpsclrpthlp_zm,  & ! intent(inout)
-                 pdf_params_zm )                                ! intent(inout)
+                 wpsclrprtp_zm, wpsclrp2_zm, wpsclrpthlp_zm )   ! intent(inout)
+                 
       !
       ! Description:
       !   This subroutine takes the output variables on the thermo.
@@ -3601,9 +3520,6 @@ module advance_clubb_core_module
       ! References:
       !   None
       !-----------------------------------------------------------------------
-
-      use constants_clubb, only: &
-          fstderr  ! Constant(s)
 
       use stats_variables, only: &
           iwprtp2, & ! Varibles
@@ -3632,10 +3548,6 @@ module advance_clubb_core_module
 
     type (grid), target, intent(in) :: gr
 
-      ! Constant parameters
-      logical, parameter :: &
-        l_apply_rule_to_pdf_params = .false. ! Apply the trapezoidal rule to pdf_params
-
       ! Input variables
       logical, intent(in) :: l_call_pdf_closure_twice
 
@@ -3655,9 +3567,6 @@ module advance_clubb_core_module
         wpsclrp2,    & ! w'sclr'^2
         wpsclrpthlp    ! w'sclr'thl'
 
-      type (pdf_parameter), intent(inout) :: &
-        pdf_params ! PDF parameters [units vary]
-
       ! Thermo. level variables brought to momentum levels either by
       ! interpolation (in subroutine trapezoidal_rule_zt) or by
       ! the second call to pdf_closure (in subroutine advance_clubb_core)
@@ -3675,93 +3584,7 @@ module advance_clubb_core_module
         wpsclrp2_zm,    & ! w'sclr'^2 on momentum grid
         wpsclrpthlp_zm    ! w'sclr'thl' on momentum grid
 
-      type (pdf_parameter), intent(inout) :: &
-        pdf_params_zm ! PDF parameters on momentum grid [units vary]
-
       ! Local variables
-
-      ! Components of PDF_parameters on the momentum grid (_zm) and on the thermo. grid (_zt)
-      real( kind = core_rknd ), dimension(gr%nz) :: &
-        w_1_zt,          & ! Mean of w for 1st normal distribution                 [m/s]
-        w_1_zm,          & ! Mean of w for 1st normal distribution                 [m/s]
-        w_2_zm,          & ! Mean of w for 2nd normal distribution                 [m/s]
-        w_2_zt,          & ! Mean of w for 2nd normal distribution                 [m/s]
-        varnce_w_1_zm,   & ! Variance of w for 1st normal distribution         [m^2/s^2]
-        varnce_w_1_zt,   & ! Variance of w for 1st normal distribution         [m^2/s^2]
-        varnce_w_2_zm,   & ! Variance of w for 2nd normal distribution         [m^2/s^2]
-        varnce_w_2_zt,   & ! Variance of w for 2nd normal distribution         [m^2/s^2]
-        rt_1_zm,         & ! Mean of r_t for 1st normal distribution             [kg/kg]
-        rt_1_zt,         & ! Mean of r_t for 1st normal distribution             [kg/kg]
-        rt_2_zm,         & ! Mean of r_t for 2nd normal distribution             [kg/kg]
-        rt_2_zt,         & ! Mean of r_t for 2nd normal distribution             [kg/kg]
-        varnce_rt_1_zm,  & ! Variance of r_t for 1st normal distribution     [kg^2/kg^2]
-        varnce_rt_1_zt,  & ! Variance of r_t for 1st normal distribution     [kg^2/kg^2]
-        varnce_rt_2_zm,  & ! Variance of r_t for 2nd normal distribution     [kg^2/kg^2]
-        varnce_rt_2_zt,  & ! Variance of r_t for 2nd normal distribution     [kg^2/kg^2]
-        crt_1_zm,        & ! Coefficient for s'                                      [-]
-        crt_1_zt,        & ! Coefficient for s'                                      [-]
-        crt_2_zm           ! Coefficient for s'                                      [-]
-
-      real( kind = core_rknd ), dimension(gr%nz) :: &
-        crt_2_zt,        & ! Coefficient for s'                                      [-]
-        cthl_1_zm,       & ! Coefficient for s'                                    [1/K]
-        cthl_1_zt,       & ! Coefficient for s'                                    [1/K]
-        cthl_2_zm,       & ! Coefficient for s'                                    [1/K]
-        cthl_2_zt,       & ! Coefficient for s'                                    [1/K]
-        thl_1_zm,        & ! Mean of th_l for 1st normal distribution                [K]
-        thl_1_zt,        & ! Mean of th_l for 1st normal distribution                [K]
-        thl_2_zm,        & ! Mean of th_l for 2nd normal distribution                [K]
-        thl_2_zt,        & ! Mean of th_l for 2nd normal distribution
-        varnce_thl_1_zm, & ! Variance of th_l for 1st normal distribution          [K^2]
-        varnce_thl_1_zt, & ! Variance of th_l for 1st normal distribution          [K^2]
-        varnce_thl_2_zm, & ! Variance of th_l for 2nd normal distribution          [K^2]
-        varnce_thl_2_zt    ! Variance of th_l for 2nd normal distribution          [K^2]
-
-      real( kind = core_rknd ), dimension(gr%nz) :: &
-        mixt_frac_zm,   & ! Weight of 1st normal distribution (Sk_w dependent)      [-]
-        mixt_frac_zt,   & ! Weight of 1st normal distribution (Sk_w dependent)      [-]
-        rc_1_zm,         & ! Mean of r_c for 1st normal distribution             [kg/kg]
-        rc_1_zt,         & ! Mean of r_c for 1st normal distribution             [kg/kg]
-        rc_2_zm,         & ! Mean of r_c for 2nd normal distribution             [kg/kg]
-        rc_2_zt,         & ! Mean of r_c for 2nd normal distribution             [kg/kg]
-        rsatl_1_zm,        & ! Mean of r_sl for 1st normal distribution            [kg/kg]
-        rsatl_1_zt,        & ! Mean of r_sl for 1st normal distribution            [kg/kg]
-        rsatl_2_zm,        & ! Mean of r_sl for 2nd normal distribution            [kg/kg]
-        rsatl_2_zt,        & ! Mean of r_sl for 2nd normal distribution            [kg/kg]
-        cloud_frac_1_zm, & ! Cloud fraction for 1st normal distribution              [-]
-        cloud_frac_1_zt, & ! Cloud fraction for 1st normal distribution              [-]
-        cloud_frac_2_zm, & ! Cloud fraction for 2nd normal distribution              [-]
-        cloud_frac_2_zt, & ! Cloud fraction for 2nd normal distribution              [-]
-        chi_1_zm,          & ! Mean of chi(s) for 1st normal distribution               [kg/kg]
-        chi_1_zt,          & ! Mean of chi(s) for 1st normal distribution               [kg/kg]
-        chi_2_zm,          & ! Mean of chi(s) for 2nd normal distribution               [kg/kg]
-        chi_2_zt,          & ! Mean of chi(s) for 2nd normal distribution               [kg/kg]
-        stdev_chi_1_zm       ! Standard deviation of chi(s) for 1st normal distribution [kg/kg]
-
-      real( kind = core_rknd ), dimension(gr%nz) :: &
-        stdev_chi_1_zt,    & ! Standard deviation of chi(s) for 1st normal distribution [kg/kg]
-        stdev_chi_2_zm,    & ! Standard deviation of chi(s) for 2nd normal distribution [kg/kg]
-        stdev_chi_2_zt,    & ! Standard deviation of chi(s) for 2nd normal distribution [kg/kg]
-        stdev_eta_1_zm,    & ! Standard deviation of eta(t) for 1st normal distribution [kg/kg]
-        stdev_eta_1_zt,    & ! Standard deviation of eta(t) for 1st normal distribution [kg/kg]
-        stdev_eta_2_zm,    & ! Standard deviation of eta(t) for 2nd normal distribution [kg/kg]
-        stdev_eta_2_zt,    & ! Standard deviation of eta(t) for 2nd normal distribution [kg/kg]
-        corr_w_rt_1_zm,    & ! PDF comp. correlation of w and r_t for 1st normal        [-]
-        corr_w_rt_1_zt,    & ! PDF comp. correlation of w and r_t for 1st normal        [-]
-        corr_w_rt_2_zm,    & ! PDF comp. correlation of w and r_t for 2nd normal        [-]
-        corr_w_rt_2_zt,    & ! PDF comp. correlation of w and r_t for 2nd normal        [-]
-        corr_w_thl_1_zm,   & ! PDF comp. correlation of w and th_l for 1st normal       [-]
-        corr_w_thl_1_zt,   & ! PDF comp. correlation of w and th_l for 1st normal       [-]
-        corr_w_thl_2_zm,   & ! PDF comp. correlation of w and th_l for 2nd normal       [-]
-        corr_w_thl_2_zt,   & ! PDF comp. correlation of w and th_l for 2nd normal       [-]
-        corr_rt_thl_1_zm,  & ! PDF comp. correlation of r_t and th_l for 1st normal     [-]
-        corr_rt_thl_1_zt,  & ! PDF comp. correlation of r_t and th_l for 1st normal     [-]
-        corr_rt_thl_2_zm,  & ! PDF comp. correlation of r_t and th_l for 2nd normal     [-]
-        corr_rt_thl_2_zt,  & ! PDF comp. correlation of r_t and th_l for 2nd normal     [-]
-        alpha_thl_zm,      & ! Factor relating to normalized variance for th_l          [-]
-        alpha_thl_zt,      & ! Factor relating to normalized variance for th_l          [-]
-        alpha_rt_zm,       & ! Factor relating to normalized variance for r_t           [-]
-        alpha_rt_zt          ! Factor relating to normalized variance for r_t           [-]
 
       integer :: i
 
@@ -3776,94 +3599,11 @@ module advance_clubb_core_module
       ! which is turn will break the latin hypercube code that samples
       ! preferentially in cloud. -dschanen 13 Feb 2012
 
-      if ( l_apply_rule_to_pdf_params ) then
-        w_1_zt          = pdf_params%w_1(1,:)
-        w_2_zt          = pdf_params%w_2(1,:)
-        varnce_w_1_zt   = pdf_params%varnce_w_1(1,:)
-        varnce_w_2_zt   = pdf_params%varnce_w_2(1,:)
-        rt_1_zt         = pdf_params%rt_1(1,:)
-        rt_2_zt         = pdf_params%rt_2(1,:)
-        varnce_rt_1_zt  = pdf_params%varnce_rt_1(1,:)
-        varnce_rt_2_zt  = pdf_params%varnce_rt_2(1,:)
-        crt_1_zt        = pdf_params%crt_1(1,:)
-        crt_2_zt        = pdf_params%crt_2(1,:)
-        cthl_1_zt       = pdf_params%cthl_1(1,:)
-        cthl_2_zt       = pdf_params%cthl_2(1,:)
-        thl_1_zt        = pdf_params%thl_1(1,:)
-        thl_2_zt        = pdf_params%thl_2(1,:)
-        varnce_thl_1_zt = pdf_params%varnce_thl_1(1,:)
-        varnce_thl_2_zt = pdf_params%varnce_thl_2(1,:)
-        mixt_frac_zt   = pdf_params%mixt_frac(1,:)
-        rc_1_zt         = pdf_params%rc_1(1,:)
-        rc_2_zt         = pdf_params%rc_2(1,:)
-        rsatl_1_zt        = pdf_params%rsatl_1(1,:)
-        rsatl_2_zt        = pdf_params%rsatl_2(1,:)
-        cloud_frac_1_zt = pdf_params%cloud_frac_1(1,:)
-        cloud_frac_2_zt = pdf_params%cloud_frac_2(1,:)
-        chi_1_zt          = pdf_params%chi_1(1,:)
-        chi_2_zt          = pdf_params%chi_2(1,:)
-        stdev_chi_1_zt    = pdf_params%stdev_chi_1(1,:)
-        stdev_chi_2_zt    = pdf_params%stdev_chi_2(1,:)
-        stdev_eta_1_zt    = pdf_params%stdev_eta_1(1,:)
-        stdev_eta_2_zt    = pdf_params%stdev_eta_2(1,:)
-        corr_w_rt_1_zt    = pdf_params%corr_w_rt_1(1,:)
-        corr_w_rt_2_zt    = pdf_params%corr_w_rt_2(1,:)
-        corr_w_thl_1_zt   = pdf_params%corr_w_thl_1(1,:)
-        corr_w_thl_2_zt   = pdf_params%corr_w_thl_2(1,:)
-        corr_rt_thl_1_zt  = pdf_params%corr_rt_thl_1(1,:)
-        corr_rt_thl_2_zt  = pdf_params%corr_rt_thl_2(1,:)
-        alpha_thl_zt   = pdf_params%alpha_thl(1,:)
-        alpha_rt_zt    = pdf_params%alpha_rt(1,:)
-      end if
 
       ! If l_call_pdf_closure_twice is true, the _zm variables already have
       ! values from the second call to pdf_closure in advance_clubb_core.
       ! If it is false, the variables are interpolated to the _zm levels.
       if ( l_call_pdf_closure_twice ) then
-
-        ! Store, in locally declared variables, the pdf_params output
-        ! from the second call to pdf_closure
-        if ( l_apply_rule_to_pdf_params ) then
-          w_1_zm          = pdf_params_zm%w_1(1,:)
-          w_2_zm          = pdf_params_zm%w_2(1,:)
-          varnce_w_1_zm   = pdf_params_zm%varnce_w_1(1,:)
-          varnce_w_2_zm   = pdf_params_zm%varnce_w_2(1,:)
-          rt_1_zm         = pdf_params_zm%rt_1(1,:)
-          rt_2_zm         = pdf_params_zm%rt_2(1,:)
-          varnce_rt_1_zm  = pdf_params_zm%varnce_rt_1(1,:)
-          varnce_rt_2_zm  = pdf_params_zm%varnce_rt_2(1,:)
-          crt_1_zm        = pdf_params_zm%crt_1(1,:)
-          crt_2_zm        = pdf_params_zm%crt_2(1,:)
-          cthl_1_zm       = pdf_params_zm%cthl_1(1,:)
-          cthl_2_zm       = pdf_params_zm%cthl_2(1,:)
-          thl_1_zm        = pdf_params_zm%thl_1(1,:)
-          thl_2_zm        = pdf_params_zm%thl_2(1,:)
-          varnce_thl_1_zm = pdf_params_zm%varnce_thl_1(1,:)
-          varnce_thl_2_zm = pdf_params_zm%varnce_thl_2(1,:)
-          mixt_frac_zm   = pdf_params_zm%mixt_frac(1,:)
-          rc_1_zm         = pdf_params_zm%rc_1(1,:)
-          rc_2_zm         = pdf_params_zm%rc_2(1,:)
-          rsatl_1_zm        = pdf_params_zm%rsatl_1(1,:)
-          rsatl_2_zm        = pdf_params_zm%rsatl_2(1,:)
-          cloud_frac_1_zm = pdf_params_zm%cloud_frac_1(1,:)
-          cloud_frac_2_zm = pdf_params_zm%cloud_frac_2(1,:)
-          chi_1_zm          = pdf_params_zm%chi_1(1,:)
-          chi_2_zm          = pdf_params_zm%chi_2(1,:)
-          stdev_chi_1_zm    = pdf_params_zm%stdev_chi_1(1,:)
-          stdev_chi_2_zm    = pdf_params_zm%stdev_chi_2(1,:)
-          stdev_eta_1_zm    = pdf_params_zm%stdev_eta_1(1,:)
-          stdev_eta_2_zm    = pdf_params_zm%stdev_eta_2(1,:)
-          corr_w_rt_1_zm    = pdf_params_zm%corr_w_rt_1(1,:)
-          corr_w_rt_2_zm    = pdf_params_zm%corr_w_rt_2(1,:)
-          corr_w_thl_1_zm   = pdf_params_zm%corr_w_thl_1(1,:)
-          corr_w_thl_2_zm   = pdf_params_zm%corr_w_thl_2(1,:)
-          corr_rt_thl_1_zm  = pdf_params_zm%corr_rt_thl_1(1,:)
-          corr_rt_thl_2_zm  = pdf_params_zm%corr_rt_thl_2(1,:)
-          alpha_thl_zm      = pdf_params_zm%alpha_thl(1,:)
-          alpha_rt_zm       = pdf_params_zm%alpha_rt(1,:)
-        end if
-
-      else
 
         ! Interpolate thermodynamic variables to the momentum grid.
         ! Since top momentum level is higher than top thermo. level,
@@ -3892,82 +3632,6 @@ module advance_clubb_core_module
           wpsclrpthlp_zm(gr%nz,i) = 0.0_core_rknd
         end do ! i = 1, sclr_dim
 
-        if ( l_apply_rule_to_pdf_params ) then
-          w_1_zm                 = zt2zm( gr, pdf_params%w_1(1,:) )
-          w_1_zm(gr%nz)          = 0.0_core_rknd
-          w_2_zm                 = zt2zm( gr, pdf_params%w_2(1,:) )
-          w_2_zm(gr%nz)          = 0.0_core_rknd
-          varnce_w_1_zm          = zt2zm( gr, pdf_params%varnce_w_1(1,:) )
-          varnce_w_1_zm(gr%nz)   = 0.0_core_rknd
-          varnce_w_2_zm          = zt2zm( gr, pdf_params%varnce_w_2(1,:) )
-          varnce_w_2_zm(gr%nz)   = 0.0_core_rknd
-          rt_1_zm                = zt2zm( gr, pdf_params%rt_1(1,:) )
-          rt_1_zm(gr%nz)         = 0.0_core_rknd
-          rt_2_zm                = zt2zm( gr, pdf_params%rt_2(1,:) )
-          rt_2_zm(gr%nz)         = 0.0_core_rknd
-          varnce_rt_1_zm         = zt2zm( gr, pdf_params%varnce_rt_1(1,:) )
-          varnce_rt_1_zm(gr%nz)  = 0.0_core_rknd
-          varnce_rt_2_zm         = zt2zm( gr, pdf_params%varnce_rt_2(1,:) )
-          varnce_rt_2_zm(gr%nz)  = 0.0_core_rknd
-          crt_1_zm               = zt2zm( gr, pdf_params%crt_1(1,:) )
-          crt_1_zm(gr%nz)        = 0.0_core_rknd
-          crt_2_zm               = zt2zm( gr, pdf_params%crt_2(1,:) )
-          crt_2_zm(gr%nz)        = 0.0_core_rknd
-          cthl_1_zm              = zt2zm( gr, pdf_params%cthl_1(1,:) )
-          cthl_1_zm(gr%nz)       = 0.0_core_rknd
-          cthl_2_zm              = zt2zm( gr, pdf_params%cthl_2(1,:) )
-          cthl_2_zm(gr%nz)       = 0.0_core_rknd
-          thl_1_zm               = zt2zm( gr, pdf_params%thl_1(1,:) )
-          thl_1_zm(gr%nz)        = 0.0_core_rknd
-          thl_2_zm               = zt2zm( gr, pdf_params%thl_2(1,:) )
-          thl_2_zm(gr%nz)        = 0.0_core_rknd
-          varnce_thl_1_zm        = zt2zm( gr, pdf_params%varnce_thl_1(1,:) )
-          varnce_thl_1_zm(gr%nz) = 0.0_core_rknd
-          varnce_thl_2_zm        = zt2zm( gr, pdf_params%varnce_thl_2(1,:) )
-          varnce_thl_2_zm(gr%nz) = 0.0_core_rknd
-          mixt_frac_zm          = zt2zm( gr, pdf_params%mixt_frac(1,:) )
-          mixt_frac_zm(gr%nz)   = 0.0_core_rknd
-          rc_1_zm                = zt2zm( gr, pdf_params%rc_1(1,:) )
-          rc_1_zm(gr%nz)         = 0.0_core_rknd
-          rc_2_zm                = zt2zm( gr, pdf_params%rc_2(1,:) )
-          rc_2_zm(gr%nz)         = 0.0_core_rknd
-          rsatl_1_zm               = zt2zm( gr, pdf_params%rsatl_1(1,:) )
-          rsatl_1_zm(gr%nz)        = 0.0_core_rknd
-          rsatl_2_zm               = zt2zm( gr, pdf_params%rsatl_2(1,:) )
-          rsatl_2_zm(gr%nz)        = 0.0_core_rknd
-          cloud_frac_1_zm        = zt2zm( gr, pdf_params%cloud_frac_1(1,:) )
-          cloud_frac_1_zm(gr%nz) = 0.0_core_rknd
-          cloud_frac_2_zm        = zt2zm( gr, pdf_params%cloud_frac_2(1,:) )
-          cloud_frac_2_zm(gr%nz) = 0.0_core_rknd
-          chi_1_zm                 = zt2zm( gr, pdf_params%chi_1(1,:) )
-          chi_1_zm(gr%nz)          = 0.0_core_rknd
-          chi_2_zm                 = zt2zm( gr, pdf_params%chi_2(1,:) )
-          chi_2_zm(gr%nz)          = 0.0_core_rknd
-          stdev_chi_1_zm           = zt2zm( gr, pdf_params%stdev_chi_1(1,:) )
-          stdev_chi_1_zm(gr%nz)    = 0.0_core_rknd
-          stdev_chi_2_zm           = zt2zm( gr, pdf_params%stdev_chi_2(1,:) )
-          stdev_chi_2_zm(gr%nz)    = 0.0_core_rknd
-          stdev_eta_1_zm           = zt2zm( gr, pdf_params%stdev_eta_1(1,:) )
-          stdev_eta_1_zm(gr%nz)    = 0.0_core_rknd
-          stdev_eta_2_zm           = zt2zm( gr, pdf_params%stdev_eta_2(1,:) )
-          stdev_eta_2_zm(gr%nz)    = 0.0_core_rknd
-          corr_w_rt_1_zm           = zt2zm( gr, pdf_params%corr_w_rt_1(1,:) )
-          corr_w_rt_1_zm(gr%nz)    = 0.0_core_rknd
-          corr_w_rt_2_zm           = zt2zm( gr, pdf_params%corr_w_rt_2(1,:) )
-          corr_w_rt_2_zm(gr%nz)    = 0.0_core_rknd
-          corr_w_thl_1_zm          = zt2zm( gr, pdf_params%corr_w_thl_1(1,:) )
-          corr_w_thl_1_zm(gr%nz)   = 0.0_core_rknd
-          corr_w_thl_2_zm          = zt2zm( gr, pdf_params%corr_w_thl_2(1,:) )
-          corr_w_thl_2_zm(gr%nz)   = 0.0_core_rknd
-          corr_rt_thl_1_zm         = zt2zm( gr, pdf_params%corr_rt_thl_1(1,:) )
-          corr_rt_thl_1_zm(gr%nz)  = 0.0_core_rknd
-          corr_rt_thl_2_zm         = zt2zm( gr, pdf_params%corr_rt_thl_2(1,:) )
-          corr_rt_thl_2_zm(gr%nz)  = 0.0_core_rknd
-          alpha_thl_zm             = zt2zm( gr, pdf_params%alpha_thl(1,:) )
-          alpha_thl_zm(gr%nz)      = 0.0_core_rknd
-          alpha_rt_zm              = zt2zm( gr, pdf_params%alpha_rt(1,:) )
-          alpha_rt_zm(gr%nz)       = 0.0_core_rknd
-        end if
       end if ! l_call_pdf_closure_twice
 
       if ( l_stats ) then
@@ -4000,57 +3664,6 @@ module advance_clubb_core_module
       rcm        = trapezoid_zt( gr, rcm, rcm_zm )
 
       wp2thvp    = trapezoid_zt( gr, wp2thvp, wp2thvp_zm )
-
-      if ( l_apply_rule_to_pdf_params ) then
-        ! Note: this code makes PDF component cloud water mixing ratios and
-        !       cloud fractions inconsistent with the PDF.  Other parts of
-        !       CLUBB require PDF component cloud fractions to remain
-        !       consistent with the PDF.  This code needs to be refactored
-        !       so that cloud_frac_1 and cloud_frac_2 are preserved.
-        write(fstderr,*) "The code in l_apply_rule_to_pdf_params does not " &
-                         // "preserve cloud_frac_1 and cloud_frac_2 in a " &
-                         // "manner consistent with the PDF as required " &
-                         // "by other parts of CLUBB."
-        write(fstderr,*) "Please refactor before continuing."
-        return
-        pdf_params%w_1(1,:)          = trapezoid_zt( gr, w_1_zt, w_1_zm )
-        pdf_params%w_2(1,:)          = trapezoid_zt( gr, w_2_zt, w_2_zm )
-        pdf_params%varnce_w_1(1,:)   = trapezoid_zt( gr, varnce_w_1_zt, varnce_w_1_zm )
-        pdf_params%varnce_w_2(1,:)   = trapezoid_zt( gr, varnce_w_2_zt, varnce_w_2_zm )
-        pdf_params%rt_1(1,:)         = trapezoid_zt( gr, rt_1_zt, rt_1_zm )
-        pdf_params%rt_2(1,:)         = trapezoid_zt( gr, rt_2_zt, rt_2_zm )
-        pdf_params%varnce_rt_1(1,:)  = trapezoid_zt( gr, varnce_rt_1_zt, varnce_rt_1_zm )
-        pdf_params%varnce_rt_2(1,:)  = trapezoid_zt( gr, varnce_rt_2_zt, varnce_rt_2_zm )
-        pdf_params%crt_1(1,:)        = trapezoid_zt( gr, crt_1_zt, crt_1_zm )
-        pdf_params%crt_2(1,:)        = trapezoid_zt( gr, crt_2_zt, crt_2_zm )
-        pdf_params%cthl_1(1,:)       = trapezoid_zt( gr, cthl_1_zt, cthl_1_zm )
-        pdf_params%cthl_2(1,:)       = trapezoid_zt( gr, cthl_2_zt, cthl_2_zm )
-        pdf_params%thl_1(1,:)        = trapezoid_zt( gr, thl_1_zt, thl_1_zm )
-        pdf_params%thl_2(1,:)        = trapezoid_zt( gr, thl_2_zt, thl_2_zm )
-        pdf_params%varnce_thl_1(1,:) = trapezoid_zt( gr, varnce_thl_1_zt, varnce_thl_1_zm )
-        pdf_params%varnce_thl_2(1,:) = trapezoid_zt( gr, varnce_thl_2_zt, varnce_thl_2_zm )
-        pdf_params%mixt_frac(1,:)   = trapezoid_zt( gr, mixt_frac_zt, mixt_frac_zm )
-        pdf_params%rc_1(1,:)         = trapezoid_zt( gr, rc_1_zt, rc_1_zm )
-        pdf_params%rc_2(1,:)         = trapezoid_zt( gr, rc_2_zt, rc_2_zm )
-        pdf_params%rsatl_1(1,:)        = trapezoid_zt( gr, rsatl_1_zt, rsatl_1_zm )
-        pdf_params%rsatl_2(1,:)        = trapezoid_zt( gr, rsatl_2_zt, rsatl_2_zm )
-        pdf_params%cloud_frac_1(1,:) = trapezoid_zt( gr, cloud_frac_1_zt, cloud_frac_1_zm )
-        pdf_params%cloud_frac_2(1,:) = trapezoid_zt( gr, cloud_frac_2_zt, cloud_frac_2_zm )
-        pdf_params%chi_1(1,:)          = trapezoid_zt( gr, chi_1_zt, chi_1_zm )
-        pdf_params%chi_2(1,:)          = trapezoid_zt( gr, chi_2_zt, chi_2_zm )
-        pdf_params%corr_w_rt_1(1,:)    = trapezoid_zt( gr, corr_w_rt_1_zt, corr_w_rt_1_zm )
-        pdf_params%corr_w_rt_2(1,:)    = trapezoid_zt( gr, corr_w_rt_2_zt, corr_w_rt_2_zm )
-        pdf_params%corr_w_thl_1(1,:)   = trapezoid_zt( gr, corr_w_thl_1_zt, corr_w_thl_1_zm )
-        pdf_params%corr_w_thl_2(1,:)   = trapezoid_zt( gr, corr_w_thl_2_zt, corr_w_thl_2_zm )
-        pdf_params%corr_rt_thl_1(1,:)  = trapezoid_zt( gr, corr_rt_thl_1_zt, corr_rt_thl_1_zm )
-        pdf_params%corr_rt_thl_2(1,:)  = trapezoid_zt( gr, corr_rt_thl_2_zt, corr_rt_thl_2_zm )
-        pdf_params%alpha_thl(1,:)      = trapezoid_zt( gr, alpha_thl_zt, alpha_thl_zm )
-        pdf_params%alpha_rt(1,:)       = trapezoid_zt( gr, alpha_rt_zt, alpha_rt_zm )
-        pdf_params%stdev_chi_1(1,:)    = trapezoid_zt( gr, stdev_chi_1_zt, stdev_chi_1_zm )
-        pdf_params%stdev_chi_2(1,:)    = trapezoid_zt( gr, stdev_chi_2_zt, stdev_chi_2_zm )
-        pdf_params%stdev_eta_1(1,:)    = trapezoid_zt( gr, stdev_eta_1_zt, stdev_eta_1_zm )
-        pdf_params%stdev_eta_2(1,:)    = trapezoid_zt( gr, stdev_eta_2_zt, stdev_eta_2_zm )
-      end if
 
       ! End of trapezoidal rule
 
