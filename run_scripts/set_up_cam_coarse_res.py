@@ -3,7 +3,6 @@
 import subprocess
 import argparse
 import sys
-import numpy
 import os
 import shutil
 from pathlib import Path
@@ -34,10 +33,11 @@ args = parser.parse_args()
 repo = Path(args.repoPath[0])
 
 if not repo.exists():
-    print("Path does not exist. Cloning cam into: "+args.repoPath)
-    #clone repo
+    print(args.repoPath+" not found.")
+    sys.exit(1)
     
 os.chdir(repo)
+
 
 print("Checking out externals...")
 checkoutExternalsCmd = "python3 manage_externals/checkout_externals -e Externals.cfg"
@@ -53,6 +53,7 @@ shutil.copy(machineOptions, cimeConfigLocation)
 shutil.copy(compilerOptions, cimeConfigLocation)
 
 
+# Go through run run_cesm_uwm_coarse_res.sh and replace lines of interest
 for line in fileinput.input("run_scripts/run_cesm_uwm_coarse_res.sh", inplace=True):
     
     if args.caseroot is not None:
@@ -64,6 +65,9 @@ for line in fileinput.input("run_scripts/run_cesm_uwm_coarse_res.sh", inplace=Tr
     if args.silhs is not None:
         line = re.sub('NUMSC=.*','NUMSC='+args.silhs[0],line)
         
+    # Adding '--handle-preexisting-dirs u' argument to the create_newcase script allows
+    # the build and run folder to be reused automatically, without requiring a user to
+    # input 'u' when asked what to do. This is nice for automated runs.
     if args.reuse_build:
         line = re.sub('create_newcase','create_newcase --handle-preexisting-dirs u',line)
         

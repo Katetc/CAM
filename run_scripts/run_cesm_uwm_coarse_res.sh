@@ -13,6 +13,14 @@ WALL_TIME="03:00:00" # H:MM:SS
 NUMSC=4
 MGVER=2 # Currently "1" and "2" are allowed
 
+# If caseroot exists already, remove it, but warn user incase they don't want this
+if [ -d "$CASEROOT" ]; then
+  echo 'Removing old code directory '$CASEROOT' in 10 seconds.'
+  echo 'To abort, press ctrl-c'
+  sleep 10
+  rm -rf $CASEROOT
+fi
+
 # Obtain the CAM source directory. This solution is from Stack Overflow.
 # http://stackoverflow.com/questions/59895/can-a-bash-script-tell-what-directory-its-stored-in
 CAM_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
