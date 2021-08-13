@@ -1245,7 +1245,6 @@ contains
                     clubb_config_flags%l_uv_nudge, &                      ! In
                     clubb_config_flags%l_tke_aniso, &                     ! In
                     clubb_config_flags%l_standard_term_ta, &              ! In
-                    clubb_config_flags%l_single_C2_Skw, &                 ! In
                     vert_decorr_coef, &                                   ! In
                     stats_lh_zt, stats_lh_sfc, &                          ! intent(inout)
                     X_nl_all_levs, X_mixt_comp_all_levs, &                ! Out

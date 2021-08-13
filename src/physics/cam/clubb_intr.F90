@@ -4331,8 +4331,6 @@ end function diag_ustar
                                       ! saturated atmospheres (from Durran and Klemp, 1982)
       l_use_thvm_in_bv_freq,        & ! Use thvm in the calculation of Brunt-Vaisala frequency
       l_rcm_supersat_adj,           & ! Add excess supersaturated vapor to cloud water
-      l_single_C2_Skw,              & ! Use a single Skewness dependent C2 for rtp2, thlp2, and
-                                      ! rtpthlp
       l_damp_wp3_Skw_squared,       & ! Set damping on wp3 to use Skw^2 rather than Skw^4
       l_prescribed_avg_deltaz,      & ! used in adj_low_res_nu. If .true., avg_deltaz = deltaz
       l_update_pressure,            & ! Flag for having CLUBB update pressure and exner
@@ -4384,7 +4382,6 @@ end function diag_ustar
                                                l_brunt_vaisala_freq_moist, & ! Out
                                                l_use_thvm_in_bv_freq, & ! Out
                                                l_rcm_supersat_adj, & ! Out
-                                               l_single_C2_Skw, & ! Out
                                                l_damp_wp3_Skw_squared, & ! Out
                                                l_prescribed_avg_deltaz, & ! Out
                                                l_update_pressure, & ! Intent(out)
@@ -4432,7 +4429,6 @@ end function diag_ustar
                                                    l_brunt_vaisala_freq_moist, & ! In
                                                    l_use_thvm_in_bv_freq, & ! In
                                                    l_rcm_supersat_adj, & ! In
-                                                   l_single_C2_Skw, & ! In
                                                    l_damp_wp3_Skw_squared, & ! In
                                                    l_prescribed_avg_deltaz, & ! In
                                                    l_update_pressure, & ! In
