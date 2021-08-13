@@ -193,6 +193,7 @@ module output_netcdf
   subroutine write_netcdf( l_uv_nudge, &
                            l_tke_aniso, &
                            l_standard_term_ta, &
+                           l_single_C2_Skw, &
                            ncf )
 
 ! Description:
@@ -228,10 +229,11 @@ module output_netcdf
       l_uv_nudge,         & ! For wind speed nudging
       l_tke_aniso,        & ! For anisotropic turbulent kinetic energy, i.e. TKE = 1/2
                             ! (u'^2 + v'^2 + w'^2)
-      l_standard_term_ta    ! Use the standard discretization for the turbulent advection terms.
+      l_standard_term_ta, & ! Use the standard discretization for the turbulent advection terms.
                             ! Setting to .false. means that a_1 and a_3 are pulled outside of the
                             ! derivative in advance_wp2_wp3_module.F90 and in
                             ! advance_xp2_xpyp_module.F90.
+      l_single_C2_Skw       ! Use a single Skewness dependent C2 for rtp2, thlp2, and rtpthlp
 
     type (stat_file), intent(inout) :: ncf    ! The file
 
@@ -254,6 +256,7 @@ module output_netcdf
       call first_write( l_uv_nudge, & ! intent(in)
                         l_tke_aniso, & ! intent(in)
                         l_standard_term_ta, & ! intent(in)
+                        l_single_C2_Skw, & ! intent(in)
                         ncf ) ! finalize the variable definitions intent(inout)
       call write_grid( ncf )  ! define lat., long., and grid intent(inout)
       ncf%l_defined = .true.
@@ -565,6 +568,7 @@ module output_netcdf
   subroutine first_write( l_uv_nudge, &
                           l_tke_aniso, &
                           l_standard_term_ta, &
+                          l_single_C2_Skw, &
                           ncf )
 
 ! Description:
@@ -635,10 +639,11 @@ module output_netcdf
       l_uv_nudge,         & ! For wind speed nudging
       l_tke_aniso,        & ! For anisotropic turbulent kinetic energy, i.e. TKE = 1/2
                             ! (u'^2 + v'^2 + w'^2)
-      l_standard_term_ta    ! Use the standard discretization for the turbulent advection terms.
+      l_standard_term_ta, & ! Use the standard discretization for the turbulent advection terms.
                             ! Setting to .false. means that a_1 and a_3 are pulled outside of the
                             ! derivative in advance_wp2_wp3_module.F90 and in
                             ! advance_xp2_xpyp_module.F90.
+      l_single_C2_Skw       ! Use a single Skewness dependent C2 for rtp2, thlp2, and rtpthlp
 
     ! Input/Output Variables
     type (stat_file), intent(inout) :: ncf
@@ -810,15 +815,17 @@ module output_netcdf
 
     ! Write the model flags to the file
     deallocate( stat )
-    allocate( stat(6) ) ! # of model flags
+    allocate( stat(7) ) ! # of model flags
 
     stat(1) = nf90_put_att( ncf%iounit, NF90_GLOBAL, "l_pos_def", lchar( l_pos_def ) )
     stat(2) = nf90_put_att( ncf%iounit, NF90_GLOBAL, "l_hole_fill", lchar( l_hole_fill ) )
     stat(3) = nf90_put_att( ncf%iounit, NF90_GLOBAL, "l_standard_term_ta", &
       lchar( l_standard_term_ta ) )
-    stat(4) = nf90_put_att( ncf%iounit, NF90_GLOBAL, "l_gamma_Skw", lchar( l_gamma_Skw ) )
-    stat(5) = nf90_put_att( ncf%iounit, NF90_GLOBAL, "l_uv_nudge", lchar( l_uv_nudge ) )
-    stat(6) = nf90_put_att( ncf%iounit, NF90_GLOBAL, "l_tke_aniso", lchar( l_tke_aniso ) )
+    stat(4) = nf90_put_att( ncf%iounit, NF90_GLOBAL, "l_single_C2_Skw", &
+      lchar( l_single_C2_Skw ) )
+    stat(5) = nf90_put_att( ncf%iounit, NF90_GLOBAL, "l_gamma_Skw", lchar( l_gamma_Skw ) )
+    stat(6) = nf90_put_att( ncf%iounit, NF90_GLOBAL, "l_uv_nudge", lchar( l_uv_nudge ) )
+    stat(7) = nf90_put_att( ncf%iounit, NF90_GLOBAL, "l_tke_aniso", lchar( l_tke_aniso ) )
 
     if ( any( stat /= NF90_NOERR ) ) then
       write(fstderr,*) "Error writing model flags"
