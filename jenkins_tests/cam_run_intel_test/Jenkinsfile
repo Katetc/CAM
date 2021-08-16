@@ -23,7 +23,7 @@ pipeline {
     }
     stage('Run atex') {
       steps {
-        sh '''source /opt/intel/bin/ifortvars.sh intel64
+        sh '''source /opt/intel/oneapi/setvars.sh --force
               run_scripts/run_scam.bash atex'''
       }
     }
