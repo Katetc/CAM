@@ -858,7 +858,6 @@ end subroutine clubb_init_cnst
     integer :: lptr
 
     logical, parameter :: l_input_fields = .false. ! Always false for CAM-CLUBB.
-    logical, parameter :: l_update_pressure = .false. ! Always false for CAM-CLUBB.
 
     real(r8)  :: zt_g(pverp+1-top_lev)          ! Height dummy array
     real(r8)  :: zi_g(pverp+1-top_lev)          ! Height dummy array
@@ -1071,7 +1070,6 @@ end subroutine clubb_init_cnst
     clubb_config_flags%l_Lscale_plume_centered = clubb_l_lscale_plume_centered
     clubb_config_flags%l_diag_Lscale_from_tau = clubb_l_diag_Lscale_from_tau
     clubb_config_flags%l_damp_wp2_using_em = clubb_l_damp_wp2_using_em
-    clubb_config_flags%l_update_pressure = l_update_pressure
     clubb_config_flags%l_lmm_stepping = clubb_l_lmm_stepping
     clubb_config_flags%l_e3sm_config = clubb_l_e3sm_config
     clubb_config_flags%l_use_tke_in_wp3_pr_turb_term = clubb_l_use_tke_in_wp3_pr_turb_term
@@ -4333,7 +4331,6 @@ end function diag_ustar
       l_rcm_supersat_adj,           & ! Add excess supersaturated vapor to cloud water
       l_damp_wp3_Skw_squared,       & ! Set damping on wp3 to use Skw^2 rather than Skw^4
       l_prescribed_avg_deltaz,      & ! used in adj_low_res_nu. If .true., avg_deltaz = deltaz
-      l_update_pressure,            & ! Flag for having CLUBB update pressure and exner
       l_lmm_stepping,               & ! Apply Linear Multistep Method (LMM) Stepping
       l_e3sm_config,                & ! Run model with E3SM settings
       l_use_tke_in_wp3_pr_turb_term   ! Use TKE formulation for wp3 pr_turb term
@@ -4384,7 +4381,6 @@ end function diag_ustar
                                                l_rcm_supersat_adj, & ! Out
                                                l_damp_wp3_Skw_squared, & ! Out
                                                l_prescribed_avg_deltaz, & ! Out
-                                               l_update_pressure, & ! Intent(out)
                                                l_lmm_stepping, & ! Intent(out)
                                                l_e3sm_config, & ! Intent(out)
                                                l_use_tke_in_wp3_pr_turb_term ) ! Intent(out) 
@@ -4431,7 +4427,6 @@ end function diag_ustar
                                                    l_rcm_supersat_adj, & ! In
                                                    l_damp_wp3_Skw_squared, & ! In
                                                    l_prescribed_avg_deltaz, & ! In
-                                                   l_update_pressure, & ! In
                                                    l_lmm_stepping, & ! In
                                                    l_e3sm_config, & ! In
                                                    l_use_tke_in_wp3_pr_turb_term, & ! In 
