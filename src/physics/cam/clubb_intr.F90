@@ -4329,6 +4329,11 @@ end function diag_ustar
       l_prescribed_avg_deltaz,      & ! used in adj_low_res_nu. If .true., avg_deltaz = deltaz
       l_lmm_stepping,               & ! Apply Linear Multistep Method (LMM) Stepping
       l_e3sm_config,                & ! Run model with E3SM settings
+      l_vary_convect_depth,         & ! Flag used to calculate convective velocity using
+                                      ! a variable estimate of layer depth based on the depth
+                                      ! over which wpthlp is positive near the ground when true
+                                      ! More information can be found by
+                                      ! Looking at issue #905 on the clubb repo
       l_use_tke_in_wp3_pr_turb_term   ! Use TKE formulation for wp3 pr_turb term
 
     logical, save :: first_call = .true.
@@ -4378,6 +4383,7 @@ end function diag_ustar
                                                l_prescribed_avg_deltaz, & ! Out
                                                l_lmm_stepping, & ! Intent(out)
                                                l_e3sm_config, & ! Intent(out)
+                                               l_vary_convect_depth, & ! Intent(out)
                                                l_use_tke_in_wp3_pr_turb_term ) ! Intent(out) 
 
       call initialize_clubb_config_flags_type_api( iiPDF_type, & ! In
@@ -4423,6 +4429,7 @@ end function diag_ustar
                                                    l_prescribed_avg_deltaz, & ! In
                                                    l_lmm_stepping, & ! In
                                                    l_e3sm_config, & ! In
+                                                   l_vary_convect_depth, & ! In
                                                    l_use_tke_in_wp3_pr_turb_term, & ! In 
                                                    clubb_config_flags_in ) ! Out
 
