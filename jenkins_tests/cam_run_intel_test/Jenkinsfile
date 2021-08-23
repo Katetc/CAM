@@ -39,9 +39,9 @@ pipeline {
               cat /home/jenkins/cam_output/scratch/test_scam_atex/bld/atm.bldlog.*'''
         sh '''gzip -d /home/jenkins/cam_output/scratch/test_scam_atex/bld/cesm.bldlog.*.gz
               cat /home/jenkins/cam_output/scratch/test_scam_atex/bld/cesm.bldlog.*'''
-        sh '''gzip -d /home/jenkins/cam_output/scratch/test_scam_atex/bld/atm.log.*.gz
-              cat /home/jenkins/cam_output/scratch/test_scam_atex/bld/atm.log.*'''
-        sh '''gzip -d /home/jenkins/cam_output/scratch/test_scam_atex/bld/cesm.log.*.gz
+        sh '''gzip -d /home/jenkins/cam_output/scratch/test_scam_atex/run/atm.log.*.gz
+              cat /home/jenkins/cam_output/scratch/test_scam_atex/run/atm.log.*'''
+        sh '''gzip -d /home/jenkins/cam_output/scratch/test_scam_atex/run/cesm.log.*.gz
               cat /home/jenkins/cam_output/scratch/test_scam_atex/run/cesm.log.*'''
       }
     }
@@ -51,9 +51,9 @@ pipeline {
               cat /home/jenkins/cam_output/scratch/test_scam_arm97/bld/atm.bldlog.*'''
         sh '''gzip -d /home/jenkins/cam_output/scratch/test_scam_arm97/bld/cesm.bldlog.*.gz
               cat /home/jenkins/cam_output/scratch/test_scam_arm97/bld/cesm.bldlog.*'''
-        sh '''gzip -d /home/jenkins/cam_output/scratch/test_scam_arm97/bld/atm.log.*.gz
-              cat /home/jenkins/cam_output/scratch/test_scam_arm97/bld/atm.log.*'''
-        sh '''gzip -d /home/jenkins/cam_output/scratch/test_scam_arm97/bld/cesm.log.*.gz
+        sh '''gzip -d /home/jenkins/cam_output/scratch/test_scam_arm97/run/atm.log.*.gz
+              cat /home/jenkins/cam_output/scratch/test_scam_arm97/run/atm.log.*'''
+        sh '''gzip -d /home/jenkins/cam_output/scratch/test_scam_arm97/run/cesm.log.*.gz
               cat /home/jenkins/cam_output/scratch/test_scam_arm97/run/cesm.log.*'''
       }
     }
