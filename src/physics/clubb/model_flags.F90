@@ -170,10 +170,6 @@ module model_flags
       l_diffuse_rtm_and_thlm,       & ! Diffuses rtm and thlm
       l_stability_correct_Kh_N2_zm, & ! Divides Kh_N2_zm by a stability factor
       l_calc_thlp2_rad,             & ! Include the contribution of radiation to thlp2
-      l_upwind_wpxp_ta,             & ! This flag determines whether we want to use an upwind
-                                      ! differencing approximation rather than a centered
-                                      ! differencing for turbulent or mean advection terms. It
-                                      ! affects wprtp, wpthlp, & wpsclrp.
       l_upwind_xpyp_ta,             & ! This flag determines whether we want to use an upwind
                                       ! differencing approximation rather than a centered
                                       ! differencing for turbulent or mean advection terms. It
@@ -246,6 +242,11 @@ module model_flags
       l_prescribed_avg_deltaz,      & ! used in adj_low_res_nu. If .true., avg_deltaz = deltaz
       l_lmm_stepping,               & ! Apply Linear Multistep Method (LMM) Stepping
       l_e3sm_config,                & ! Run model with E3SM settings
+      l_vary_convect_depth,         & ! Flag used to calculate convective velocity using
+                                      ! a variable estimate of layer depth based on the depth
+                                      ! over which wpthlp is positive near the ground when true
+                                      ! More information can be found by
+                                      ! Looking at issue #905 on the clubb repo
       l_use_tke_in_wp3_pr_turb_term   ! Use TKE formulation for wp3 pr_turb term
 
   end type clubb_config_flags_type
@@ -326,7 +327,6 @@ module model_flags
                                              l_diffuse_rtm_and_thlm, &
                                              l_stability_correct_Kh_N2_zm, &
                                              l_calc_thlp2_rad, &
-                                             l_upwind_wpxp_ta, &
                                              l_upwind_xpyp_ta, &
                                              l_upwind_xm_ma, &
                                              l_uv_nudge, &
@@ -360,6 +360,7 @@ module model_flags
                                              l_prescribed_avg_deltaz, &
                                              l_lmm_stepping, &
                                              l_e3sm_config, &
+                                             l_vary_convect_depth, &
                                              l_use_tke_in_wp3_pr_turb_term )
 
 ! Description:
@@ -403,10 +404,6 @@ module model_flags
       l_diffuse_rtm_and_thlm,       & ! Diffuses rtm and thlm
       l_stability_correct_Kh_N2_zm, & ! Divides Kh_N2_zm by a stability factor
       l_calc_thlp2_rad,             & ! Include the contribution of radiation to thlp2
-      l_upwind_wpxp_ta,             & ! This flag determines whether we want to use an upwind
-                                      ! differencing approximation rather than a centered
-                                      ! differencing for turbulent or mean advection terms. It
-                                      ! affects wprtp, wpthlp, & wpsclrp.
       l_upwind_xpyp_ta,             & ! This flag determines whether we want to use an upwind
                                       ! differencing approximation rather than a centered
                                       ! differencing for turbulent or mean advection terms. It
@@ -479,6 +476,11 @@ module model_flags
       l_prescribed_avg_deltaz,      & ! used in adj_low_res_nu. If .true., avg_deltaz = deltaz
       l_lmm_stepping,               & ! Apply Linear Multistep Method (LMM) Stepping
       l_e3sm_config,                & ! Run model with E3SM settings
+      l_vary_convect_depth,         & ! Flag used to calculate convective velocity using
+                                      ! a variable estimate of layer depth based on the depth
+                                      ! over which wpthlp is positive near the ground when true
+                                      ! More information can be found by
+                                      ! Looking at issue #905 on the clubb repo
       l_use_tke_in_wp3_pr_turb_term   ! Use TKE formulation for wp3 pr_turb term
 
 !-----------------------------------------------------------------------
@@ -494,7 +496,6 @@ module model_flags
     l_diffuse_rtm_and_thlm = .false.
     l_stability_correct_Kh_N2_zm = .false.
     l_calc_thlp2_rad = .true.
-    l_upwind_wpxp_ta = .false.
     l_upwind_xpyp_ta = .true.
     l_upwind_xm_ma = .true.
     l_uv_nudge = .false.
@@ -532,6 +533,7 @@ module model_flags
 #endif
     l_lmm_stepping = .false.
     l_e3sm_config = .false.
+    l_vary_convect_depth = .false.
     l_use_tke_in_wp3_pr_turb_term = .false.
 
     return
@@ -548,7 +550,6 @@ module model_flags
                                                  l_diffuse_rtm_and_thlm, &
                                                  l_stability_correct_Kh_N2_zm, &
                                                  l_calc_thlp2_rad, &
-                                                 l_upwind_wpxp_ta, &
                                                  l_upwind_xpyp_ta, &
                                                  l_upwind_xm_ma, &
                                                  l_uv_nudge, &
@@ -582,6 +583,7 @@ module model_flags
                                                  l_prescribed_avg_deltaz, &
                                                  l_lmm_stepping, &
                                                  l_e3sm_config, &
+                                                 l_vary_convect_depth, &
                                                  l_use_tke_in_wp3_pr_turb_term, &
                                                  clubb_config_flags )
 
@@ -626,10 +628,6 @@ module model_flags
       l_diffuse_rtm_and_thlm,       & ! Diffuses rtm and thlm
       l_stability_correct_Kh_N2_zm, & ! Divides Kh_N2_zm by a stability factor
       l_calc_thlp2_rad,             & ! Include the contribution of radiation to thlp2
-      l_upwind_wpxp_ta,             & ! This flag determines whether we want to use an upwind
-                                      ! differencing approximation rather than a centered
-                                      ! differencing for turbulent or mean advection terms. It
-                                      ! affects wprtp, wpthlp, & wpsclrp.
       l_upwind_xpyp_ta,             & ! This flag determines whether we want to use an upwind
                                       ! differencing approximation rather than a centered
                                       ! differencing for turbulent or mean advection terms. It
@@ -702,6 +700,11 @@ module model_flags
       l_prescribed_avg_deltaz,      & ! used in adj_low_res_nu. If .true., avg_deltaz = deltaz
       l_lmm_stepping,               & ! Apply Linear Multistep Method (LMM) Stepping
       l_e3sm_config,                & ! Run model with E3SM settings
+      l_vary_convect_depth,         & ! Flag used to calculate convective velocity using
+                                      ! a variable estimate of layer depth based on the depth
+                                      ! over which wpthlp is positive near the ground when true
+                                      ! More information can be found by
+                                      ! Looking at issue #905 on the clubb repo
       l_use_tke_in_wp3_pr_turb_term   ! Use TKE formulation for wp3 pr_turb term
 
     ! Output variables
@@ -721,7 +724,6 @@ module model_flags
     clubb_config_flags%l_diffuse_rtm_and_thlm = l_diffuse_rtm_and_thlm
     clubb_config_flags%l_stability_correct_Kh_N2_zm = l_stability_correct_Kh_N2_zm
     clubb_config_flags%l_calc_thlp2_rad = l_calc_thlp2_rad
-    clubb_config_flags%l_upwind_wpxp_ta = l_upwind_wpxp_ta
     clubb_config_flags%l_upwind_xpyp_ta = l_upwind_xpyp_ta
     clubb_config_flags%l_upwind_xm_ma = l_upwind_xm_ma
     clubb_config_flags%l_uv_nudge = l_uv_nudge
@@ -755,6 +757,7 @@ module model_flags
     clubb_config_flags%l_prescribed_avg_deltaz = l_prescribed_avg_deltaz
     clubb_config_flags%l_lmm_stepping = l_lmm_stepping
     clubb_config_flags%l_e3sm_config = l_e3sm_config
+    clubb_config_flags%l_vary_convect_depth = l_vary_convect_depth
     clubb_config_flags%l_use_tke_in_wp3_pr_turb_term = l_use_tke_in_wp3_pr_turb_term
     return
   end subroutine initialize_clubb_config_flags_type
@@ -792,7 +795,6 @@ module model_flags
     write(iunit,*) "l_stability_correct_Kh_N2_zm = ", &
                    clubb_config_flags%l_stability_correct_Kh_N2_zm
     write(iunit,*) "l_calc_thlp2_rad = ", clubb_config_flags%l_calc_thlp2_rad
-    write(iunit,*) "l_upwind_wpxp_ta = ", clubb_config_flags%l_upwind_wpxp_ta
     write(iunit,*) "l_upwind_xpyp_ta = ", clubb_config_flags%l_upwind_xpyp_ta
     write(iunit,*) "l_upwind_xm_ma = ", clubb_config_flags%l_upwind_xm_ma
     write(iunit,*) "l_uv_nudge = ", clubb_config_flags%l_uv_nudge
@@ -827,6 +829,7 @@ module model_flags
     write(iunit,*) "l_prescribed_avg_deltaz = ", clubb_config_flags%l_prescribed_avg_deltaz
     write(iunit,*) "l_lmm_stepping = ", clubb_config_flags%l_lmm_stepping
     write(iunit,*) "l_e3sm_config = ", clubb_config_flags%l_e3sm_config
+    write(iunit,*) "l_vary_convect_depth", clubb_config_flags%l_vary_convect_depth
     write(iunit,*) "l_use_tke_in_wp3_pr_turb_term = ", &
                    clubb_config_flags%l_use_tke_in_wp3_pr_turb_term
 
