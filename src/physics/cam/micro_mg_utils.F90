@@ -650,14 +650,14 @@ subroutine size_dist_param_liq_2D(mgncol, nlev, props, qcic, ncic, rho, &
         pgam(i,k) = 1.0_r8 - 0.7_r8 * exp(-0.008_r8*1.e-6_r8*ncic(i,k)*rho(i,k))
         pgam(i,k) = 1._r8/(pgam(i,k)**2) - 1._r8
         pgam(i,k) = max(pgam(i,k), 2._r8)
+        pgam_tmp(i,k) = pgam(i,k) + 1.0_r8
+      else
+        ! pgam not calculated in this case, so set it to a value likely to
+        ! cause an error if it is accidentally used
+        ! (gamma function undefined for negative integers)
+        pgam(i,k) = -100._r8
+        pgam_tmp(i,k) = 0.0_r8
       endif
-    end do
-  end do
-  
-  !$acc parallel loop collapse(2) default(present) async(1) 
-  do k = 1, nlev
-    do i = 1, mgncol
-      pgam_tmp(i,k) = pgam(i,k) + 1.0_r8
     end do
   end do
   
@@ -672,7 +672,9 @@ subroutine size_dist_param_liq_2D(mgncol, nlev, props, qcic, ncic, rho, &
   !$acc parallel loop collapse(2) default(present) async(1) 
   do k = 1, nlev
     do i = 1, mgncol
-      shape_coef(i,k) = pi / 6._r8 * props%rho * rising_factorial_term(i,k)
+      if (qcic(i,k) > qsmall) then
+        shape_coef(i,k) = pi / 6._r8 * props%rho * rising_factorial_term(i,k)
+      end if
     end do
   end do
   
@@ -680,8 +682,8 @@ subroutine size_dist_param_liq_2D(mgncol, nlev, props, qcic, ncic, rho, &
   do k = 1, nlev
     do i = 1, mgncol
       ! Limit to between 2 and 50 microns mean size.
-      lower_bound(i,k) = ( pgam(i,k) + 1._r8 ) * 1._r8 / 50.e-6_r8
-      upper_bound(i,k) = ( pgam(i,k) + 1._r8 ) * 1._r8 / 2.e-6_r8
+      lower_bound(i,k) = pgam_tmp(i,k) * 1._r8 / 50.e-6_r8
+      upper_bound(i,k) = pgam_tmp(i,k) * 1._r8 / 2.e-6_r8
     end do
   end do
         
@@ -702,6 +704,8 @@ subroutine size_dist_param_liq_2D(mgncol, nlev, props, qcic, ncic, rho, &
       if (qcic(i,k) > qsmall) then
         ! lambda = (c n/q)^(1/d)
         lamc(i,k) = (shape_coef(i,k) * ncic(i,k)/qcic(i,k))**(1._r8/props%eff_dim)
+      else
+        lamc(i,k) = 0._r8
       endif
     end do
   end do
@@ -709,27 +713,16 @@ subroutine size_dist_param_liq_2D(mgncol, nlev, props, qcic, ncic, rho, &
   !$acc parallel loop collapse(2) default(present) async(1) 
   do k = 1, nlev
     do i = 1, mgncol
-      ! check for slope
-      ! adjust vars
-      if ( lamc(i,k) < lower_bound(i,k) ) then
-         lamc(i,k) = lower_bound(i,k)
-         ncic(i,k) = lower_bound(i,k)**props%eff_dim * qcic(i,k)/shape_coef(i,k)
-      else if ( lamc(i,k) > upper_bound(i,k) ) then
-         lamc(i,k) = upper_bound(i,k)
-         ncic(i,k) = upper_bound(i,k)**props%eff_dim * qcic(i,k)/shape_coef(i,k)
-      end if
-    end do
-  end do
-  
-  !$acc parallel loop collapse(2) default(present) async(1) 
-  do k = 1, nlev
-    do i = 1, mgncol
-      if (qcic(i,k) <= qsmall) then
-        ! pgam not calculated in this case, so set it to a value likely to
-        ! cause an error if it is accidentally used
-        ! (gamma function undefined for negative integers)
-        pgam(i,k) = -100._r8
-        lamc(i,k) = 0._r8
+      if (qcic(i,k) > qsmall) then
+        ! check for slope
+        ! adjust vars
+        if ( lamc(i,k) < lower_bound(i,k) ) then
+           lamc(i,k) = lower_bound(i,k)
+           ncic(i,k) = lower_bound(i,k)**props%eff_dim * qcic(i,k)/shape_coef(i,k)
+        else if ( lamc(i,k) > upper_bound(i,k) ) then
+           lamc(i,k) = upper_bound(i,k)
+           ncic(i,k) = upper_bound(i,k)**props%eff_dim * qcic(i,k)/shape_coef(i,k)
+        end if
       end if
     end do
   end do
@@ -2789,7 +2782,7 @@ subroutine evaporate_sublimate_precip_2D(mgncol, nlev, t, rho, dv, mu, sc, q, qv
     do i = 1, mgncol
      ! calculate q for out-of-cloud region
      if (precip_frac(i,k) > dum(i,k) .and. &
-         qric(i,k) >= qsmall .or. qsic(i,k) >= qsmall) then
+         (qric(i,k) >= qsmall .or. qsic(i,k) >= qsmall)) then
          
          am_evp_st(i,k) = precip_frac(i,k) - dum(i,k)
 
@@ -2806,11 +2799,13 @@ subroutine evaporate_sublimate_precip_2D(mgncol, nlev, t, rho, dv, mu, sc, q, qv
   !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i = 1, mgncol
-      eps(i,k) = 2._r8*pi*n0r(i,k)*rho(i,k)*Dv(i,k)* &
-           (f1r/(lamr(i,k)*lamr(i,k))+ &
-           f2r*(arn(i,k)*rho(i,k)/mu(i,k))**0.5_r8* &
-           sc(i,k)**(1._r8/3._r8)*gamma_half_br_plus5/ &
-           (lamr(i,k)**(5._r8/2._r8+br/2._r8)))
+      if (qric(i,k) >= qsmall) then
+        eps(i,k) = 2._r8*pi*n0r(i,k)*rho(i,k)*Dv(i,k)* &
+             (f1r/(lamr(i,k)*lamr(i,k))+ &
+             f2r*(arn(i,k)*rho(i,k)/mu(i,k))**0.5_r8* &
+             sc(i,k)**(1._r8/3._r8)*gamma_half_br_plus5/ &
+             (lamr(i,k)**(5._r8/2._r8+br/2._r8)))
+      end if
     end do
   end do
   
@@ -2837,11 +2832,13 @@ subroutine evaporate_sublimate_precip_2D(mgncol, nlev, t, rho, dv, mu, sc, q, qv
   !$acc parallel loop collapse(2) default(present) async(1)
   do k = 1, nlev
     do i = 1, mgncol
-      eps(i,k) = 2._r8*pi*n0s(i,k)*rho(i,k)*Dv(i,k)* &
-           (f1s/(lams(i,k)*lams(i,k))+ &
-           f2s*(asn(i,k)*rho(i,k)/mu(i,k))**0.5_r8* &
-           sc(i,k)**(1._r8/3._r8)*gamma_half_bs_plus5/ &
-           (lams(i,k)**(5._r8/2._r8+bs/2._r8)))
+      if (qsic(i,k) >= qsmall) then
+        eps(i,k) = 2._r8*pi*n0s(i,k)*rho(i,k)*Dv(i,k)* &
+             (f1s/(lams(i,k)*lams(i,k))+ &
+             f2s*(asn(i,k)*rho(i,k)/mu(i,k))**0.5_r8* &
+             sc(i,k)**(1._r8/3._r8)*gamma_half_bs_plus5/ &
+             (lams(i,k)**(5._r8/2._r8+bs/2._r8)))
+      end if
     end do
   end do
 

@@ -1785,16 +1785,15 @@ subroutine micro_mg_tend ( &
    end if
 
    !  graupel/hail size distributions and properties
-
    if (do_hail) then
      call size_dist_param_basic_2D( mgncol, nlev, mg_hail_props, qgic(:,:), ngic(:,:), &
                                     lamg(:,:), n0=n0g(:,:))
-   end if
-   
-   if (do_graupel) then
+   else if (do_graupel) then
       call size_dist_param_basic_2D( mgncol, nlev, mg_graupel_props, qgic(:,:), ngic(:,:), &
                                      lamg(:,:), n0=n0g(:,:))
-   end if
+   else
+      lamg = 0.0_r8
+    end if
 
       
    !$acc parallel loop collapse(2) default(present) async(1)
