@@ -259,7 +259,7 @@ contains
                                                    silhs_config_flags )
 
       ! Print the SILHS configurable flags
-      write(iulog,'(a,i0,a)') " SILHS configurable flags set in thread ", iam, ":"
+      !write(iulog,'(a,i0,a)') " SILHS configurable flags set in thread ", iam, ":"
       call print_silhs_config_flags_api( iulog, silhs_config_flags ) ! Intent(in)
 
 #ifdef SPMD
@@ -1232,7 +1232,7 @@ contains
       ! will be reproducible for restarts.
       lh_seed = int( 1.0e4_r8 * rtm(1,pver), kind = genrand_intg )
       
-      ! Let's generate some subcolumns!!!!!7
+      ! Let's generate some subcolumns!!!!!
       call generate_silhs_sample_api( &
                     iter, pdf_dim, num_subcols, sequence_length, pverp-top_lev+1, ngrdcol, & ! In
                     l_calc_weights_all_levs_itime, &                      ! In 
@@ -1283,11 +1283,11 @@ contains
       do k = top_lev, pverp
         do j = 1, num_subcols
           do i = 1, ngrdcol
-            RT_lh_out(   num_subcols*(i-1)+j,k ) = lh_rt_clipped(i,j,pverp-k+1)
-            RCM_lh_out(  num_subcols*(i-1)+j,k ) = lh_rc_clipped(i,j,pverp-k+1)
-            NCLW_lh_out( num_subcols*(i-1)+j,k ) = lh_Nc_clipped(i,j,pverp-k+1)
-            RVM_lh_out(  num_subcols*(i-1)+j,k ) = lh_rv_clipped(i,j,pverp-k+1)
-            THL_lh_out(  num_subcols*(i-1)+j,k ) = lh_thl_clipped(i,j,pverp-k+1)
+            RT_lh_out(   ngrdcol*(j-1)+i,k ) = lh_rt_clipped(i,j,pverp-k+1)
+            RCM_lh_out(  ngrdcol*(j-1)+i,k ) = lh_rc_clipped(i,j,pverp-k+1)
+            NCLW_lh_out( ngrdcol*(j-1)+i,k ) = lh_Nc_clipped(i,j,pverp-k+1)
+            RVM_lh_out(  ngrdcol*(j-1)+i,k ) = lh_rv_clipped(i,j,pverp-k+1)
+            THL_lh_out(  ngrdcol*(j-1)+i,k ) = lh_thl_clipped(i,j,pverp-k+1)
           end do          
         end do
       end do
@@ -1297,13 +1297,13 @@ contains
       do k = top_lev, pverp
         do j = 1, num_subcols
           do i = 1, ngrdcol
-            ICE_lh_out(   num_subcols*(i-1)+j,k ) = X_nl_all_levs(i,j,pverp-k+1,iiPDF_ri)
-            NICE_lh_out(  num_subcols*(i-1)+j,k ) = X_nl_all_levs(i,j,pverp-k+1,iiPDF_Ni)
-            RAIN_lh_out(  num_subcols*(i-1)+j,k ) = X_nl_all_levs(i,j,pverp-k+1,iiPDF_rr)
-            NRAIN_lh_out( num_subcols*(i-1)+j,k ) = X_nl_all_levs(i,j,pverp-k+1,iiPDF_Nr)
-            SNOW_lh_out(  num_subcols*(i-1)+j,k ) = X_nl_all_levs(i,j,pverp-k+1,iiPDF_rs)
-            NSNOW_lh_out( num_subcols*(i-1)+j,k ) = X_nl_all_levs(i,j,pverp-k+1,iiPDF_Ns)
-            WM_lh_out(    num_subcols*(i-1)+j,k ) = X_nl_all_levs(i,j,pverp-k+1,iiPDF_w)
+            ICE_lh_out(   ngrdcol*(j-1)+i,k ) = X_nl_all_levs(i,j,pverp-k+1,iiPDF_ri)
+            NICE_lh_out(  ngrdcol*(j-1)+i,k ) = X_nl_all_levs(i,j,pverp-k+1,iiPDF_Ni)
+            RAIN_lh_out(  ngrdcol*(j-1)+i,k ) = X_nl_all_levs(i,j,pverp-k+1,iiPDF_rr)
+            NRAIN_lh_out( ngrdcol*(j-1)+i,k ) = X_nl_all_levs(i,j,pverp-k+1,iiPDF_Nr)
+            SNOW_lh_out(  ngrdcol*(j-1)+i,k ) = X_nl_all_levs(i,j,pverp-k+1,iiPDF_rs)
+            NSNOW_lh_out( ngrdcol*(j-1)+i,k ) = X_nl_all_levs(i,j,pverp-k+1,iiPDF_Ns)
+            WM_lh_out(    ngrdcol*(j-1)+i,k ) = X_nl_all_levs(i,j,pverp-k+1,iiPDF_w)
           end do          
         end do
       end do
@@ -1313,7 +1313,7 @@ contains
       do k = top_lev, pverp
         do j = 1, num_subcols
           do i = 1, ngrdcol
-            OMEGA_lh_out( num_subcols*(i-1)+j,k ) = -1._r8 * WM_lh_out(num_subcols*(i-1)+j,k) &
+            OMEGA_lh_out( ngrdcol*(j-1)+i,k ) = -1._r8 * WM_lh_out(ngrdcol*(j-1)+i,k) &
                                                            * rho_ds_zt(i,pverp-k+1) * gravit
           end do
         end do
@@ -1431,10 +1431,10 @@ contains
         do j = 1, num_subcols
           do i = 1, ngrdcol
               
-            state_sc%t(num_subcols*(i-1)+j,k) = THL_lh_out(num_subcols*(i-1)+j,k) * invs_exner(i,k) &
-                                                + Lv * RCM_lh_out(num_subcols*(i-1)+j,k) / Cp
+            state_sc%t(ngrdcol*(j-1)+i,k) = THL_lh_out(ngrdcol*(j-1)+i,k) * invs_exner(i,k) &
+                                                + Lv * RCM_lh_out(ngrdcol*(j-1)+i,k) / Cp
             
-            state_sc%s(num_subcols*(i-1)+j,k) = cpair * state_sc%t(num_subcols*(i-1)+j,k) &
+            state_sc%s(ngrdcol*(j-1)+i,k) = cpair * state_sc%t(ngrdcol*(j-1)+i,k) &
                                                 + gravit * state%zm(i,k) + state%phis(i)
           end do
         end do
@@ -1448,8 +1448,8 @@ contains
           do i = 1, ngrdcol
             ! Vertical Velocity is not part of the energy conservation checks, but
             ! we need to be careful here, because the SILHS output VV is noisy.
-            state_sc%omega(num_subcols*(i-1)+j,k) = OMEGA_lh_out(num_subcols*(i-1)+j,k)
-            state_sc%q(num_subcols*(i-1)+j,k,ixq) = RVM_lh_out(num_subcols*(i-1)+j,k) 
+            state_sc%omega(ngrdcol*(j-1)+i,k) = OMEGA_lh_out(ngrdcol*(j-1)+i,k)
+            state_sc%q(ngrdcol*(j-1)+i,k,ixq) = RVM_lh_out(ngrdcol*(j-1)+i,k) 
           end do
         end do
       end do
@@ -1463,8 +1463,8 @@ contains
         do k = 1, pver-top_lev+1
           do j = 1, num_subcols
             do i = 1, ngrdcol
-              state_sc%q(num_subcols*(i-1)+j,k,ixcldliq) = RCM_lh_out(num_subcols*(i-1)+j,k)
-              state_sc%q(num_subcols*(i-1)+j,k,ixcldice) = ICE_lh_out(num_subcols*(i-1)+j,k)
+              state_sc%q(ngrdcol*(j-1)+i,k,ixcldliq) = RCM_lh_out(ngrdcol*(j-1)+i,k)
+              state_sc%q(ngrdcol*(j-1)+i,k,ixcldice) = ICE_lh_out(ngrdcol*(j-1)+i,k)
             end do
           end do
         end do
@@ -1476,7 +1476,7 @@ contains
           do k = 1, pver-top_lev+1
             do j = 1, num_subcols
               do i = 1, ngrdcol
-                state_sc%q(num_subcols*(i-1)+j,k,ixrain) = RAIN_lh_out(num_subcols*(i-1)+j,k)
+                state_sc%q(ngrdcol*(j-1)+i,k,ixrain) = RAIN_lh_out(ngrdcol*(j-1)+i,k)
               end do
             end do
           end do
@@ -1489,7 +1489,7 @@ contains
           do k = 1, pver-top_lev+1
             do j = 1, num_subcols
               do i = 1, ngrdcol
-                state_sc%q(num_subcols*(i-1)+j,k,ixsnow) = SNOW_lh_out(num_subcols*(i-1)+j,k)
+                state_sc%q(ngrdcol*(j-1)+i,k,ixsnow) = SNOW_lh_out(ngrdcol*(j-1)+i,k)
               end do
             end do
           end do
@@ -1500,12 +1500,12 @@ contains
         do k = 1, pver-top_lev+1
           do j = 1, num_subcols
             do i = 1, ngrdcol
-              state_sc%q(num_subcols*(i-1)+j,k,ixcldliq) = state%q(i,k,ixcldliq)
-              state_sc%q(num_subcols*(i-1)+j,k,ixcldice) = state%q(i,k,ixcldice)
+              state_sc%q(ngrdcol*(j-1)+i,k,ixcldliq) = state%q(i,k,ixcldliq)
+              state_sc%q(ngrdcol*(j-1)+i,k,ixcldice) = state%q(i,k,ixcldice)
               if (ixrain > 0) &
-                state_sc%q(num_subcols*(i-1)+j,k,ixrain) = state%q(i,k,ixrain)
+                state_sc%q(ngrdcol*(j-1)+i,k,ixrain) = state%q(i,k,ixrain)
               if (ixsnow > 0) &
-                state_sc%q(num_subcols*(i-1)+j,k,ixsnow) = state%q(i,k,ixsnow)
+                state_sc%q(ngrdcol*(j-1)+i,k,ixsnow) = state%q(i,k,ixsnow)
             end do
           end do
         end do
@@ -1520,8 +1520,8 @@ contains
         do k = 1, pver-top_lev+1
           do j = 1, num_subcols
             do i = 1, ngrdcol
-              state_sc%q(num_subcols*(i-1)+j,k,ixnumice) = NICE_lh_out(num_subcols*(i-1)+j,k)
-              state_sc%q(num_subcols*(i-1)+j,k,ixnumliq) = NCLW_lh_out(num_subcols*(i-1)+j,k)
+              state_sc%q(ngrdcol*(j-1)+i,k,ixnumice) = NICE_lh_out(ngrdcol*(j-1)+i,k)
+              state_sc%q(ngrdcol*(j-1)+i,k,ixnumliq) = NCLW_lh_out(ngrdcol*(j-1)+i,k)
             end do
           end do
         end do
@@ -1533,7 +1533,7 @@ contains
           do k = 1, pver-top_lev+1
             do j = 1, num_subcols
               do i = 1, ngrdcol
-                state_sc%q(num_subcols*(i-1)+j,k,ixnumrain) = NRAIN_lh_out(num_subcols*(i-1)+j,k)
+                state_sc%q(ngrdcol*(j-1)+i,k,ixnumrain) = NRAIN_lh_out(ngrdcol*(j-1)+i,k)
               end do
             end do
           end do
@@ -1546,7 +1546,7 @@ contains
           do k = 1, pver-top_lev+1
             do j = 1, num_subcols
               do i = 1, ngrdcol
-                state_sc%q(num_subcols*(i-1)+j,k,ixnumsnow) = NSNOW_lh_out(num_subcols*(i-1)+j,k)
+                state_sc%q(ngrdcol*(j-1)+i,k,ixnumsnow) = NSNOW_lh_out(ngrdcol*(j-1)+i,k)
               end do
             end do
           end do
@@ -1557,12 +1557,12 @@ contains
         do k = 1, pver-top_lev+1
           do j = 1, num_subcols
             do i = 1, ngrdcol
-              state_sc%q(num_subcols*(i-1)+j,k,ixnumliq) = state%q(i,k,ixnumliq)
-              state_sc%q(num_subcols*(i-1)+j,k,ixnumice) = state%q(i,k,ixnumice)
+              state_sc%q(ngrdcol*(j-1)+i,k,ixnumliq) = state%q(i,k,ixnumliq)
+              state_sc%q(ngrdcol*(j-1)+i,k,ixnumice) = state%q(i,k,ixnumice)
               if (ixnumrain > 0) &
-                state_sc%q(num_subcols*(i-1)+j,k,ixnumrain) = state%q(i,k,ixnumrain)
+                state_sc%q(ngrdcol*(j-1)+i,k,ixnumrain) = state%q(i,k,ixnumrain)
               if (ixnumsnow > 0) &
-                state_sc%q(num_subcols*(i-1)+j,k,ixnumsnow) = state%q(i,k,ixnumsnow)
+                state_sc%q(ngrdcol*(j-1)+i,k,ixnumsnow) = state%q(i,k,ixnumsnow)
             end do
           end do
         end do
@@ -1576,12 +1576,12 @@ contains
         do j = 1, num_subcols
           do i = 1, ngrdcol
             ! Change liq and ice (and rain and snow) num conc zeros to min values (1e-12)
-            if (state_sc%q(num_subcols*(i-1)+j,k,ixnumliq) .lt. min_num_conc) then
-                state_sc%q(num_subcols*(i-1)+j,k,ixnumliq) = min_num_conc
+            if (state_sc%q(ngrdcol*(j-1)+i,k,ixnumliq) .lt. min_num_conc) then
+                state_sc%q(ngrdcol*(j-1)+i,k,ixnumliq) = min_num_conc
             end if
             
-            if (state_sc%q(num_subcols*(i-1)+j,k,ixnumice) .lt. min_num_conc) then
-                state_sc%q(num_subcols*(i-1)+j,k,ixnumice) = min_num_conc
+            if (state_sc%q(ngrdcol*(j-1)+i,k,ixnumice) .lt. min_num_conc) then
+                state_sc%q(ngrdcol*(j-1)+i,k,ixnumice) = min_num_conc
             end if
           end do
         end do
@@ -1594,8 +1594,8 @@ contains
         do k = 1, pver-top_lev+1
           do j = 1, num_subcols   
             do i = 1, ngrdcol   
-              if(state_sc%q(num_subcols*(i-1)+j,k,ixnumrain) .lt. min_num_conc) then
-                 state_sc%q(num_subcols*(i-1)+j,k,ixnumrain) = min_num_conc
+              if(state_sc%q(ngrdcol*(j-1)+i,k,ixnumrain) .lt. min_num_conc) then
+                 state_sc%q(ngrdcol*(j-1)+i,k,ixnumrain) = min_num_conc
                end if
             end do
           end do
@@ -1609,8 +1609,8 @@ contains
         do k = 1, pver-top_lev+1
           do j = 1, num_subcols     
             do i = 1, ngrdcol
-              if(state_sc%q(num_subcols*(i-1)+j,k,ixnumsnow) .lt. min_num_conc) then
-                 state_sc%q(num_subcols*(i-1)+j,k,ixnumsnow) = min_num_conc
+              if(state_sc%q(ngrdcol*(j-1)+i,k,ixnumsnow) .lt. min_num_conc) then
+                 state_sc%q(ngrdcol*(j-1)+i,k,ixnumsnow) = min_num_conc
               end if
             end do
           end do
