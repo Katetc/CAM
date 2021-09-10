@@ -1811,6 +1811,7 @@
 <clubb_c11b                                       > 0.35D0  </clubb_c11b>
 <clubb_c14                                        > 2.2D0   </clubb_c14>
 <clubb_c14 dyn="se"                               > 1.6D0   </clubb_c14>
+<clubb_C_wp3_pr_turb                              > 0.4     </clubb_C_wp3_pr_turb>
 <clubb_c_K1                                       > 0.75    </clubb_c_K1>
 <clubb_c_K2                                       > 0.125   </clubb_c_K2>
 <clubb_nu2                                        > 5.0     </clubb_nu2>

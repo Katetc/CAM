@@ -155,6 +155,7 @@ module clubb_intr
   real(r8) :: clubb_c11 = unset_r8
   real(r8) :: clubb_c11b = unset_r8
   real(r8) :: clubb_c14 = unset_r8
+  real(r8) :: clubb_C_wp3_pr_turb = unset_r8
   real(r8) :: clubb_c_K1 = unset_r8
   real(r8) :: clubb_c_K2 = unset_r8
   real(r8) :: clubb_nu2 = unset_r8
@@ -571,7 +572,8 @@ end subroutine clubb_init_cnst
     namelist /clubbpbl_diff_nl/ clubb_cloudtop_cooling, clubb_rainevap_turb, clubb_expldiff, &
                                 clubb_do_adv, clubb_timestep,  &
                                 clubb_rnevap_effic,clubb_do_icesuper
-    namelist /clubb_params_nl/ clubb_c1, clubb_c1b, clubb_c11, clubb_c11b, clubb_c14, clubb_mult_coef, clubb_gamma_coef, &
+    namelist /clubb_params_nl/ clubb_c1, clubb_c1b, clubb_c11, clubb_c11b, clubb_c14, &
+                               clubb_C_wp3_pr_turb, clubb_mult_coef, clubb_gamma_coef, &
                                clubb_c_K10, clubb_c_K10h, clubb_beta, clubb_C2rt, clubb_C2thl, &
 			       clubb_C2rtthl, clubb_C8, clubb_C8b, clubb_C7, clubb_C7b, clubb_Skw_denom_coef, &
                                clubb_c6rt, clubb_c6rtb, clubb_c6rtc, clubb_c6thl, clubb_c6thlb, clubb_c6thlc, &
@@ -679,6 +681,8 @@ end subroutine clubb_init_cnst
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_c11b")
     call mpi_bcast(clubb_c14,                    1, mpi_real8,   mstrid, mpicom, ierr)
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_c14")
+    call mpi_bcast(clubb_C_wp3_pr_turb,          1, mpi_real8,   mstrid, mpicom, ierr)
+    if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_C_wp3_pr_turb")
     call mpi_bcast(clubb_c6rt,                   1, mpi_real8,   mstrid, mpicom, ierr)
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_c6rt")
     call mpi_bcast(clubb_c6rtb,                  1, mpi_real8,   mstrid, mpicom, ierr)
@@ -845,6 +849,7 @@ end subroutine clubb_init_cnst
   if(clubb_c11 == unset_r8) call endrun(sub//": FATAL: clubb_c11 is not set")
   if(clubb_c11b == unset_r8) call endrun(sub//": FATAL: clubb_c11b is not set")
   if(clubb_c14 == unset_r8) call endrun(sub//": FATAL: clubb_c14 is not set")
+  if(clubb_C_wp3_pr_turb == unset_r8) call endrun(sub//": FATAL: clubb_C_wp3_pr_turb is not set")
   if(clubb_c_K1 == unset_r8) call endrun(sub//": FATAL: clubb_c_K1 is not set")
   if(clubb_c_K2 == unset_r8) call endrun(sub//": FATAL: clubb_c_K2 is not set")
   if(clubb_nu2 == unset_r8) call endrun(sub//": FATAL: clubb_nu2 is not set")
@@ -904,7 +909,8 @@ end subroutine clubb_init_cnst
          core_rknd, em_min, &
          ilambda0_stability_coef, ic_K10, ic_K10h, iC7, iC7b, iC8, iC8b, iC11, iC11b, iC4, iC_uu_shr, iC_uu_buoy, &
          iC1, iC1b, iC6rt, iC6rtb, iC6rtc, iC6thl, iC6thlb, iC6thlc, iup2_sfc_coef, iwpxp_L_thresh, &
-         iC14, igamma_coef, igamma_coefb, imult_coef, ilmin_coef, iSkw_denom_coef, ibeta, iskw_max_mag, &
+         iC14, iC_wp3_pr_turb, igamma_coef, igamma_coefb, imult_coef, ilmin_coef, &
+         iSkw_denom_coef, ibeta, iskw_max_mag, &
          iC2rt, iC2thl, iC2rtthl, ic_K1, ic_K2, inu2, ic_K8, ic_K9, inu9, iC_wp2_splat, params_list
 
     use clubb_api_module, only: &
@@ -1131,6 +1137,7 @@ end subroutine clubb_init_cnst
     clubb_params(iC11) = clubb_c11
     clubb_params(iC11b) = clubb_c11b
     clubb_params(iC14) = clubb_c14
+    clubb_params(iC_wp3_pr_turb) = clubb_C_wp3_pr_turb
     clubb_params(ic_K10) = clubb_c_K10
     clubb_params(imult_coef) = clubb_mult_coef
     clubb_params(iSkw_denom_coef) = clubb_Skw_denom_coef

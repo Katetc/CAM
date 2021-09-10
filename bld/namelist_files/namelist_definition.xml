@@ -3638,6 +3638,11 @@ the damping of CLUBB's wp3 when skewness of w (vertical velocity) is large in
 magnitude.
 </entry>
 
+<entry id="clubb_C_wp3_pr_turb" type="real" category="pblrad"
+       group="clubb_params_nl" valid_values="" >
+Coefficient in the pressure-turbulence term of CLUBB's wp3 predictive equation.
+</entry>
+
 <entry id="clubb_c_K1" type="real" category="pblrad"
        group="clubb_params_nl" valid_values="" >
 Coefficient of Kh_zm (diffusivity on momentum grid levels) in the wp2 (variance
