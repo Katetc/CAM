@@ -3655,7 +3655,7 @@ Coefficient of Kh_zm (diffusivity on momentum grid levels) in the scalar
 variance predictive equations (e.g. rtp2, variance of total water).
 </entry>
 
-<entry id="nu2" type="real" category="pblrad"
+<entry id="clubb_nu2" type="real" category="pblrad"
        group="clubb_params_nl" valid_values="" >
 Constant in the diffusivity term in the scalar variance predictive equations
 (e.g. rtp2, variance of total water).

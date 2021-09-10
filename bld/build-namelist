@@ -3019,6 +3019,8 @@ if ($clubb_sgs  =~ /$TRUE/io) {
    add_default($nl, 'clubb_C2thl');
    add_default($nl, 'clubb_C2rtthl');
    add_default($nl, 'clubb_C4');
+   add_default($nl, 'clubb_C_uu_shr');
+   add_default($nl, 'clubb_C_uu_buoy');
    add_default($nl, 'clubb_c6rt');
    add_default($nl, 'clubb_c6rtb');
    add_default($nl, 'clubb_c6rtc');
@@ -3029,6 +3031,11 @@ if ($clubb_sgs  =~ /$TRUE/io) {
    add_default($nl, 'clubb_C7b');
    add_default($nl, 'clubb_C8');
    add_default($nl, 'clubb_C8b');
+   add_default($nl, 'clubb_C_wp3_pr_turb');
+   add_default($nl, 'clubb_c_K1');
+   add_default($nl, 'clubb_c_K2');
+   add_default($nl, 'clubb_nu2');
+   add_default($nl, 'clubb_c_K8');
    add_default($nl, 'clubb_c_K9');
    add_default($nl, 'clubb_nu9');
    add_default($nl, 'clubb_c_K10');

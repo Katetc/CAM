@@ -575,10 +575,10 @@ end subroutine clubb_init_cnst
     namelist /clubb_params_nl/ clubb_c1, clubb_c1b, clubb_c11, clubb_c11b, clubb_c14, &
                                clubb_C_wp3_pr_turb, clubb_mult_coef, clubb_gamma_coef, &
                                clubb_c_K10, clubb_c_K10h, clubb_beta, clubb_C2rt, clubb_C2thl, &
-			       clubb_C2rtthl, clubb_C8, clubb_C8b, clubb_C7, clubb_C7b, clubb_Skw_denom_coef, &
+                               clubb_C2rtthl, clubb_C8, clubb_C8b, clubb_C7, clubb_C7b, clubb_Skw_denom_coef, &
                                clubb_c6rt, clubb_c6rtb, clubb_c6rtc, clubb_c6thl, clubb_c6thlb, clubb_c6thlc, &
                                clubb_C4, clubb_C_uu_shr, clubb_C_uu_buoy, &
-                               clubb_c_K1. clubb_c_K2, clubb_nu2, clubb_c_K8, &
+                               clubb_c_K1, clubb_c_K2, clubb_nu2, clubb_c_K8, &
                                clubb_c_K9, clubb_nu9, clubb_C_wp2_splat, clubb_wpxp_L_thresh, &
                                clubb_lambda0_stability_coef, clubb_l_lscale_plume_centered, &
                                clubb_do_liqsupersat, clubb_do_energyfix,&
@@ -723,11 +723,11 @@ end subroutine clubb_init_cnst
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_C7b")
     call mpi_bcast(clubb_Skw_denom_coef,         1, mpi_real8,   mstrid, mpicom, ierr)
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_Skw_denom_coef")
-    call mpi_bcast(clubb_C4,         1, mpi_real8,   mstrid, mpicom, ierr)
+    call mpi_bcast(clubb_C4,                     1, mpi_real8,   mstrid, mpicom, ierr)
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_C4")
-    call mpi_bcast(clubb_C_uu_shr,     1, mpi_real8,   mstrid, mpicom, ierr)
+    call mpi_bcast(clubb_C_uu_shr,               1, mpi_real8,   mstrid, mpicom, ierr)
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_C_uu_shr")
-    call mpi_bcast(clubb_C_uu_buoy,    1, mpi_real8,   mstrid, mpicom, ierr)
+    call mpi_bcast(clubb_C_uu_buoy,              1, mpi_real8,   mstrid, mpicom, ierr)
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_C_uu_buoy")
     call mpi_bcast(clubb_c_K1,         1, mpi_real8,   mstrid, mpicom, ierr)
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_c_K1")
