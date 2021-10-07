@@ -81,9 +81,9 @@ echo "----- Compile Configuration -----"
 
 if [ "$SILHS_ENABLED" = true ] ; then
   # Setup includes -silhs, -psubcols $NUMSC, and -DSILHS to enable SILHS
-  ./xmlchange CAM_CONFIG_OPTS="-phys cam5 -clubb_sgs -rad rrtmg -chem trop_mam3 -silhs -silent -microphys mg$MGVER -psubcols $NUMSC -cppdefs '-DUWM_MISC -DSILHS'"
+  ./xmlchange CAM_CONFIG_OPTS="-clubb_sgs -rad rrtmg -silhs -silent -microphys mg$MGVER -psubcols $NUMSC -cppdefs '-DUWM_MISC -DSILHS'"
 else
-  ./xmlchange CAM_CONFIG_OPTS="-phys cam5 -clubb_sgs -rad rrtmg -chem trop_mam3 -silent -microphys mg$MGVER -cppdefs '-DUWM_MISC'"
+  ./xmlchange CAM_CONFIG_OPTS="-clubb_sgs -rad rrtmg -silent -microphys mg$MGVER -cppdefs '-DUWM_MISC'"
 fi
 
 #./xmlchange DEBUG="FALSE" # Set to TRUE for run-time debugging
@@ -154,10 +154,9 @@ fincl1 = 'U:A','PS:A','T:A','V:A','OMEGA:A','Z3:A','PRECT:A',
 'QCRAT:A', $clubb_vars_zt_list,$clubb_vars_zm_list,
 'SL', 'Q', 'RHW', 'QRS', 'QRL', 'HR', 'FDL'
 !, 'SILHS_CLUBB_PRECIP_FRAC','SILHS_CLUBB_ICE_SS_FRAC'
-ncdata='/home/pub/cam_inputdata/atm/cam/inic/gaus/cami_0000-09-01_64x128_L30_c031210.nc' 
+ncdata='/home/pub/cam_inputdata/atm/cam/inic/gaus/cami_0000-01-01_64x128_L32_c170510.nc' 
 fincl2 = 'CLDTOT', 'CLDST','CDNUMC','CLDLIQ','CLDICE','FLUT',
 'LWCF','SWCF','PRECT'
-end_restart = .true.
 subcol_SILHS_weight = .true.
 subcol_SILHS_numsubcol = $NUMSC
 subcol_SILHS_corr_file_name = 'arm_97'
