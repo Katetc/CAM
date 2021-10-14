@@ -1,5 +1,6 @@
 #!/bin/bash
 
+
 # Variables
 CASE="subcol_SILHS_UWM_test"
 CASEROOT="/glade/scratch/$USER/$CASE"
