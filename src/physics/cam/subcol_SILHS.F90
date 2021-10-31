@@ -659,6 +659,7 @@ contains
                                          vert_decorr_coef
 
       use clubb_intr, only:              clubb_config_flags, gr, &
+                                         clubb_params, &
                                          stats_zt, stats_zm, stats_sfc, &
                                          stats_lh_zt, stats_lh_sfc
 
@@ -1154,6 +1155,7 @@ contains
                                      ice_supersat_frac_in, hydromet, wphydrometp, &     ! In
                                      corr_array_n_cloud, corr_array_n_below, &          ! In
                                      pdf_params_chnk(lchnk), l_stats_samp, &            ! In
+                                     clubb_params, &                                    ! In
                                      clubb_config_flags%iiPDF_type, &                   ! In
                                      clubb_config_flags%l_use_precip_frac, &            ! In
                                      clubb_config_flags%l_predict_upwp_vpwp, &          ! In
@@ -1242,6 +1244,7 @@ contains
                     mu_x_1, mu_x_2, sigma_x_1, sigma_x_2, &               ! In 
                     corr_cholesky_mtx_1, corr_cholesky_mtx_2, &           ! In
                     precip_fracs(lchnk), silhs_config_flags, &            ! In
+                    clubb_params, &                                       ! In
                     clubb_config_flags%l_uv_nudge, &                      ! In
                     clubb_config_flags%l_tke_aniso, &                     ! In
                     clubb_config_flags%l_standard_term_ta, &              ! In
