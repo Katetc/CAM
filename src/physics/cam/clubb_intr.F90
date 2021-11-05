@@ -29,7 +29,7 @@ module clubb_intr
   use zm_conv_intr,  only: zmconv_microp
 #ifdef CLUBB_SGS
   use clubb_api_module, only: pdf_parameter, implicit_coefs_terms
-  use clubb_api_module, only: clubb_config_flags_type, grid, stats
+  use clubb_api_module, only: clubb_config_flags_type, grid, stats, nu_vertical_res_dep
   use clubb_api_module, only: nparams
   use clubb_mf,         only: do_clubb_mf, do_clubb_mf_diag
   use cloud_fraction,   only: dp1, dp2
@@ -89,8 +89,9 @@ module clubb_intr
 
 #ifdef CLUBB_SGS
   type(clubb_config_flags_type), public, save :: clubb_config_flags
-  real(r8), dimension(nparams), public, save  :: clubb_params    ! These adjustable CLUBB parameters (C1, C2 ...)
-  real(r8), private, save  :: lmin
+  real(r8), dimension(nparams), public, save :: clubb_params    ! Adjustable CLUBB parameters (C1, C2 ...)
+  type(nu_vertical_res_dep), private, save :: nu_vert_res_dep   ! Vertical resolution dependent nu values
+  real(r8), private, save :: lmin
 #endif
 
   ! ------------ !
@@ -1300,7 +1301,7 @@ end subroutine clubb_init_cnst
            clubb_config_flags%l_prescribed_avg_deltaz, &              ! In
            clubb_config_flags%l_damp_wp2_using_em, &                  ! In
            clubb_config_flags%l_stability_correct_tau_zm, &           ! In
-           gr, lmin, err_code )                                       ! Out
+           gr, lmin, nu_vert_res_dep, err_code )                      ! Out
 
     if ( err_code == clubb_fatal_error ) then
        call endrun('clubb_ini_cam:  FATAL ERROR CALLING SETUP_CLUBB_CORE')
@@ -2542,10 +2543,10 @@ end subroutine clubb_init_cnst
       call setup_grid_heights_api( l_implemented, grid_type, zi_g(2), &
            zi_g(1), zi_g, gr, zt_g )
 
-      call setup_parameters_api( gr, zi_g(2), clubb_params, nlev+1, grid_type, &
+      call setup_parameters_api( zi_g(2), clubb_params, nlev+1, grid_type, &
                                  zi_g, zt_g, &
                                  clubb_config_flags%l_prescribed_avg_deltaz, &
-                                 lmin, err_code )
+                                 lmin, nu_vert_res_dep, err_code )
 
       !  Define forcings from CAM to CLUBB as zero for momentum and thermo,
       !  forcings already applied through CAM
@@ -2788,7 +2789,7 @@ end subroutine clubb_init_cnst
             rfrzm, radf, &
             wphydrometp, wp2hmp, rtphmp_zt, thlphmp_zt, &
             host_dx, host_dy, &
-            clubb_params, lmin, &
+            clubb_params, nu_vert_res_dep, lmin, &
             clubb_config_flags, &
             stats_zt, stats_zm, stats_sfc, &
             um_in, vm_in, upwp_in, vpwp_in, up2_in, vp2_in, up3_in, vp3_in, &
