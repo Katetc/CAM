@@ -697,8 +697,6 @@ contains
       real(r8) :: msc, std, maxcldfrac, maxsccldfrac
       real(r8) :: scale = 1.0_r8
 
-      real(r8), dimension(nparams) :: clubb_params ! Adjustable CLUBB parameters
-
       real(r8) :: c_K ! CLUBB parameter c_K (for eddy diffusivity)
 
       integer( kind = genrand_intg ) :: &
@@ -927,9 +925,6 @@ contains
       call pbuf_get_field(pbuf, nsnow_idx, nsnow)
       call pbuf_get_field(pbuf, tke_idx, tke_in)
       call pbuf_get_field(pbuf, kvh_idx, khzm_in)
-
-      ! Read the clubb parameters in order to extract c_K.
-      call read_parameters_api( -99, "", clubb_params )
 
       ! Pull c_K from clubb parameters.
       c_K = clubb_params(ic_K)
