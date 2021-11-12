@@ -22,7 +22,8 @@ module pdf_closure_module
             calc_wp2xp_pdf, &
             calc_wpxp2_pdf, &
             calc_wpxpyp_pdf, &
-            calc_vert_avg_cf_component
+            calc_vert_avg_cf_component, &
+            calc_w_up_in_cloud
 
   private ! Set Default Scope
 
@@ -62,7 +63,7 @@ module pdf_closure_module
                           rcm, wpthvp, wp2thvp, rtpthvp,            &
                           thlpthvp, wprcp, wp2rcp, rtprcp,          &
                           thlprcp, rcp2,                            &
-                          uprcp, vprcp,                             &
+                          uprcp, vprcp, w_up_in_cloud,              &
                           pdf_params, pdf_implicit_coefs_terms,     &
                           F_w, F_rt, F_thl,                         &
                           min_F_w, max_F_w,                         &
@@ -168,7 +169,8 @@ module pdf_closure_module
         ircp2,      & ! Variables
         iwprtp2,    &
         iwprtpthlp, &
-        iwpthlp2
+        iwpthlp2,   &
+        iw_up_in_cloud
 
     use clubb_precision, only: &
         core_rknd ! Variable(s)
@@ -279,7 +281,8 @@ module pdf_closure_module
       rtprcp,             & ! r_t' r_c'             [(kg^2)/(kg^2)]
       thlprcp,            & ! th_l' r_c'            [(K kg)/kg]
       rcp2,               & ! r_c'^2                [(kg^2)/(kg^2)]
-      wprtpthlp             ! w' r_t' th_l'         [(m kg K)/(s kg)]
+      wprtpthlp,          & ! w' r_t' th_l'         [(m kg K)/(s kg)]
+      w_up_in_cloud         ! wm over Clouds        [m/s] TODO Correct place?
 
     real( kind = core_rknd ), dimension(gr%nz), intent(out) ::  &
       uprcp,              & ! u' r_c'               [(m kg)/(s kg)]
@@ -1270,6 +1273,19 @@ endif
     !  if CLUBB is used in CAM we want this variable computed no matter what
     end if
 #endif
+
+    if ((iiPDF_type == iiPDF_ADG1 .or. iiPDF_type == iiPDF_ADG2 &
+                                 .or. iiPDF_type == iiPDF_new_hybrid) &
+                                 .and. iw_up_in_cloud > 0) then
+      call calc_w_up_in_cloud( &
+                     gr, pdf_params%mixt_frac(1,:), &                                    ! In
+                     pdf_params%cloud_frac_1(1,:), pdf_params%cloud_frac_2(1,:), &       ! In
+                     pdf_params%w_1(1,:), pdf_params%w_2(1,:), &                         ! In
+                     pdf_params%varnce_w_1(1,:), pdf_params%varnce_w_2(1,:), &           ! In
+                     w_up_in_cloud )                                                     ! Out
+    else
+      w_up_in_cloud = zero
+    end if
 
     if ( clubb_at_least_debug_level( 2 ) ) then
 
@@ -3007,6 +3023,84 @@ endif
 
     return
   end subroutine calc_vert_avg_cf_component
+
+  !=============================================================================
+  subroutine calc_w_up_in_cloud(gr, &
+                                mixt_frac, cloud_frac_1, cloud_frac_2, &
+                                w_1, w_2, varnce_w_1, varnce_w_2, w_up_in_cloud)
+    ! Description:
+    ! Subroutine that computes the mean cloudy updraft.
+    !
+    ! In order to activate aerosol, we'd like to feed the activation scheme
+    ! a vertical velocity that's representative of cloudy updrafts. For skewed
+    ! layers, like cumulus layers, this might be an improvement over the square
+    ! root of wp2 that's currently used. At the same time, it would be simpler
+    ! and less expensive than feeding SILHS samples into the aerosol code
+    ! (see larson-group/e3sm#19 and larson-group/e3sm#26).
+    !
+    ! The formulas are only valid for certain PDFs in CLUBB (ADG1, ADG2,
+    ! new hybrid), hence we omit calculation if another PDF type is used.
+    !
+    ! References: https://www.overleaf.com/project/614a136d47846639af22ae34
+    !----------------------------------------------------------------------
+
+    use grid_class, only: &
+        grid ! Type
+
+    use constants_clubb, only: &
+        sqrt_2pi, & ! sqrt(2*pi)
+        sqrt_2,   & ! sqrt(2)
+        one,      & ! 1
+        one_half, & ! 1/2
+        eps
+
+    use clubb_precision, only: &
+        core_rknd     ! Precision
+
+    implicit none
+
+    type (grid), target, intent(in) :: gr
+
+    !----------- Input Variables -----------
+    real( kind = core_rknd ), dimension(gr%nz), intent(in) :: &
+      mixt_frac, &      ! mixture fraction                             [-]
+      cloud_frac_1, &   ! cloud fraction (1st PDF component)           [-]
+      cloud_frac_2, &   ! cloud fraction (2nd PDF component)           [-]
+      w_1, &            ! upward velocity (1st PDF component)          [m/s]
+      w_2, &            ! upward velocity (2nd PDF component)          [m/s]
+      varnce_w_1, &     ! standard deviation of w (1st PDF component)  [m^2/s^2]
+      varnce_w_2        ! standard deviation of w (2nd PDF component)  [m^2/s^2]
+
+    !----------- Output Variables -----------
+    real( kind = core_rknd ), dimension(gr%nz), intent(out) :: &
+      w_up_in_cloud ! mean updraft over clouds                         [m/s]
+
+    !----------- Local Variables -----------
+    real( kind = core_rknd ), dimension(gr%nz) :: &
+      w_up_1, w_up_2, &       ! product of w and Heaviside function
+      stdev_w_1, stdev_w_2  ! Standard deviation of w
+      
+    stdev_w_1 = sqrt(varnce_w_1)
+    stdev_w_2 = sqrt(varnce_w_2)
+    
+    w_up_1 &
+    = one_half * w_1 &
+        * (one + erf(w_1 / (sqrt_2 * max(eps, stdev_w_1)))) &
+      + stdev_w_1 / sqrt_2pi &
+          * exp(-one_half * (w_1 / max(eps, stdev_w_1)) ** 2)
+    w_up_2 &
+    = one_half * w_2 &
+        * (one + erf(w_2 / (sqrt_2 * max(eps, stdev_w_2)))) &
+      + stdev_w_2 / sqrt_2pi &
+          * exp(-one_half * (w_2 / max(eps, stdev_w_2)) ** 2)
+
+    w_up_in_cloud &
+    = (mixt_frac * cloud_frac_1 * w_up_1 &
+        + (one - mixt_frac) * cloud_frac_2 * w_up_2) &
+      / (mixt_frac * max(eps, cloud_frac_1) &
+        + (one - mixt_frac) * max(eps, cloud_frac_2))
+
+  end subroutine calc_w_up_in_cloud
 
   !=============================================================================
   function interp_var_array( n_points, nz, k, z_vals, var )
