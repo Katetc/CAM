@@ -1796,6 +1796,7 @@ end subroutine clubb_init_cnst
    real(r8) :: thlp2_forcing(pverp+1-top_lev)
    real(r8) :: rtpthlp_forcing(pverp+1-top_lev)
    real(r8) :: ice_supersat_frac_out(pverp+1-top_lev)
+   real(r8) :: w_up_in_cloud_out(pverp+1-top_lev)
    real(r8) :: zt_g(pverp+1-top_lev)			  ! Thermodynamic grid of CLUBB		      	[m]
    real(r8) :: zi_g(pverp+1-top_lev)			  ! Momentum grid of CLUBB		      	[m]
    real(r8) :: zt_out(pcols,pverp)                        ! output for the thermo CLUBB grid           	[m] 
@@ -2805,7 +2806,7 @@ end subroutine clubb_init_cnst
             pdf_implicit_coefs_terms_chnk(i,lchnk), &
             khzm_out, khzt_out, &
             qclvar_out, thlprcp_out, &
-            wprcp_out, ice_supersat_frac_out, &
+            wprcp_out, w_up_in_cloud_out, ice_supersat_frac_out, &
             rcm_in_layer_out, cloud_cover_out, invrs_tau_zm_out )
 
          if ( err_code == clubb_fatal_error ) then
