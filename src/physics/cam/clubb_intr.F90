@@ -1677,6 +1677,10 @@ end subroutine clubb_init_cnst
         copy_single_pdf_params_to_multi, &
         pdf_parameter, &
         init_pdf_params_api
+        
+   use grid_class, only : &
+      setup_grid
+   
 
    use clubb_api_module, only: &
        clubb_fatal_error    ! Error code value to indicate a fatal error
@@ -1855,7 +1859,6 @@ end subroutine clubb_init_cnst
    real(r8) :: se_upper_a(pcols), se_upper_b(pcols), se_upper_diss(pcols)
    real(r8) :: tw_upper_a(pcols), tw_upper_b(pcols), tw_upper_diss(pcols)
    real(r8) :: grid_dx(pcols), grid_dy(pcols)   ! CAM grid [m]
-   real(r8) :: host_dx, host_dy                 ! CAM grid [m]
 
    ! Variables below are needed to compute energy integrals for conservation
    real(r8) :: ke_a(pcols), ke_b(pcols), te_a(pcols), te_b(pcols)
@@ -2043,6 +2046,12 @@ end subroutine clubb_init_cnst
    
    type(pdf_parameter) :: pdf_params_single_col(pcols), &
                           pdf_params_zm_single_col(pcols)
+                          
+   type(grid) :: gr(pcols)
+   integer :: begin_height, end_height
+   
+   type(nu_vertical_res_dep) :: nu_vert_res_dep(pcols)   ! Vertical resolution dependent nu values
+   real(r8) :: lmin(pcols)
 
 #endif
    det_s(:)   = 0.0_r8
@@ -2442,10 +2451,6 @@ end subroutine clubb_init_cnst
 
       !  Set the elevation of the surface
       sfc_elevation(i) = state1%zi(i,pver+1)
-      
-      !  Set the grid size
-      host_dx = grid_dx(i)
-      host_dy = grid_dy(i)
 
       !  Compute thermodynamic stuff needed for CLUBB on thermo levels.  
       !  Inputs for the momentum levels are set below setup_clubb core
@@ -2549,13 +2554,18 @@ end subroutine clubb_init_cnst
       !  Important note:  do not make any calls that use CLUBB grid-height
       !                   operators (such as zt2zm_api, etc.) until AFTER the
       !                   call to setup_grid_heights_api.
-      call setup_grid_heights_api( l_implemented, grid_type, zi_g(i,2), &
-           zi_g(i,1), zi_g(i,:), gr, zt_g(i,:) )
+      !call setup_grid_heights_api( l_implemented, grid_type, zi_g(i,2), &
+      !     zi_g(i,1), zi_g(i,:), gr, zt_g(i,:) )
+      
+      call setup_grid( nlev+1, sfc_elevation(i), l_implemented,     & ! intent(in)
+                       grid_type, zi_g(i,2), zi_g(i,1), zi_g(i,nlev+1),      & ! intent(in)
+                       zi_g(i,:), zt_g(i,:), & ! intent(in)
+                       gr(i), begin_height, end_height             ) ! intent(out)
 
       call setup_parameters_api( zi_g(i,2), clubb_params, nlev+1, grid_type, &
                                  zi_g(i,:), zt_g(i,:), &
                                  clubb_config_flags%l_prescribed_avg_deltaz, &
-                                 lmin, nu_vert_res_dep, err_code )
+                                 lmin(i), nu_vert_res_dep(i), err_code )
 
       !  Define forcings from CAM to CLUBB as zero for momentum and thermo,
       !  forcings already applied through CAM
@@ -2580,11 +2590,11 @@ end subroutine clubb_init_cnst
       ice_supersat_frac_out(i,:) = 0._r8
 
       ! Add forcings for SILHS covariance contributions
-      rtp2_forcing(i,:)    = rtp2_forcing(i,:)    + zt2zm_api( gr, rtp2_mc_zt(i,:) )
-      thlp2_forcing(i,:)   = thlp2_forcing(i,:)   + zt2zm_api( gr, thlp2_mc_zt(i,:) )
-      wprtp_forcing(i,:)   = wprtp_forcing(i,:)   + zt2zm_api( gr, wprtp_mc_zt(i,:) )
-      wpthlp_forcing(i,:)  = wpthlp_forcing(i,:)  + zt2zm_api( gr, wpthlp_mc_zt(i,:) )
-      rtpthlp_forcing(i,:) = rtpthlp_forcing(i,:) + zt2zm_api( gr, rtpthlp_mc_zt(i,:) )
+      rtp2_forcing(i,:)    = rtp2_forcing(i,:)    + zt2zm_api( gr(i), rtp2_mc_zt(i,:) )
+      thlp2_forcing(i,:)   = thlp2_forcing(i,:)   + zt2zm_api( gr(i), thlp2_mc_zt(i,:) )
+      wprtp_forcing(i,:)   = wprtp_forcing(i,:)   + zt2zm_api( gr(i), wprtp_mc_zt(i,:) )
+      wpthlp_forcing(i,:)  = wpthlp_forcing(i,:)  + zt2zm_api( gr(i), wpthlp_mc_zt(i,:) )
+      rtpthlp_forcing(i,:) = rtpthlp_forcing(i,:) + zt2zm_api( gr(i), rtpthlp_mc_zt(i,:) )
 
       ! Zero out SILHS covariance contribution terms
       rtp2_mc_zt(i,:) = 0.0_r8
@@ -2595,11 +2605,11 @@ end subroutine clubb_init_cnst
 
       !  Compute some inputs from the thermodynamic grid
       !  to the momentum grid
-      rho_ds_zm(i,:)       = zt2zm_api( gr, rho_ds_zt(i,:))
-      rho_zm(i,:)          = zt2zm_api( gr, rho_zt(i,:))
-      invrs_rho_ds_zm(i,:) = zt2zm_api( gr, invrs_rho_ds_zt(i,:))
-      thv_ds_zm(i,:)       = zt2zm_api( gr, thv_ds_zt(i,:))
-      wm_zm(i,:)           = zt2zm_api( gr, wm_zt(i,:))
+      rho_ds_zm(i,:)       = zt2zm_api( gr(i), rho_ds_zt(i,:))
+      rho_zm(i,:)          = zt2zm_api( gr(i), rho_zt(i,:))
+      invrs_rho_ds_zm(i,:) = zt2zm_api( gr(i), invrs_rho_ds_zt(i,:))
+      thv_ds_zm(i,:)       = zt2zm_api( gr(i), thv_ds_zt(i,:))
+      wm_zm(i,:)           = zt2zm_api( gr(i), wm_zt(i,:))
  
       !  Surface fluxes provided by host model                                                                  
       wpthlp_sfc(i) = cam_in%shf(i)/(cpair*rho_ds_zm(i,1))       ! Sensible heat flux
@@ -2677,7 +2687,7 @@ end subroutine clubb_init_cnst
         qc_zt(i,1) = qc_zt(i,2)
         invrs_exner_zt(i,1) = invrs_exner_zt(i,2)
  
-        kappa_zm(i,:) = zt2zm_api(gr, kappa_zt(i,:)) 
+        kappa_zm(i,:) = zt2zm_api(gr(i), kappa_zt(i,:)) 
         do k=1,pverp
           p_in_Pa_zm(i,k) = state1%pint(i,pverp-k+1)
           invrs_exner_zm(i,k) = 1._r8/((p_in_Pa_zm(i,k)/p0_clubb)**(kappa_zm(i,k)))
@@ -2686,14 +2696,14 @@ end subroutine clubb_init_cnst
      
       if (clubb_do_adv) then
         if (macmic_it  ==  1) then
-          wp2_in(i,:)=zt2zm_api(gr, wp2_in(i,:))    
-          wpthlp_in(i,:)=zt2zm_api(gr, wpthlp_in(i,:))
-          wprtp_in(i,:)=zt2zm_api(gr, wprtp_in(i,:))
-          up2_in(i,:)=zt2zm_api(gr, up2_in(i,:))
-          vp2_in(i,:)=zt2zm_api(gr, vp2_in(i,:))
-          thlp2_in(i,:)=zt2zm_api(gr, thlp2_in(i,:))
-          rtp2_in(i,:)=zt2zm_api(gr, rtp2_in(i,:))
-          rtpthlp_in(i,:)=zt2zm_api(gr, rtpthlp_in(i,:))
+          wp2_in(i,:)=zt2zm_api(gr(i), wp2_in(i,:))    
+          wpthlp_in(i,:)=zt2zm_api(gr(i), wpthlp_in(i,:))
+          wprtp_in(i,:)=zt2zm_api(gr(i), wprtp_in(i,:))
+          up2_in(i,:)=zt2zm_api(gr(i), up2_in(i,:))
+          vp2_in(i,:)=zt2zm_api(gr(i), vp2_in(i,:))
+          thlp2_in(i,:)=zt2zm_api(gr(i), thlp2_in(i,:))
+          rtp2_in(i,:)=zt2zm_api(gr(i), rtp2_in(i,:))
+          rtpthlp_in(i,:)=zt2zm_api(gr(i), rtpthlp_in(i,:))
  
           do k=1,nlev+1
             thlp2_in(i,k)=max(thl_tol**2,thlp2_in(i,k))
@@ -2730,12 +2740,12 @@ end subroutine clubb_init_cnst
       stats_nsamp = nint(stats_tsamp/dtime)
       stats_nout = nint(stats_tout/dtime)
       
-    !end do
+    end do
 
 
     do t=1,nadv    ! do needed number of "sub" timesteps for each CAM step
       
-      !do i=1, ncol
+      do i=1, ncol
     
          !  Increment the statistics then being stats timestep
          if (l_stats) then
@@ -2753,8 +2763,8 @@ end subroutine clubb_init_cnst
            dzt(i,1) = dzt(i,2)
            invrs_dzt(i,:) = 1._r8/dzt(i,:)
 
-           rtm_zm_in(i,:)  = zt2zm_api( gr, rtm_in(i,:) )
-           thlm_zm_in(i,:) = zt2zm_api( gr, thlm_in(i,:) )
+           rtm_zm_in(i,:)  = zt2zm_api( gr(i), rtm_in(i,:) )
+           thlm_zm_in(i,:) = zt2zm_api( gr(i), thlm_in(i,:) )
 
            call integrate_mf( pverp, dzt(i,:), zi_g(i,:), p_in_Pa_zm(i,:), invrs_exner_zm(i,:), & ! input
                                                           p_in_Pa(i,:),    invrs_exner_zt(i,:), & ! input
@@ -2786,10 +2796,14 @@ end subroutine clubb_init_cnst
            end do
 
          end if
+         
+       end do
+       
+       do i=1, ncol
 
          !  Advance CLUBB CORE one timestep in the future
          call advance_clubb_core_api &
-            ( gr, l_implemented, dtime, fcor, sfc_elevation(i), hydromet_dim, &
+            ( gr(i), l_implemented, dtime, fcor, sfc_elevation(i), hydromet_dim, &
             thlm_forcing(i,:), rtm_forcing(i,:), um_forcing(i,:), vm_forcing(i,:), &
             sclrm_forcing(i,:,:), edsclrm_forcing(i,:,:), wprtp_forcing(i,:), &
             wpthlp_forcing(i,:), rtp2_forcing(i,:), thlp2_forcing(i,:), &
@@ -2802,8 +2816,8 @@ end subroutine clubb_init_cnst
             invrs_rho_ds_zt(i,:), thv_ds_zm(i,:), thv_ds_zt(i,:), hydromet(i,:,:), &
             rfrzm(i,:), radf(i,:), &
             wphydrometp(i,:,:), wp2hmp(i,:,:), rtphmp_zt(i,:,:), thlphmp_zt(i,:,:), &
-            host_dx, host_dy, &
-            clubb_params, nu_vert_res_dep, lmin, &
+            grid_dx(i), grid_dy(i), &
+            clubb_params, nu_vert_res_dep(i), lmin(i), &
             clubb_config_flags, &
             stats_zt, stats_zm, stats_sfc, &
             um_in(i,:), vm_in(i,:), upwp_in(i,:), vpwp_in(i,:), up2_in(i,:), vp2_in(i,:), up3_in(i,:), vp3_in(i,:), &
@@ -2821,6 +2835,7 @@ end subroutine clubb_init_cnst
             qclvar_out(i,:), thlprcp_out(i,:), &
             wprcp_out(i,:), w_up_in_cloud_out(i,:), ice_supersat_frac_out(i,:), &
             rcm_in_layer_out(i,:), cloud_cover_out(i,:), invrs_tau_zm_out(i,:) )
+            
 
          if ( err_code == clubb_fatal_error ) then
              write(fstderr,*) "Fatal error in CLUBB: at timestep ", get_nstep(), "LAT: ", state1%lat(i), " LON: ", state1%lon(i)
@@ -2837,7 +2852,7 @@ end subroutine clubb_init_cnst
 
          if (do_rainturb) then
             rvm_in(i,:) = rtm_in(i,:) - rcm_inout(i,:) 
-            call update_xp2_mc_api( gr, nlev+1, dtime, cloud_frac_inout(i,:), &
+            call update_xp2_mc_api( gr(i), nlev+1, dtime, cloud_frac_inout(i,:), &
             rcm_inout(i,:), rvm_in(i,:), thlm_in(i,:), wm_zt(i,:), exner(i,:), pre_in(i,:), pdf_params_single_col(i), &
             rtp2_mc_out(i,:), thlp2_mc_out(i,:), &
             wprtp_mc_out(i,:), wpthlp_mc_out(i,:), &
@@ -2854,8 +2869,8 @@ end subroutine clubb_init_cnst
 
          if (do_cldcool) then
          
-            rcm_out_zm(i,:) = zt2zm_api(gr, rcm_inout(i,:))
-            qrl_zm(i,:) = zt2zm_api(gr, qrl_clubb(i,:))
+            rcm_out_zm(i,:) = zt2zm_api(gr(i), rcm_inout(i,:))
+            qrl_zm(i,:) = zt2zm_api(gr(i), qrl_clubb(i,:))
             thlp2_rad_out(i,:) = 0._r8
             call calculate_thlp2_rad_api(nlev+1, rcm_out_zm(i,:), thlprcp_out(i,:), qrl_zm(i,:), clubb_params, &
                                          thlp2_rad_out(i,:))
@@ -2868,22 +2883,22 @@ end subroutine clubb_init_cnst
           if (l_stats) call stats_end_timestep_clubb(i,out_zt,out_zm,&
                                                      out_radzt,out_radzm,out_sfc)
 
-        !end do
+        end do
 
       enddo  ! end time loop
       
-      !do i=1, ncol
+      do i=1, ncol
 
       if (clubb_do_adv) then
          if (macmic_it  ==  cld_macmic_num_steps) then 
-            wp2_in(i,:)=zm2zt_api(gr, wp2_in(i,:))   
-            wpthlp_in(i,:)=zm2zt_api(gr, wpthlp_in(i,:))
-            wprtp_in(i,:)=zm2zt_api(gr, wprtp_in(i,:))
-            up2_in(i,:)=zm2zt_api(gr, up2_in(i,:))
-            vp2_in(i,:)=zm2zt_api(gr, vp2_in(i,:))
-            thlp2_in(i,:)=zm2zt_api(gr, thlp2_in(i,:))
-            rtp2_in(i,:)=zm2zt_api(gr, rtp2_in(i,:))
-            rtpthlp_in(i,:)=zm2zt_api(gr, rtpthlp_in(i,:)) 
+            wp2_in(i,:)=zm2zt_api(gr(i), wp2_in(i,:))   
+            wpthlp_in(i,:)=zm2zt_api(gr(i), wpthlp_in(i,:))
+            wprtp_in(i,:)=zm2zt_api(gr(i), wprtp_in(i,:))
+            up2_in(i,:)=zm2zt_api(gr(i), up2_in(i,:))
+            vp2_in(i,:)=zm2zt_api(gr(i), vp2_in(i,:))
+            thlp2_in(i,:)=zm2zt_api(gr(i), thlp2_in(i,:))
+            rtp2_in(i,:)=zm2zt_api(gr(i), rtp2_in(i,:))
+            rtpthlp_in(i,:)=zm2zt_api(gr(i), rtpthlp_in(i,:)) 
 
             do k=1,nlev+1
                thlp2_in(i,k)=max(thl_tol**2,thlp2_in(i,k))
@@ -2896,9 +2911,9 @@ end subroutine clubb_init_cnst
       endif
        
       ! Convert RTP2 and THLP2 to thermo grid for output
-      rtp2_zt(i,:) = zm2zt_api(gr, rtp2_in(i,:))
-      thl2_zt(i,:) = zm2zt_api(gr, thlp2_in(i,:))
-      wp2_zt(i,:)  = zm2zt_api(gr, wp2_in(i,:))
+      rtp2_zt(i,:) = zm2zt_api(gr(i), rtp2_in(i,:))
+      thl2_zt(i,:) = zm2zt_api(gr(i), thlp2_in(i,:))
+      wp2_zt(i,:)  = zm2zt_api(gr(i), wp2_in(i,:))
 
       !  Arrays need to be "flipped" to CAM grid 
 
