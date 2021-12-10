@@ -41,16 +41,17 @@ module clubb_intr
 
   ! Variables that contains all the statistics
 
-  type (stats), target, save :: stats_zt,      & ! stats_zt grid
-                                stats_zm,      & ! stats_zm grid
-                                stats_lh_zt,   &
+  type (stats), target, save :: stats_zt(pcols),      & ! stats_zt grid
+                                stats_zm(pcols),      & ! stats_zm grid
+                                stats_rad_zt(pcols),  & ! stats_rad_zt grid
+                                stats_rad_zm(pcols),  & ! stats_rad_zm grid
+                                stats_sfc(pcols)        ! stats_sfc
+                                
+  type (stats), target, save :: stats_lh_zt,   &
                                 stats_lh_sfc,  &
-                                stats_rad_zt,  & ! stats_rad_zt grid
-                                stats_rad_zm,  & ! stats_rad_zm grid
-                                stats_sfc        ! stats_sfc
 
-!$omp threadprivate(stats_zt, stats_zm, stats_lh_zt, stats_lh_sfc)
-!$omp threadprivate(stats_rad_zt, stats_rad_zm, stats_sfc)
+!$omp threadprivate(stats_zt, stats_zm, stats_rad_zt, stats_rad_zm, stats_sfc)
+!$omp threadprivate(stats_lh_zt, stats_lh_sfc)
 
 
 
@@ -969,7 +970,7 @@ end subroutine clubb_init_cnst
     logical :: history_amwg, history_clubb
 
     integer :: err_code                   ! Code for when CLUBB fails
-    integer :: j, k, l                    ! Indices
+    integer :: i, j, k, l                    ! Indices
     integer :: ntop_eddy                        ! Top    interface level to which eddy vertical diffusion is applied ( = 1 )
     integer :: nbot_eddy                        ! Bottom interface level to which eddy vertical diffusion is applied ( = pver )
     integer :: nmodes, nspec, m
@@ -1433,15 +1434,19 @@ end subroutine clubb_init_cnst
 
     if (l_stats) then
       
-       call stats_init_clubb( .true., dum1, dum2, &
-                         nlev+1, nlev+1, nlev+1, dum3 )
+      do i=1, pcols
+        call stats_init_clubb( .true., dum1, dum2, &
+                               nlev+1, nlev+1, nlev+1, dum3, &
+                               stats_zt(i), stats_zm(i), stats_sfc(i), &
+                               stats_rad_zt(i), stats_rad_zm(i))
+      end do             
 
-       allocate(out_zt(pcols,pverp,stats_zt%num_output_fields))
-       allocate(out_zm(pcols,pverp,stats_zm%num_output_fields))
-       allocate(out_sfc(pcols,1,stats_sfc%num_output_fields))
+       allocate(out_zt(pcols,pverp,stats_zt(1)%num_output_fields))
+       allocate(out_zm(pcols,pverp,stats_zm(1)%num_output_fields))
+       allocate(out_sfc(pcols,1,stats_sfc(1)%num_output_fields))
 
-       allocate(out_radzt(pcols,pverp,stats_rad_zt%num_output_fields))
-       allocate(out_radzm(pcols,pverp,stats_rad_zm%num_output_fields))
+       allocate(out_radzt(pcols,pverp,stats_rad_zt(1)%num_output_fields))
+       allocate(out_radzm(pcols,pverp,stats_rad_zm(1)%num_output_fields))
 
     endif
   
@@ -2554,8 +2559,6 @@ end subroutine clubb_init_cnst
       !  Important note:  do not make any calls that use CLUBB grid-height
       !                   operators (such as zt2zm_api, etc.) until AFTER the
       !                   call to setup_grid_heights_api.
-      !call setup_grid_heights_api( l_implemented, grid_type, zi_g(i,2), &
-      !     zi_g(i,1), zi_g(i,:), gr, zt_g(i,:) )
       
       call setup_grid( nlev+1, sfc_elevation(i), l_implemented,     & ! intent(in)
                        grid_type, zi_g(i,2), zi_g(i,1), zi_g(i,nlev+1),      & ! intent(in)
@@ -2819,7 +2822,7 @@ end subroutine clubb_init_cnst
             grid_dx(i), grid_dy(i), &
             clubb_params, nu_vert_res_dep(i), lmin(i), &
             clubb_config_flags, &
-            stats_zt, stats_zm, stats_sfc, &
+            stats_zt(i), stats_zm(i), stats_sfc(i), &
             um_in(i,:), vm_in(i,:), upwp_in(i,:), vpwp_in(i,:), up2_in(i,:), vp2_in(i,:), up3_in(i,:), vp3_in(i,:), &
             thlm_in(i,:), rtm_in(i,:), wprtp_in(i,:), wpthlp_in(i,:), &
             wp2_in(i,:), wp3_in(i,:), rtp2_in(i,:), rtp3_in(i,:), thlp2_in(i,:), thlp3_in(i,:), rtpthlp_in(i,:), &
@@ -2836,6 +2839,9 @@ end subroutine clubb_init_cnst
             wprcp_out(i,:), w_up_in_cloud_out(i,:), ice_supersat_frac_out(i,:), &
             rcm_in_layer_out(i,:), cloud_cover_out(i,:), invrs_tau_zm_out(i,:) )
             
+       end do
+      
+       do i=1, ncol
 
          if ( err_code == clubb_fatal_error ) then
              write(fstderr,*) "Fatal error in CLUBB: at timestep ", get_nstep(), "LAT: ", state1%lat(i), " LON: ", state1%lon(i)
@@ -2848,7 +2854,7 @@ end subroutine clubb_init_cnst
 
          call copy_single_pdf_params_to_multi( pdf_params_zm_single_col(i), i, &
                                                pdf_params_zm_chnk(lchnk)  )
-         
+                                               
 
          if (do_rainturb) then
             rvm_in(i,:) = rtm_in(i,:) - rcm_inout(i,:) 
@@ -2880,8 +2886,10 @@ end subroutine clubb_init_cnst
 
           !  Check to see if stats should be output, here stats are read into
           !  output arrays to make them conformable to CAM output
-          if (l_stats) call stats_end_timestep_clubb(i,out_zt,out_zm,&
-                                                     out_radzt,out_radzm,out_sfc)
+          if (l_stats) then
+            call stats_end_timestep_clubb(i, stats_zt(i), stats_zm(i), stats_rad_zt(i), stats_rad_zm(i), stats_sfc(i), &
+                                          out_zt, out_zm, out_radzt, out_radzm, out_sfc)
+          end if
 
         end do
 
@@ -3748,36 +3756,36 @@ end subroutine clubb_init_cnst
    !  Output CLUBB history here
    if (l_stats) then 
       
-      do i=1,stats_zt%num_output_fields
+      do j=1,stats_zt(1)%num_output_fields
    
-         temp1 = trim(stats_zt%file%grid_avg_var(i)%name)
+         temp1 = trim(stats_zt(1)%file%grid_avg_var(j)%name)
          sub   = temp1
          if (len(temp1) >  16) sub = temp1(1:16)
    
-         call outfld(trim(sub), out_zt(:,:,i), pcols, lchnk )
+         call outfld(trim(sub), out_zt(:,:,j), pcols, lchnk )
       enddo
    
-      do i=1,stats_zm%num_output_fields
+      do j=1,stats_zm(1)%num_output_fields
    
-         temp1 = trim(stats_zm%file%grid_avg_var(i)%name)
+         temp1 = trim(stats_zm(1)%file%grid_avg_var(j)%name)
          sub   = temp1
          if (len(temp1) > 16) sub = temp1(1:16)
    
-         call outfld(trim(sub),out_zm(:,:,i), pcols, lchnk)
+         call outfld(trim(sub),out_zm(:,:,j), pcols, lchnk)
       enddo
 
       if (l_output_rad_files) then  
-         do i=1,stats_rad_zt%num_output_fields
-            call outfld(trim(stats_rad_zt%file%grid_avg_var(i)%name), out_radzt(:,:,i), pcols, lchnk)
+         do j=1,stats_rad_zt(1)%num_output_fields
+            call outfld(trim(stats_rad_zt(1)%file%grid_avg_var(j)%name), out_radzt(:,:,j), pcols, lchnk)
          enddo
    
-         do i=1,stats_rad_zm%num_output_fields
-            call outfld(trim(stats_rad_zm%file%grid_avg_var(i)%name), out_radzm(:,:,i), pcols, lchnk)
+         do j=1,stats_rad_zm(1)%num_output_fields
+            call outfld(trim(stats_rad_zm(1)%file%grid_avg_var(j)%name), out_radzm(:,:,j), pcols, lchnk)
          enddo
       endif
    
-      do i=1,stats_sfc%num_output_fields
-         call outfld(trim(stats_sfc%file%grid_avg_var(i)%name), out_sfc(:,:,i), pcols, lchnk)
+      do j=1,stats_sfc(1)%num_output_fields
+         call outfld(trim(stats_sfc(1)%file%grid_avg_var(j)%name), out_sfc(:,:,j), pcols, lchnk)
       enddo
    
    endif
@@ -3930,7 +3938,9 @@ end function diag_ustar
 #ifdef CLUBB_SGS
 
   subroutine stats_init_clubb( l_stats_in, stats_tsamp_in, stats_tout_in, &
-                         nnzp, nnrad_zt,nnrad_zm, delt )
+                               nnzp, nnrad_zt,nnrad_zm, delt, &
+                               stats_zt, stats_zm, stats_sfc, &
+                               stats_rad_zt, stats_rad_zm)
     !
     ! Description: Initializes the statistics saving functionality of
     !   the CLUBB model.  This is for purpose of CAM-CLUBB interface.  Here
@@ -4018,6 +4028,13 @@ end function diag_ustar
     integer, intent(in) :: nnrad_zm ! Grid points in the radiation grid [count]
 
     real(kind=time_precision), intent(in) ::   delt         ! Timestep (dtmain in CLUBB)         [s]
+    
+    ! Output Variables
+    type (stats), intent(out) :: stats_zt,      & ! stats_zt grid
+                                 stats_zm,      & ! stats_zm grid
+                                 stats_rad_zt,  & ! stats_rad_zt grid
+                                 stats_rad_zm,  & ! stats_rad_zm grid
+                                 stats_sfc        ! stats_sfc
 
 
     !  Local Variables
@@ -4041,7 +4058,8 @@ end function diag_ustar
 
     !  Local Variables
 
-    logical :: l_error
+    logical :: l_error, &
+               first_call = .false.
 
     character(len=200) :: temp1, sub
 
@@ -4147,29 +4165,30 @@ end function diag_ustar
     allocate( stats_zt%file%grid_avg_var( stats_zt%num_output_fields ) )
     allocate( stats_zt%file%z( stats_zt%kk ) )
 
-    !  Allocate scratch space
+    first_call = (.not. allocated(ztscr01))
 
-    allocate( ztscr01(stats_zt%kk) )
-    allocate( ztscr02(stats_zt%kk) )
-    allocate( ztscr03(stats_zt%kk) )
-    allocate( ztscr04(stats_zt%kk) )
-    allocate( ztscr05(stats_zt%kk) )
-    allocate( ztscr06(stats_zt%kk) )
-    allocate( ztscr07(stats_zt%kk) )
-    allocate( ztscr08(stats_zt%kk) )
-    allocate( ztscr09(stats_zt%kk) )
-    allocate( ztscr10(stats_zt%kk) )
-    allocate( ztscr11(stats_zt%kk) )
-    allocate( ztscr12(stats_zt%kk) )
-    allocate( ztscr13(stats_zt%kk) )
-    allocate( ztscr14(stats_zt%kk) )
-    allocate( ztscr15(stats_zt%kk) )
-    allocate( ztscr16(stats_zt%kk) )
-    allocate( ztscr17(stats_zt%kk) )
-    allocate( ztscr18(stats_zt%kk) )
-    allocate( ztscr19(stats_zt%kk) )
-    allocate( ztscr20(stats_zt%kk) )
-    allocate( ztscr21(stats_zt%kk) )
+    !  Allocate scratch space
+    if (first_call) allocate( ztscr01(stats_zt%kk) )
+    if (first_call) allocate( ztscr02(stats_zt%kk) )
+    if (first_call) allocate( ztscr03(stats_zt%kk) )
+    if (first_call) allocate( ztscr04(stats_zt%kk) )
+    if (first_call) allocate( ztscr05(stats_zt%kk) )
+    if (first_call) allocate( ztscr06(stats_zt%kk) )
+    if (first_call) allocate( ztscr07(stats_zt%kk) )
+    if (first_call) allocate( ztscr08(stats_zt%kk) )
+    if (first_call) allocate( ztscr09(stats_zt%kk) )
+    if (first_call) allocate( ztscr10(stats_zt%kk) )
+    if (first_call) allocate( ztscr11(stats_zt%kk) )
+    if (first_call) allocate( ztscr12(stats_zt%kk) )
+    if (first_call) allocate( ztscr13(stats_zt%kk) )
+    if (first_call) allocate( ztscr14(stats_zt%kk) )
+    if (first_call) allocate( ztscr15(stats_zt%kk) )
+    if (first_call) allocate( ztscr16(stats_zt%kk) )
+    if (first_call) allocate( ztscr17(stats_zt%kk) )
+    if (first_call) allocate( ztscr18(stats_zt%kk) )
+    if (first_call) allocate( ztscr19(stats_zt%kk) )
+    if (first_call) allocate( ztscr20(stats_zt%kk) )
+    if (first_call) allocate( ztscr21(stats_zt%kk) )
 
     ztscr01 = 0.0_r8
     ztscr02 = 0.0_r8
@@ -4194,9 +4213,10 @@ end function diag_ustar
     ztscr21 = 0.0_r8
 
     !  Default initialization for array indices for zt
-
-    call stats_init_zt_api( clubb_vars_zt, l_error, &
-                            stats_zt )
+    if (first_call) then
+      call stats_init_zt_api( clubb_vars_zt, l_error, &
+                              stats_zt )
+    end if
 
     !  Initialize zm (momentum points)
 
@@ -4232,23 +4252,23 @@ end function diag_ustar
 
     !  Allocate scratch space
 
-    allocate( zmscr01(stats_zm%kk) )
-    allocate( zmscr02(stats_zm%kk) )
-    allocate( zmscr03(stats_zm%kk) )
-    allocate( zmscr04(stats_zm%kk) )
-    allocate( zmscr05(stats_zm%kk) )
-    allocate( zmscr06(stats_zm%kk) )
-    allocate( zmscr07(stats_zm%kk) )
-    allocate( zmscr08(stats_zm%kk) )
-    allocate( zmscr09(stats_zm%kk) )
-    allocate( zmscr10(stats_zm%kk) )
-    allocate( zmscr11(stats_zm%kk) )
-    allocate( zmscr12(stats_zm%kk) )
-    allocate( zmscr13(stats_zm%kk) )
-    allocate( zmscr14(stats_zm%kk) )
-    allocate( zmscr15(stats_zm%kk) )
-    allocate( zmscr16(stats_zm%kk) )
-    allocate( zmscr17(stats_zm%kk) )
+    if (first_call) allocate( zmscr01(stats_zm%kk) )
+    if (first_call) allocate( zmscr02(stats_zm%kk) )
+    if (first_call) allocate( zmscr03(stats_zm%kk) )
+    if (first_call) allocate( zmscr04(stats_zm%kk) )
+    if (first_call) allocate( zmscr05(stats_zm%kk) )
+    if (first_call) allocate( zmscr06(stats_zm%kk) )
+    if (first_call) allocate( zmscr07(stats_zm%kk) )
+    if (first_call) allocate( zmscr08(stats_zm%kk) )
+    if (first_call) allocate( zmscr09(stats_zm%kk) )
+    if (first_call) allocate( zmscr10(stats_zm%kk) )
+    if (first_call) allocate( zmscr11(stats_zm%kk) )
+    if (first_call) allocate( zmscr12(stats_zm%kk) )
+    if (first_call) allocate( zmscr13(stats_zm%kk) )
+    if (first_call) allocate( zmscr14(stats_zm%kk) )
+    if (first_call) allocate( zmscr15(stats_zm%kk) )
+    if (first_call) allocate( zmscr16(stats_zm%kk) )
+    if (first_call) allocate( zmscr17(stats_zm%kk) )
 
     zmscr01 = 0.0_r8
     zmscr02 = 0.0_r8
@@ -4268,8 +4288,10 @@ end function diag_ustar
     zmscr16 = 0.0_r8
     zmscr17 = 0.0_r8
 
-    call stats_init_zm_api( clubb_vars_zm, l_error, &
-                            stats_zm )
+    if (first_call) then
+      call stats_init_zm_api( clubb_vars_zm, l_error, &
+                              stats_zm )
+    end if
 
     !  Initialize rad_zt (radiation points)
 
@@ -4380,8 +4402,10 @@ end function diag_ustar
     allocate( stats_sfc%file%grid_avg_var( stats_sfc%num_output_fields ) )
     allocate( stats_sfc%file%z( stats_sfc%kk ) )
 
-    call stats_init_sfc_api( clubb_vars_sfc, l_error, &
-                             stats_sfc )
+    if (first_call) then
+      call stats_init_sfc_api( clubb_vars_sfc, l_error, &
+                               stats_sfc )
+    end if
 
     ! Check for errors
 
@@ -4390,45 +4414,49 @@ end function diag_ustar
     endif
 
 !   Now call add fields
-    do i = 1, stats_zt%num_output_fields
-    
-      temp1 = trim(stats_zt%file%grid_avg_var(i)%name)
-      sub   = temp1
-      if (len(temp1) > 16) sub = temp1(1:16)
-     
-!!XXgoldyXX: Probably need a hist coord for nnzp for the vertical
-        call addfld(trim(sub),(/ 'ilev' /),&
-             'A',trim(stats_zt%file%grid_avg_var(i)%units),trim(stats_zt%file%grid_avg_var(i)%description))
-    enddo
-    
-    do i = 1, stats_zm%num_output_fields
-    
-      temp1 = trim(stats_zm%file%grid_avg_var(i)%name)
-      sub   = temp1
-      if (len(temp1) > 16) sub = temp1(1:16)
-    
-!!XXgoldyXX: Probably need a hist coord for nnzp for the vertical
-       call addfld(trim(sub),(/ 'ilev' /),&
-            'A',trim(stats_zm%file%grid_avg_var(i)%units),trim(stats_zm%file%grid_avg_var(i)%description))
-    enddo
+    if (first_call) then
+      
+      do i = 1, stats_zt%num_output_fields
+      
+        temp1 = trim(stats_zt%file%grid_avg_var(i)%name)
+        sub   = temp1
+        if (len(temp1) > 16) sub = temp1(1:16)
+       
+  !!XXgoldyXX: Probably need a hist coord for nnzp for the vertical
+          call addfld(trim(sub),(/ 'ilev' /),&
+               'A',trim(stats_zt%file%grid_avg_var(i)%units),trim(stats_zt%file%grid_avg_var(i)%description))
+      enddo
+      
+      do i = 1, stats_zm%num_output_fields
+      
+        temp1 = trim(stats_zm%file%grid_avg_var(i)%name)
+        sub   = temp1
+        if (len(temp1) > 16) sub = temp1(1:16)
+      
+  !!XXgoldyXX: Probably need a hist coord for nnzp for the vertical
+         call addfld(trim(sub),(/ 'ilev' /),&
+              'A',trim(stats_zm%file%grid_avg_var(i)%units),trim(stats_zm%file%grid_avg_var(i)%description))
+      enddo
 
-    if (l_output_rad_files) then     
-!!XXgoldyXX: Probably need a hist coord for nnzp for the vertical
-       do i = 1, stats_rad_zt%num_output_fields
-          call addfld(trim(stats_rad_zt%file%grid_avg_var(i)%name),(/ 'ilev' /),&
-             'A',trim(stats_rad_zt%file%grid_avg_var(i)%units),trim(stats_rad_zt%file%grid_avg_var(i)%description))
-       enddo
-    
-       do i = 1, stats_rad_zm%num_output_fields
-          call addfld(trim(stats_rad_zm%file%grid_avg_var(i)%name),(/ 'ilev' /),&
-             'A',trim(stats_rad_zm%file%grid_avg_var(i)%units),trim(stats_rad_zm%file%grid_avg_var(i)%description))
-       enddo
-    endif 
-    
-    do i = 1, stats_sfc%num_output_fields
-       call addfld(trim(stats_sfc%file%grid_avg_var(i)%name),horiz_only,&
-            'A',trim(stats_sfc%file%grid_avg_var(i)%units),trim(stats_sfc%file%grid_avg_var(i)%description))
-    enddo
+      if (l_output_rad_files) then     
+  !!XXgoldyXX: Probably need a hist coord for nnzp for the vertical
+         do i = 1, stats_rad_zt%num_output_fields
+            call addfld(trim(stats_rad_zt%file%grid_avg_var(i)%name),(/ 'ilev' /),&
+               'A',trim(stats_rad_zt%file%grid_avg_var(i)%units),trim(stats_rad_zt%file%grid_avg_var(i)%description))
+         enddo
+      
+         do i = 1, stats_rad_zm%num_output_fields
+            call addfld(trim(stats_rad_zm%file%grid_avg_var(i)%name),(/ 'ilev' /),&
+               'A',trim(stats_rad_zm%file%grid_avg_var(i)%units),trim(stats_rad_zm%file%grid_avg_var(i)%description))
+         enddo
+      endif 
+      
+      do i = 1, stats_sfc%num_output_fields
+         call addfld(trim(stats_sfc%file%grid_avg_var(i)%name),horiz_only,&
+              'A',trim(stats_sfc%file%grid_avg_var(i)%units),trim(stats_sfc%file%grid_avg_var(i)%description))
+      enddo
+      
+    end if
 
     return
 
@@ -4442,7 +4470,8 @@ end function diag_ustar
 
   
     !-----------------------------------------------------------------------
-  subroutine stats_end_timestep_clubb(thecol,out_zt,out_zm,out_radzt,out_radzm,out_sfc)
+  subroutine stats_end_timestep_clubb(thecol, stats_zt, stats_zm, stats_rad_zt, stats_rad_zm, stats_sfc, &
+                                      out_zt, out_zm, out_radzt, out_radzm, out_sfc)
 
     !     Description: Called when the stats timestep has ended. This subroutine
     !     is responsible for calling statistics to be written to the output
@@ -4470,6 +4499,14 @@ end function diag_ustar
 
     integer :: thecol
     
+    ! Input Variables
+    type (stats), intent(inout) :: stats_zt,      & ! stats_zt grid
+                                   stats_zm,      & ! stats_zm grid
+                                   stats_rad_zt,  & ! stats_rad_zt grid
+                                   stats_rad_zm,  & ! stats_rad_zm grid
+                                   stats_sfc        ! stats_sfc
+    
+    ! Inout variables
     real(r8), intent(inout) :: out_zt(:,:,:)     ! (pcols,pverp,stats_zt%num_output_fields)
     real(r8), intent(inout) :: out_zm(:,:,:)     ! (pcols,pverp,stats_zt%num_output_fields)
     real(r8), intent(inout) :: out_radzt(:,:,:)  ! (pcols,pverp,stats_rad_zt%num_output_fields)

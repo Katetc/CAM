@@ -1158,7 +1158,7 @@ contains
                                      clubb_config_flags%l_calc_w_corr, &                ! In
                                      clubb_config_flags%l_const_Nc_in_cloud, &          ! In
                                      clubb_config_flags%l_fix_w_chi_eta_correlations, & ! In
-                                     stats_zt, stats_zm, stats_sfc, &                   ! intent(inout)
+                                     stats_zt(1), stats_zm(1), stats_sfc(1), &          ! intent(inout)
                                      hydrometp2, &                                      ! Inout
                                      mu_x_1, mu_x_2, &                                  ! Out
                                      sigma_x_1, sigma_x_2, &                            ! Out
