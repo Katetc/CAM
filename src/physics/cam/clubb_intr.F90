@@ -48,7 +48,7 @@ module clubb_intr
                                 stats_sfc(pcols)        ! stats_sfc
                                 
   type (stats), target, save :: stats_lh_zt,   &
-                                stats_lh_sfc,  &
+                                stats_lh_sfc
 
 !$omp threadprivate(stats_zt, stats_zm, stats_rad_zt, stats_rad_zm, stats_sfc)
 !$omp threadprivate(stats_lh_zt, stats_lh_sfc)
