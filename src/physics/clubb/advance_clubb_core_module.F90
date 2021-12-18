@@ -106,6 +106,13 @@ module advance_clubb_core_module
 
   private ! Default Scope
 
+  ! Advance subroutine ordering variables
+  integer, parameter, private :: &
+    order_xm_wpxp = 1, &
+    order_xp2_xpyp = 2, &
+    order_wp2_wp3 = 3, &
+    order_windm = 4
+
   contains
 
   !-----------------------------------------------------------------------
@@ -829,6 +836,7 @@ module advance_clubb_core_module
     integer, intent(out) :: &
       err_code_out  ! Error code indicator
 
+    integer :: advance_order_loop_iter
 
     !----- Begin Code -----
 
@@ -1492,208 +1500,345 @@ module advance_clubb_core_module
           Cx_fnc_Richardson = 0.0
       end if
 
-      ! Advance the prognostic equations for
-      !   the scalar grid means (rtm, thlm, sclrm) and
-      !   scalar turbulent fluxes (wprtp, wpthlp, and wpsclrp)
-      !   by one time step.
-      ! advance_xm_wpxp_bad_wp2 ! Test error comment, DO NOT modify or move
-      call advance_xm_wpxp( gr, dt_advance, sigma_sqd_w, wm_zm, wm_zt, wp2,       & ! intent(in)
-                            Lscale, wp3_on_wp2, wp3_on_wp2_zt, Kh_zt, Kh_zm,      & ! intent(in)
-                            invrs_tau_C6_zm, tau_max_zm, Skw_zm, wp2rtp, rtpthvp, & ! intent(in)
-                            rtm_forcing, wprtp_forcing, rtm_ref, wp2thlp,         & ! intent(in)
-                            thlpthvp, thlm_forcing, wpthlp_forcing, thlm_ref,     & ! intent(in)
-                            rho_ds_zm, rho_ds_zt, invrs_rho_ds_zm,                & ! intent(in)
-                            invrs_rho_ds_zt, thv_ds_zm, rtp2, thlp2,              & ! intent(in)
-                            w_1_zm, w_2_zm, varnce_w_1_zm, varnce_w_2_zm,         & ! intent(in)
-                            mixt_frac_zm, l_implemented, em, wp2sclrp,            & ! intent(in)
-                            sclrpthvp, sclrm_forcing, sclrp2, exner, rcm,         & ! intent(in)
-                            p_in_Pa, thvm, Cx_fnc_Richardson,                     & ! intent(in)
-                            ice_supersat_frac,                                    & ! intent(in)
-                            pdf_implicit_coefs_terms,                             & ! intent(in)
-                            um_forcing, vm_forcing, ug, vg, wpthvp,               & ! intent(in)
-                            fcor, um_ref, vm_ref, up2, vp2,                       & ! intent(in)
-                            uprcp, vprcp, rc_coef,                                & ! intent(in)
-                            clubb_params, nu_vert_res_dep,                        & ! intent(in)
-                            clubb_config_flags%iiPDF_type,                        & ! intent(in)
-                            clubb_config_flags%l_predict_upwp_vpwp,               & ! intent(in)
-                            clubb_config_flags%l_diffuse_rtm_and_thlm,            & ! intent(in)
-                            clubb_config_flags%l_stability_correct_Kh_N2_zm,      & ! intent(in)
-                            clubb_config_flags%l_godunov_upwind_wpxp_ta,          & ! intent(in)
-                            clubb_config_flags%l_upwind_xm_ma,                    & ! intent(in)
-                            clubb_config_flags%l_uv_nudge,                        & ! intent(in)
-                            clubb_config_flags%l_tke_aniso,                       & ! intent(in)
-                            clubb_config_flags%l_diag_Lscale_from_tau,            & ! intent(in)
-                            clubb_config_flags%l_use_C7_Richardson,               & ! intent(in)
-                            clubb_config_flags%l_brunt_vaisala_freq_moist,        & ! intent(in)
-                            clubb_config_flags%l_use_thvm_in_bv_freq,             & ! intent(in)
-                            clubb_config_flags%l_lmm_stepping,                    & ! intent(in)
-                            stats_zt, stats_zm, stats_sfc,                        & ! intent(inout)
-                            rtm, wprtp, thlm, wpthlp,                             & ! intent(inout)
-                            sclrm, wpsclrp, um, upwp, vm, vpwp )                    ! intent(inout)
+      ! Loop over the 4 main advance subroutines -- advance_xm_wpxp,
+      ! advance_wp2_wp3, advance_xp2_xpyp, and advance_windm_edsclrm -- in the
+      ! order determined by order_xm_wpxp, order_wp2_wp3, order_xp2_xpyp, and
+      ! order_windm.
+      do advance_order_loop_iter = 1, 4, 1
 
-      if ( clubb_at_least_debug_level( 0 ) ) then
-          if ( err_code == clubb_fatal_error ) then
-            err_code_out = err_code
-            write(fstderr,*) "Error calling advance_xm_wpxp"
-            return
-          end if
-      end if
+       if ( advance_order_loop_iter == order_xm_wpxp ) then
 
-      ! Vince Larson clipped rcm in order to prevent rvm < 0.  5 Apr 2008.
-      ! This code won't work unless rtm >= 0 !!!
-      ! We do not clip rcm_in_layer because rcm_in_layer only influences
-      ! radiation, and we do not want to bother recomputing it.  6 Aug 2009
-      call clip_rcm( gr, rtm, 'rtm < rcm in advance_xm_wpxp',             & ! intent(in)
-                     rcm )                                              ! intent(inout)
+        ! Advance the prognostic equations for
+        !   the scalar grid means (rtm, thlm, sclrm) and
+        !   scalar turbulent fluxes (wprtp, wpthlp, and wpsclrp)
+        !   by one time step.
+        ! advance_xm_wpxp_bad_wp2 ! Test error comment, DO NOT modify or move
+        call advance_xm_wpxp( gr, dt_advance, sigma_sqd_w, wm_zm, wm_zt, wp2,       & ! intent(in)
+                              Lscale, wp3_on_wp2, wp3_on_wp2_zt, Kh_zt, Kh_zm,      & ! intent(in)
+                              invrs_tau_C6_zm, tau_max_zm, Skw_zm, wp2rtp, rtpthvp, & ! intent(in)
+                              rtm_forcing, wprtp_forcing, rtm_ref, wp2thlp,         & ! intent(in)
+                              thlpthvp, thlm_forcing, wpthlp_forcing, thlm_ref,     & ! intent(in)
+                              rho_ds_zm, rho_ds_zt, invrs_rho_ds_zm,                & ! intent(in)
+                              invrs_rho_ds_zt, thv_ds_zm, rtp2, thlp2,              & ! intent(in)
+                              w_1_zm, w_2_zm, varnce_w_1_zm, varnce_w_2_zm,         & ! intent(in)
+                              mixt_frac_zm, l_implemented, em, wp2sclrp,            & ! intent(in)
+                              sclrpthvp, sclrm_forcing, sclrp2, exner, rcm,         & ! intent(in)
+                              p_in_Pa, thvm, Cx_fnc_Richardson,                     & ! intent(in)
+                              ice_supersat_frac,                                    & ! intent(in)
+                              pdf_implicit_coefs_terms,                             & ! intent(in)
+                              um_forcing, vm_forcing, ug, vg, wpthvp,               & ! intent(in)
+                              fcor, um_ref, vm_ref, up2, vp2,                       & ! intent(in)
+                              uprcp, vprcp, rc_coef,                                & ! intent(in)
+                              clubb_params, nu_vert_res_dep,                        & ! intent(in)
+                              clubb_config_flags%iiPDF_type,                        & ! intent(in)
+                              clubb_config_flags%l_predict_upwp_vpwp,               & ! intent(in)
+                              clubb_config_flags%l_diffuse_rtm_and_thlm,            & ! intent(in)
+                              clubb_config_flags%l_stability_correct_Kh_N2_zm,      & ! intent(in)
+                              clubb_config_flags%l_godunov_upwind_wpxp_ta,          & ! intent(in)
+                              clubb_config_flags%l_upwind_xm_ma,                    & ! intent(in)
+                              clubb_config_flags%l_uv_nudge,                        & ! intent(in)
+                              clubb_config_flags%l_tke_aniso,                       & ! intent(in)
+                              clubb_config_flags%l_diag_Lscale_from_tau,            & ! intent(in)
+                              clubb_config_flags%l_use_C7_Richardson,               & ! intent(in)
+                              clubb_config_flags%l_brunt_vaisala_freq_moist,        & ! intent(in)
+                              clubb_config_flags%l_use_thvm_in_bv_freq,             & ! intent(in)
+                              clubb_config_flags%l_lmm_stepping,                    & ! intent(in)
+                              order_xm_wpxp, order_xp2_xpyp, order_wp2_wp3,         & ! intent(in)
+                              stats_zt, stats_zm, stats_sfc,                        & ! intent(i/o)
+                              rtm, wprtp, thlm, wpthlp,                             & ! intent(i/o)
+                              sclrm, wpsclrp, um, upwp, vm, vpwp )                    ! intent(i/o)
+
+        if ( clubb_at_least_debug_level( 0 ) ) then
+           if ( err_code == clubb_fatal_error ) then
+              err_code_out = err_code
+              write(fstderr,*) "Error calling advance_xm_wpxp"
+              return
+           end if
+        end if
+
+        ! Vince Larson clipped rcm in order to prevent rvm < 0.  5 Apr 2008.
+        ! This code won't work unless rtm >= 0 !!!
+        ! We do not clip rcm_in_layer because rcm_in_layer only influences
+        ! radiation, and we do not want to bother recomputing it.  6 Aug 2009
+        call clip_rcm( gr, rtm, 'rtm < rcm in advance_xm_wpxp', & ! intent(in)
+                       rcm )                                      ! intent(inout)
 
 #ifdef GFDL
-      call advance_sclrm_Nd_diffusion_OG( dt, &  ! h1g, 2012-06-16     ! intent(in)
-                                          sclrm, sclrm_trsport_only, & ! intent(inout)
-                                          Kh_zm,  cloud_frac )         ! intent(in)
+        call advance_sclrm_Nd_diffusion_OG( dt, &  ! h1g, 2012-06-16     ! intent(in)
+                                            sclrm, sclrm_trsport_only, & ! intent(inout)
+                                            Kh_zm,  cloud_frac )         ! intent(in)
 #endif
 
-      !----------------------------------------------------------------
-      ! Compute some of the variances and covariances.  These include the variance of
-      ! total water (rtp2), liquid water potential temperature (thlp2), their
-      ! covariance (rtpthlp), and the variance of horizontal wind (up2 and vp2).
-      ! The variance of vertical velocity is computed later.
-      !----------------------------------------------------------------
+       elseif ( advance_order_loop_iter == order_xp2_xpyp ) then
 
-      ! We found that certain cases require a time tendency to run
-      ! at shorter timesteps so these are prognosed now.
+        !----------------------------------------------------------------
+        ! Compute some of the variances and covariances.  These include the
+        ! variance of total water (rtp2), liquid water potential temperature
+        ! (thlp2), their covariance (rtpthlp), and the variance of horizontal
+        ! wind (up2 and vp2).  The variance of vertical velocity is computed
+        ! in a different section, which will come either earlier or later
+        ! depending on the chosen call order.
+        !----------------------------------------------------------------
 
-      ! We found that if we call advance_xp2_xpyp first, we can use a longer timestep.
+        ! We found that certain cases require a time tendency to run
+        ! at shorter timesteps so these are prognosed now.
 
-      ! Advance the prognostic equations
-      !   for scalar variances and covariances,
-      !   plus the horizontal wind variances by one time step, by one time step.
-      call advance_xp2_xpyp( gr, invrs_tau_xp2_zm, invrs_tau_C4_zm,       & ! intent(in)
-                             invrs_tau_C14_zm, wm_zm,                     & ! intent(in)
-                             rtm, wprtp, thlm, wpthlp, wpthvp, um, vm,    & ! intent(in)
-                             wp2, wp2_zt, wp3, upwp, vpwp,                & ! intent(in)
-                             sigma_sqd_w, Skw_zm, wprtp2, wpthlp2,        & ! intent(in)
-                             wprtpthlp, Kh_zt, rtp2_forcing,              & ! intent(in)
-                             thlp2_forcing, rtpthlp_forcing,              & ! intent(in)
-                             rho_ds_zm, rho_ds_zt, invrs_rho_ds_zm,       & ! intent(in)
-                             thv_ds_zm, cloud_frac,                       & ! intent(in)
-                             wp3_on_wp2, wp3_on_wp2_zt,                   & ! intent(in)
-                             pdf_implicit_coefs_terms,                    & ! intent(in)
-                             dt_advance,                                  & ! intent(in)
-                             sclrm, wpsclrp,                              & ! intent(in)
-                             wpsclrp2, wpsclrprtp, wpsclrpthlp,           & ! intent(in)
-                             wp2_splat,                                   & ! intent(in)
-                             clubb_params, nu_vert_res_dep,               & ! intent(in)
-                             clubb_config_flags%iiPDF_type,               & ! intent(in)
-                             clubb_config_flags%l_predict_upwp_vpwp,      & ! intent(in)
-                             clubb_config_flags%l_min_xp2_from_corr_wx,   & ! intent(in)
-                             clubb_config_flags%l_C2_cloud_frac,          & ! intent(in)
-                             clubb_config_flags%l_upwind_xpyp_ta,         & ! intent(in)
-                             clubb_config_flags%l_godunov_upwind_xpyp_ta, & ! intent(in)
-                             clubb_config_flags%l_lmm_stepping,           & ! intent(in)
-                             stats_zt, stats_zm, stats_sfc,               & ! intent(inout)
-                             rtp2, thlp2, rtpthlp, up2, vp2,              & ! intent(inout)
-                             sclrp2, sclrprtp, sclrpthlp)                   ! intent(inout)
+        ! We found that if we call advance_xp2_xpyp first, we can use a longer timestep.
 
-      if ( clubb_at_least_debug_level( 0 ) ) then
-          if ( err_code == clubb_fatal_error ) then
-            err_code_out = err_code
-            write(fstderr,*) "Error calling advance_xp2_xpyp"
-            return
+        ! Advance the prognostic equations
+        !   for scalar variances and covariances,
+        !   plus the horizontal wind variances by one time step, by one time step.
+        call advance_xp2_xpyp( gr, invrs_tau_xp2_zm, invrs_tau_C4_zm,       & ! intent(in)
+                               invrs_tau_C14_zm, wm_zm,                     & ! intent(in)
+                               rtm, wprtp, thlm, wpthlp, wpthvp, um, vm,    & ! intent(in)
+                               wp2, wp2_zt, wp3, upwp, vpwp,                & ! intent(in)
+                               sigma_sqd_w, Skw_zm, wprtp2, wpthlp2,        & ! intent(in)
+                               wprtpthlp, Kh_zt, rtp2_forcing,              & ! intent(in)
+                               thlp2_forcing, rtpthlp_forcing,              & ! intent(in)
+                               rho_ds_zm, rho_ds_zt, invrs_rho_ds_zm,       & ! intent(in)
+                               thv_ds_zm, cloud_frac,                       & ! intent(in)
+                               wp3_on_wp2, wp3_on_wp2_zt,                   & ! intent(in)
+                               pdf_implicit_coefs_terms,                    & ! intent(in)
+                               dt_advance,                                  & ! intent(in)
+                               sclrm, wpsclrp,                              & ! intent(in)
+                               wpsclrp2, wpsclrprtp, wpsclrpthlp,           & ! intent(in)
+                               wp2_splat,                                   & ! intent(in)
+                               clubb_params, nu_vert_res_dep,               & ! intent(in)
+                               clubb_config_flags%iiPDF_type,               & ! intent(in)
+                               clubb_config_flags%l_predict_upwp_vpwp,      & ! intent(in)
+                               clubb_config_flags%l_min_xp2_from_corr_wx,   & ! intent(in)
+                               clubb_config_flags%l_C2_cloud_frac,          & ! intent(in)
+                               clubb_config_flags%l_upwind_xpyp_ta,         & ! intent(in)
+                               clubb_config_flags%l_godunov_upwind_xpyp_ta, & ! intent(in)
+                               clubb_config_flags%l_lmm_stepping,           & ! intent(in)
+                               stats_zt, stats_zm, stats_sfc,               & ! intent(inout)
+                               rtp2, thlp2, rtpthlp, up2, vp2,              & ! intent(inout)
+                               sclrp2, sclrprtp, sclrpthlp)                   ! intent(inout)
+
+        if ( clubb_at_least_debug_level( 0 ) ) then
+           if ( err_code == clubb_fatal_error ) then
+              err_code_out = err_code
+              write(fstderr,*) "Error calling advance_xp2_xpyp"
+              return
+           end if
+        end if
+
+        !----------------------------------------------------------------
+        ! Covariance clipping for wprtp, wpthlp, wpsclrp, upwp, and vpwp
+        ! after subroutine advance_xp2_xpyp updated xp2.
+        !----------------------------------------------------------------
+
+        if ( order_xp2_xpyp < order_xm_wpxp &
+             .and. order_xp2_xpyp < order_wp2_wp3 ) then
+           wprtp_cl_num   = 1 ! First instance of w'r_t' clipping.
+           wpthlp_cl_num  = 1 ! First instance of w'th_l' clipping.
+           wpsclrp_cl_num = 1 ! First instance of w'sclr' clipping.
+           if ( clubb_config_flags%l_predict_upwp_vpwp ) then
+              upwp_cl_num = 1 ! First instance of u'w' clipping.
+              vpwp_cl_num = 1 ! First instance of v'w' clipping.
+           endif
+        elseif ( order_xp2_xpyp > order_xm_wpxp &
+                 .and. order_xp2_xpyp > order_wp2_wp3 ) then
+           wprtp_cl_num   = 3 ! Third instance of w'r_t' clipping.
+           wpthlp_cl_num  = 3 ! Third instance of w'th_l' clipping.
+           wpsclrp_cl_num = 3 ! Third instance of w'sclr' clipping.
+           if ( clubb_config_flags%l_predict_upwp_vpwp ) then
+              upwp_cl_num = 3 ! Third instance of u'w' clipping.
+              vpwp_cl_num = 3 ! Third instance of v'w' clipping.
+           endif
+        else
+           wprtp_cl_num   = 2 ! Second instance of w'r_t' clipping.
+           wpthlp_cl_num  = 2 ! Second instance of w'th_l' clipping.
+           wpsclrp_cl_num = 2 ! Second instance of w'sclr' clipping.
+           if ( clubb_config_flags%l_predict_upwp_vpwp ) then
+              upwp_cl_num = 2 ! Second instance of u'w' clipping.
+              vpwp_cl_num = 2 ! Second instance of v'w' clipping.
+           endif
+        endif
+
+        if ( .not. clubb_config_flags%l_predict_upwp_vpwp ) then
+           if ( order_xp2_xpyp < order_wp2_wp3 &
+                .and. order_xp2_xpyp < order_windm ) then
+              upwp_cl_num = 1 ! First instance of u'w' clipping.
+              vpwp_cl_num = 1 ! First instance of v'w' clipping.
+           elseif ( order_xp2_xpyp > order_wp2_wp3 &
+                    .and. order_xp2_xpyp > order_windm ) then
+              upwp_cl_num = 3 ! Third instance of u'w' clipping.
+              vpwp_cl_num = 3 ! Third instance of v'w' clipping.
+           else
+              upwp_cl_num = 2 ! Second instance of u'w' clipping.
+              vpwp_cl_num = 2 ! Second instance of v'w' clipping.
+           endif ! l_predict_upwp_vpwp
+        endif
+
+        call clip_covars_denom( gr, dt, rtp2, thlp2, up2, vp2, wp2,       & ! intent(in)
+                                sclrp2, wprtp_cl_num, wpthlp_cl_num,      & ! intent(in)
+                                wpsclrp_cl_num, upwp_cl_num, vpwp_cl_num, & ! intent(in)
+                                clubb_config_flags%l_predict_upwp_vpwp,   & ! intent(in)
+                                clubb_config_flags%l_tke_aniso,           & ! intent(in)
+                                stats_zm,                                 & ! intent(inout)
+                                wprtp, wpthlp, upwp, vpwp, wpsclrp )        ! intent(inout)
+
+       elseif ( advance_order_loop_iter == order_wp2_wp3 ) then
+
+        !----------------------------------------------------------------
+        ! Advance the 2nd- and 3rd-order moments
+        !   of vertical velocity (wp2, wp3) by one timestep.
+        !----------------------------------------------------------------
+
+        ! advance_wp2_wp3_bad_wp2 ! Test error comment, DO NOT modify or move
+        call advance_wp2_wp3 &
+             ( gr, dt_advance, sfc_elevation, sigma_sqd_w, wm_zm,         & ! intent(in)
+               wm_zt, a3_coef, a3_coef_zt, wp3_on_wp2,                    & ! intent(in)
+               wpup2, wpvp2, wp2up2, wp2vp2, wp4,                         & ! intent(in)
+               wpthvp, wp2thvp, um, vm, upwp, vpwp,                       & ! intent(in)
+               up2, vp2, em, Kh_zm, Kh_zt, invrs_tau_C4_zm,               & ! intent(in)
+               invrs_tau_wp3_zt, invrs_tau_C1_zm, Skw_zm,                 & ! intent(in)
+               Skw_zt, rho_ds_zm, rho_ds_zt, invrs_rho_ds_zm,             & ! intent(in)
+               invrs_rho_ds_zt, radf, thv_ds_zm,                          & ! intent(in)
+               thv_ds_zt, pdf_params%mixt_frac(1,:), Cx_fnc_Richardson,   & ! intent(in)
+               wp2_splat, wp3_splat,                                      & ! intent(in)
+               pdf_implicit_coefs_terms,                                  & ! intent(in)
+               wprtp, wpthlp, rtp2, thlp2,                                & ! intent(in)
+               clubb_params, nu_vert_res_dep,                             & ! intent(in)
+               clubb_config_flags%iiPDF_type,                             & ! intent(in)
+               clubb_config_flags%l_min_wp2_from_corr_wx,                 & ! intent(in)
+               clubb_config_flags%l_upwind_xm_ma,                         & ! intent(in)
+               clubb_config_flags%l_tke_aniso,                            & ! intent(in)
+               clubb_config_flags%l_standard_term_ta,                     & ! intent(in)
+               clubb_config_flags%l_partial_upwind_wp3,                   & ! intent(in)
+               clubb_config_flags%l_damp_wp2_using_em,                    & ! intent(in)
+               clubb_config_flags%l_use_C11_Richardson,                   & ! intent(in)
+               clubb_config_flags%l_damp_wp3_Skw_squared,                 & ! intent(in)
+               clubb_config_flags%l_lmm_stepping,                         & ! intent(in)
+               clubb_config_flags%l_use_tke_in_wp3_pr_turb_term,          & ! intent(in)
+               clubb_config_flags%l_use_tke_in_wp2_wp3_K_dfsn,            & ! intent(in)
+               stats_zt, stats_zm, stats_sfc,                             & ! intent(inout)
+               wp2, wp3, wp3_zm, wp2_zt )                                   ! intent(inout)
+
+        if ( clubb_at_least_debug_level( 0 ) ) then
+           if ( err_code == clubb_fatal_error ) then
+              err_code = clubb_fatal_error
+              err_code_out = err_code
+              write(fstderr,*) "Error calling advance_wp2_wp3"
+              return
+           end if
+        end if
+
+        !----------------------------------------------------------------
+        ! Covariance clipping for wprtp, wpthlp, wpsclrp, upwp, and vpwp
+        ! after subroutine advance_wp2_wp3 updated wp2.
+        !----------------------------------------------------------------
+
+        if ( order_wp2_wp3 < order_xm_wpxp &
+             .and. order_wp2_wp3 < order_xp2_xpyp ) then
+           wprtp_cl_num   = 1 ! First instance of w'r_t' clipping.
+           wpthlp_cl_num  = 1 ! First instance of w'th_l' clipping.
+           wpsclrp_cl_num = 1 ! First instance of w'sclr' clipping.
+           if ( clubb_config_flags%l_predict_upwp_vpwp ) then
+              upwp_cl_num = 1 ! First instance of u'w' clipping.
+              vpwp_cl_num = 1 ! First instance of v'w' clipping.
+           endif
+        elseif ( order_wp2_wp3 > order_xm_wpxp &
+                 .and. order_wp2_wp3 > order_xp2_xpyp ) then
+           wprtp_cl_num   = 3 ! Third instance of w'r_t' clipping.
+           wpthlp_cl_num  = 3 ! Third instance of w'th_l' clipping.
+           wpsclrp_cl_num = 3 ! Third instance of w'sclr' clipping.
+           if ( clubb_config_flags%l_predict_upwp_vpwp ) then
+              upwp_cl_num = 3 ! Third instance of u'w' clipping.
+              vpwp_cl_num = 3 ! Third instance of v'w' clipping.
+           endif
+        else
+           wprtp_cl_num   = 2 ! Second instance of w'r_t' clipping.
+           wpthlp_cl_num  = 2 ! Second instance of w'th_l' clipping.
+           wpsclrp_cl_num = 2 ! Second instance of w'sclr' clipping.
+           if ( clubb_config_flags%l_predict_upwp_vpwp ) then
+              upwp_cl_num = 2 ! Second instance of u'w' clipping.
+              vpwp_cl_num = 2 ! Second instance of v'w' clipping.
+           endif
+        endif
+      
+        if ( .not. clubb_config_flags%l_predict_upwp_vpwp ) then
+           if ( order_wp2_wp3 < order_xp2_xpyp &
+                .and. order_wp2_wp3 < order_windm ) then
+              upwp_cl_num = 1 ! First instance of u'w' clipping.
+              vpwp_cl_num = 1 ! First instance of v'w' clipping.
+           elseif ( order_wp2_wp3 > order_xp2_xpyp &
+                    .and. order_wp2_wp3 > order_windm ) then
+              upwp_cl_num = 3 ! Third instance of u'w' clipping.
+              vpwp_cl_num = 3 ! Third instance of v'w' clipping.
+           else
+              upwp_cl_num = 2 ! Second instance of u'w' clipping.
+              vpwp_cl_num = 2 ! Second instance of v'w' clipping.
+           endif ! l_predict_upwp_vpwp
+        endif
+
+        call clip_covars_denom( gr, dt, rtp2, thlp2, up2, vp2, wp2,       & ! intent(in)
+                                sclrp2, wprtp_cl_num, wpthlp_cl_num,      & ! intent(in)
+                                wpsclrp_cl_num, upwp_cl_num, vpwp_cl_num, & ! intent(in)
+                                clubb_config_flags%l_predict_upwp_vpwp,   & ! intent(in)
+                                clubb_config_flags%l_tke_aniso,           & ! intent(in)
+                                stats_zm,                                 & ! intent(inout)
+                                wprtp, wpthlp, upwp, vpwp, wpsclrp )        ! intent(inout)
+
+       elseif ( advance_order_loop_iter == order_windm ) then
+
+        !----------------------------------------------------------------
+        ! Advance the horizontal mean winds (um, vm),
+        !   the mean of the eddy-diffusivity scalars (i.e. edsclrm),
+        !   and their fluxes (upwp, vpwp, wpedsclrp) by one time step.
+        !----------------------------------------------------------------
+
+        Km_zm = Kh_zm * clubb_params(ic_K10)   ! Coefficient for momentum
+
+        Kmh_zm = Kh_zm * clubb_params(ic_K10h) ! Coefficient for thermo
+
+        if ( clubb_config_flags%l_do_expldiff_rtm_thlm ) then
+           edsclrm(:,edsclr_dim-1)=thlm(:)
+           edsclrm(:,edsclr_dim)=rtm(:)
+        endif
+
+        call advance_windm_edsclrm( gr, dt, wm_zt, Km_zm, Kmh_zm,               & ! intent(in)
+                                    ug, vg, um_ref, vm_ref,                     & ! intent(in)
+                                    wp2, up2, vp2, um_forcing, vm_forcing,      & ! intent(in)
+                                    edsclrm_forcing,                            & ! intent(in)
+                                    rho_ds_zm, invrs_rho_ds_zt,                 & ! intent(in)
+                                    fcor, l_implemented,                        & ! intent(in)
+                                    nu_vert_res_dep,                            & ! intent(in)
+                                    clubb_config_flags%l_predict_upwp_vpwp,     & ! intent(in)
+                                    clubb_config_flags%l_upwind_xm_ma,          & ! intent(in)
+                                    clubb_config_flags%l_uv_nudge,              & ! intent(in)
+                                    clubb_config_flags%l_tke_aniso,             & ! intent(in)
+                                    clubb_config_flags%l_lmm_stepping,          & ! intent(in)
+                                    order_xp2_xpyp, order_wp2_wp3, order_windm, & ! intent(in)
+                                    stats_zt, stats_zm, stats_sfc,              & ! intent(inout)
+                                    um, vm, edsclrm,                            & ! intent(inout)
+                                    upwp, vpwp, wpedsclrp )                       ! intent(inout)
+
+        if ( clubb_config_flags%l_do_expldiff_rtm_thlm ) then
+          call pvertinterp(gr%nz, p_in_Pa, 70000.0_core_rknd, thlm, &  ! intent(in)
+                           thlm700)                                    ! intent(out)
+          call pvertinterp(gr%nz, p_in_Pa, 100000.0_core_rknd, thlm, & ! intent(in)
+                           thlm1000)                                   ! intent(out)
+          if ( thlm700 - thlm1000 < 20.0_core_rknd ) then
+            thlm(:) = edsclrm(:,edsclr_dim-1)
+            rtm(:) = edsclrm(:,edsclr_dim)
           end if
-      end if
+        end if
 
-      !----------------------------------------------------------------
-      ! Covariance clipping for wprtp, wpthlp, wpsclrp, upwp, and vpwp
-      ! after subroutine advance_xp2_xpyp updated xp2.
-      !----------------------------------------------------------------
+        ! Eric Raut: this seems dangerous to call without any attached flag.
+        ! Hence the preprocessor.
+#ifdef CLUBB_CAM
+        do ixind=1,edsclr_dim
+          call fill_holes_vertical( gr, 2,0.0_core_rknd,"zt", & ! intent(in)
+                                   rho_ds_zt, rho_ds_zm, & ! intent(in)
+                                   edsclrm(:,ixind))       ! intent(inout)
+        enddo
+#endif
 
-      wprtp_cl_num   = 2 ! Second instance of w'r_t' clipping.
-      wpthlp_cl_num  = 2 ! Second instance of w'th_l' clipping.
-      wpsclrp_cl_num = 2 ! Second instance of w'sclr' clipping.
-      if ( clubb_config_flags%l_predict_upwp_vpwp ) then
-         upwp_cl_num = 2 ! Second instance of u'w' clipping.
-         vpwp_cl_num = 2 ! Second instance of v'w' clipping.
-      else
-         upwp_cl_num = 1 ! First instance of u'w' clipping.
-         vpwp_cl_num = 1 ! First instance of v'w' clipping.
-      endif ! l_predict_upwp_vpwp
+       endif ! advance_order_loop_iter
 
-      call clip_covars_denom( gr, dt, rtp2, thlp2, up2, vp2, wp2,       & ! intent(in)
-                              sclrp2, wprtp_cl_num, wpthlp_cl_num,      & ! intent(in)
-                              wpsclrp_cl_num, upwp_cl_num, vpwp_cl_num, & ! intent(in)
-                              clubb_config_flags%l_predict_upwp_vpwp,   & ! intent(in)
-                              clubb_config_flags%l_tke_aniso,           & ! intent(in)
-                              stats_zm,                                 & ! intent(inout)
-                              wprtp, wpthlp, upwp, vpwp, wpsclrp )        ! intent(inout)
-
-
-      !----------------------------------------------------------------
-      ! Advance the 2nd- and 3rd-order moments
-      !   of vertical velocity (wp2, wp3) by one timestep.
-      !----------------------------------------------------------------
-
-      ! advance_wp2_wp3_bad_wp2 ! Test error comment, DO NOT modify or move
-      call advance_wp2_wp3 &
-           ( gr, dt_advance, sfc_elevation, sigma_sqd_w, wm_zm,         & ! intent(in)
-             wm_zt, a3_coef, a3_coef_zt, wp3_on_wp2,                    & ! intent(in)
-             wpup2, wpvp2, wp2up2, wp2vp2, wp4,                         & ! intent(in)
-             wpthvp, wp2thvp, um, vm, upwp, vpwp,                       & ! intent(in)
-             up2, vp2, em, Kh_zm, Kh_zt, invrs_tau_C4_zm,               & ! intent(in)
-             invrs_tau_wp3_zt, invrs_tau_C1_zm, Skw_zm,                 & ! intent(in)
-             Skw_zt, rho_ds_zm, rho_ds_zt, invrs_rho_ds_zm,             & ! intent(in)
-             invrs_rho_ds_zt, radf, thv_ds_zm,                          & ! intent(in)
-             thv_ds_zt, pdf_params%mixt_frac(1,:), Cx_fnc_Richardson,   & ! intent(in)
-             wp2_splat, wp3_splat,                                      & ! intent(in)
-             pdf_implicit_coefs_terms,                                  & ! intent(in)
-             wprtp, wpthlp, rtp2, thlp2,                                & ! intent(in)
-             clubb_params, nu_vert_res_dep,                             & ! intent(in)
-             clubb_config_flags%iiPDF_type,                             & ! intent(in)
-             clubb_config_flags%l_min_wp2_from_corr_wx,                 & ! intent(in)
-             clubb_config_flags%l_upwind_xm_ma,                         & ! intent(in)
-             clubb_config_flags%l_tke_aniso,                            & ! intent(in)
-             clubb_config_flags%l_standard_term_ta,                     & ! intent(in)
-             clubb_config_flags%l_partial_upwind_wp3,                   & ! intent(in)
-             clubb_config_flags%l_damp_wp2_using_em,                    & ! intent(in)
-             clubb_config_flags%l_use_C11_Richardson,                   & ! intent(in)
-             clubb_config_flags%l_damp_wp3_Skw_squared,                 & ! intent(in)
-             clubb_config_flags%l_lmm_stepping,                         & ! intent(in)
-             clubb_config_flags%l_use_tke_in_wp3_pr_turb_term,          & ! intent(in)
-             clubb_config_flags%l_use_tke_in_wp2_wp3_K_dfsn,            & ! intent(in)
-             stats_zt, stats_zm, stats_sfc,                             & ! intent(inout)
-             wp2, wp3, wp3_zm, wp2_zt )                                   ! intent(inout)
-
-      if ( clubb_at_least_debug_level( 0 ) ) then
-          if ( err_code == clubb_fatal_error ) then
-            err_code = clubb_fatal_error
-            err_code_out = err_code
-            write(fstderr,*) "Error calling advance_wp2_wp3"
-            return
-          end if
-      end if
-
-      !----------------------------------------------------------------
-      ! Covariance clipping for wprtp, wpthlp, wpsclrp, upwp, and vpwp
-      ! after subroutine advance_wp2_wp3 updated wp2.
-      !----------------------------------------------------------------
-
-      wprtp_cl_num   = 3 ! Third instance of w'r_t' clipping.
-      wpthlp_cl_num  = 3 ! Third instance of w'th_l' clipping.
-      wpsclrp_cl_num = 3 ! Third instance of w'sclr' clipping.
-      if ( clubb_config_flags%l_predict_upwp_vpwp ) then
-         upwp_cl_num = 3 ! Third instance of u'w' clipping.
-         vpwp_cl_num = 3 ! Third instance of v'w' clipping.
-      else
-         upwp_cl_num = 2 ! Second instance of u'w' clipping.
-         vpwp_cl_num = 2 ! Second instance of v'w' clipping.
-      endif ! l_predict_upwp_vpwp
-
-      call clip_covars_denom( gr, dt, rtp2, thlp2, up2, vp2, wp2,       & ! intent(in)
-                              sclrp2, wprtp_cl_num, wpthlp_cl_num,      & ! intent(in)
-                              wpsclrp_cl_num, upwp_cl_num, vpwp_cl_num, & ! intent(in)
-                              clubb_config_flags%l_predict_upwp_vpwp,   & ! intent(in)
-                              clubb_config_flags%l_tke_aniso,           & ! intent(in)
-                              stats_zm,                                 & ! intent(inout)
-                              wprtp, wpthlp, upwp, vpwp, wpsclrp )        ! intent(inout)
+      enddo ! advance_order_loop_iter = 1, 4, 1
 
       !----------------------------------------------------------------
       ! Advance or otherwise calculate <thl'^3>, <rt'^3>, and
@@ -1856,60 +2001,6 @@ module advance_clubb_core_module
          endif ! clubb_config_flags%iiPDF_type == iiPDF_ADG1
 
       endif ! l_advance_xp3 .and. clubb_config_flags%iiPDF_type /= iiPDF_ADG1
-
-      !----------------------------------------------------------------
-      ! Advance the horizontal mean winds (um, vm),
-      !   the mean of the eddy-diffusivity scalars (i.e. edsclrm),
-      !   and their fluxes (upwp, vpwp, wpedsclrp) by one time step.
-      !----------------------------------------------------------------
-
-      
-
-      Km_zm = Kh_zm * clubb_params(ic_K10)   ! Coefficient for momentum
-
-      Kmh_zm = Kh_zm * clubb_params(ic_K10h) ! Coefficient for thermo
-
-      if ( clubb_config_flags%l_do_expldiff_rtm_thlm ) then
-        edsclrm(:,edsclr_dim-1)=thlm(:)
-        edsclrm(:,edsclr_dim)=rtm(:)
-      endif
-
-      call advance_windm_edsclrm( gr, dt, wm_zt, Km_zm, Kmh_zm,                 & ! intent(in)
-                                  ug, vg, um_ref, vm_ref,                       & ! intent(in)
-                                  wp2, up2, vp2, um_forcing, vm_forcing,        & ! intent(in)
-                                  edsclrm_forcing,                              & ! intent(in)
-                                  rho_ds_zm, invrs_rho_ds_zt,                   & ! intent(in)
-                                  fcor, l_implemented,                          & ! intent(in)
-                                  nu_vert_res_dep,                              & ! intent(in)
-                                  clubb_config_flags%l_predict_upwp_vpwp,       & ! intent(in)
-                                  clubb_config_flags%l_upwind_xm_ma,            & ! intent(in)
-                                  clubb_config_flags%l_uv_nudge,                & ! intent(in)
-                                  clubb_config_flags%l_tke_aniso,               & ! intent(in)
-                                  clubb_config_flags%l_lmm_stepping,            & ! intent(in)
-                                  stats_zt, stats_zm, stats_sfc,                & ! intent(inout)
-                                  um, vm, edsclrm,                              & ! intent(inout)
-                                  upwp, vpwp, wpedsclrp )                         ! intent(inout)
-
-      if ( clubb_config_flags%l_do_expldiff_rtm_thlm ) then
-        call pvertinterp(gr%nz, p_in_Pa, 70000.0_core_rknd, thlm, &  ! intent(in)
-                         thlm700)                                    ! intent(out)
-        call pvertinterp(gr%nz, p_in_Pa, 100000.0_core_rknd, thlm, & ! intent(in)
-                         thlm1000)                                   ! intent(out)
-        if ( thlm700 - thlm1000 < 20.0_core_rknd ) then
-          thlm(:) = edsclrm(:,edsclr_dim-1)
-          rtm(:) = edsclrm(:,edsclr_dim)
-        end if
-      end if
-
-      ! Eric Raut: this seems dangerous to call without any attached flag.
-      ! Hence the preprocessor.
-#ifdef CLUBB_CAM
-      do ixind=1,edsclr_dim
-        call fill_holes_vertical( gr, 2,0.0_core_rknd,"zt", & ! intent(in)
-                                 rho_ds_zt, rho_ds_zm, & ! intent(in)
-                                 edsclrm(:,ixind))       ! intent(inout)
-      enddo
-#endif
 
     if ( clubb_config_flags%ipdf_call_placement == ipdf_post_advance_fields &
          .or. clubb_config_flags%ipdf_call_placement &
@@ -3136,6 +3227,7 @@ module advance_clubb_core_module
                  iiPDF_type,                              & ! intent(in)
                  ipdf_call_placement,                     & ! intent(in)
                  l_predict_upwp_vpwp,                     & ! intent(in)
+                 l_min_xp2_from_corr_wx,                  & ! intent(in)
                  l_prescribed_avg_deltaz,                 & ! intent(in)
                  l_damp_wp2_using_em,                     & ! intent(in)
                  l_stability_correct_tau_zm               & ! intent(in)
@@ -3192,6 +3284,9 @@ module advance_clubb_core_module
           iiPDF_LY93,       &
           iiPDF_new_hybrid, &
           l_explicit_turbulent_adv_wpxp
+
+      use advance_xm_wpxp_module, only: &
+          l_enable_relaxed_clipping
 
       use clubb_precision, only: &
           core_rknd ! Variable(s)
@@ -3289,6 +3384,10 @@ module advance_clubb_core_module
                                    ! Otherwise, <u'w'> and <v'w'> are still approximated by eddy
                                    ! diffusivity when <u> and <v> are advanced in subroutine
                                    ! advance_windm_edsclrm.
+        l_min_xp2_from_corr_wx,  & ! Flag to base the threshold minimum value of xp2 (rtp2 and
+                                   ! thlp2) on keeping the overall correlation of w and x within
+                                   ! the limits of -max_mag_correlation_flux to
+                                   ! max_mag_correlation_flux.
         l_prescribed_avg_deltaz, &  ! used in adj_low_res_nu. If .true., avg_deltaz = deltaz
         l_damp_wp2_using_em,     &
         l_stability_correct_tau_zm
@@ -3496,6 +3595,125 @@ module advance_clubb_core_module
          endif
 
       endif ! l_predict_upwp_vpwp
+
+      ! The flags l_min_xp2_from_corr_wx and l_enable_relaxed_clipping must
+      ! have opposite values.
+      if ( ( l_min_xp2_from_corr_wx ) &
+         .and. ( l_enable_relaxed_clipping ) ) then
+         write(fstderr,*) "Invalid configuration: l_min_xp2_from_corr_wx = T " &
+                          // "and l_enable_relaxed_clipping = T"
+         write(fstderr,*) "They must have opposite values"
+         write(fstderr,*) "Fatal error in setup_clubb_core"
+         err_code = clubb_fatal_error
+         err_code_out = clubb_fatal_error
+         return
+      elseif ( ( .not. l_min_xp2_from_corr_wx ) &
+               .and. ( .not. l_enable_relaxed_clipping ) ) then
+         write(fstderr,*) "Invalid configuration: l_min_xp2_from_corr_wx = F " &
+                          // "and l_enable_relaxed_clipping = F"
+         write(fstderr,*) "They must have opposite values"
+         write(fstderr,*) "Fatal error in setup_clubb_core"
+         err_code = clubb_fatal_error
+         err_code_out = clubb_fatal_error
+         return
+      endif
+
+      ! Checking for the code that orders CLUBB's advance_ subroutines
+      if ( order_xm_wpxp < 1 .or. order_xm_wpxp > 4 ) then
+         write(fstderr,*) "The variable order_xm_wpxp must have a value " &
+                          // "between 1 and 4"
+         write(fstderr,*) "order_xm_wpxp = ", order_xm_wpxp
+         write(fstderr,*) "Fatal error in setup_clubb_core"
+         err_code = clubb_fatal_error
+         err_code_out = clubb_fatal_error
+         return
+      elseif ( order_xm_wpxp == order_wp2_wp3 &
+               .or. order_xm_wpxp == order_xp2_xpyp &
+               .or. order_xm_wpxp == order_windm ) then
+         write(fstderr,*) "The variable order_xm_wpxp has the same value " &
+                          // "as another order_ variable.  Please give each " &
+                          // "order index a unique value."
+         write(fstderr,*) "order_xm_wpxp = ", order_xm_wpxp
+         write(fstderr,*) "order_wp2_wp3 = ", order_wp2_wp3
+         write(fstderr,*) "order_xp2_xpyp = ", order_xp2_xpyp
+         write(fstderr,*) "order_windm = ", order_windm
+         write(fstderr,*) "Fatal error in setup_clubb_core"
+         err_code = clubb_fatal_error
+         err_code_out = clubb_fatal_error
+         return
+      endif
+
+      if ( order_wp2_wp3 < 1 .or. order_wp2_wp3 > 4 ) then
+         write(fstderr,*) "The variable order_wp2_wp3 must have a value " &
+                          // "between 1 and 4"
+         write(fstderr,*) "order_wp2_wp3 = ", order_wp2_wp3
+         write(fstderr,*) "Fatal error in setup_clubb_core"
+         err_code = clubb_fatal_error
+         err_code_out = clubb_fatal_error
+         return
+      elseif ( order_wp2_wp3 == order_xm_wpxp &
+               .or. order_wp2_wp3 == order_xp2_xpyp &
+               .or. order_wp2_wp3 == order_windm ) then
+         write(fstderr,*) "The variable order_wp2_wp3 has the same value " &
+                          // "as another order_ variable.  Please give each " &
+                          // "order index a unique value."
+         write(fstderr,*) "order_wp2_wp3 = ", order_wp2_wp3
+         write(fstderr,*) "order_xm_wpxp = ", order_xm_wpxp
+         write(fstderr,*) "order_xp2_xpyp = ", order_xp2_xpyp
+         write(fstderr,*) "order_windm = ", order_windm
+         write(fstderr,*) "Fatal error in setup_clubb_core"
+         err_code = clubb_fatal_error
+         err_code_out = clubb_fatal_error
+         return
+      endif
+
+      if ( order_xp2_xpyp < 1 .or. order_xp2_xpyp > 4 ) then
+         write(fstderr,*) "The variable order_xp2_xpyp must have a value " &
+                          // "between 1 and 4"
+         write(fstderr,*) "order_xp2_xpyp = ", order_xp2_xpyp
+         write(fstderr,*) "Fatal error in setup_clubb_core"
+         err_code = clubb_fatal_error
+         err_code_out = clubb_fatal_error
+         return
+      elseif ( order_xp2_xpyp == order_wp2_wp3 &
+               .or. order_xp2_xpyp == order_xm_wpxp &
+               .or. order_xp2_xpyp == order_windm ) then
+         write(fstderr,*) "The variable order_xp2_xpyp has the same value " &
+                          // "as another order_ variable.  Please give each " &
+                          // "order index a unique value."
+         write(fstderr,*) "order_xp2_xpyp = ", order_xp2_xpyp
+         write(fstderr,*) "order_wp2_wp3 = ", order_wp2_wp3
+         write(fstderr,*) "order_xm_wpxp = ", order_xm_wpxp
+         write(fstderr,*) "order_windm = ", order_windm
+         write(fstderr,*) "Fatal error in setup_clubb_core"
+         err_code = clubb_fatal_error
+         err_code_out = clubb_fatal_error
+         return
+      endif
+
+      if ( order_windm < 1 .or. order_windm > 4 ) then
+         write(fstderr,*) "The variable order_windm must have a value " &
+                          // "between 1 and 4"
+         write(fstderr,*) "order_windm = ", order_windm
+         write(fstderr,*) "Fatal error in setup_clubb_core"
+         err_code = clubb_fatal_error
+         err_code_out = clubb_fatal_error
+         return
+      elseif ( order_windm == order_wp2_wp3 &
+               .or. order_windm == order_xp2_xpyp &
+               .or. order_windm == order_xm_wpxp ) then
+         write(fstderr,*) "The variable order_windm has the same value " &
+                          // "as another order_ variable.  Please give each " &
+                          // "order index a unique value."
+         write(fstderr,*) "order_windm = ", order_windm
+         write(fstderr,*) "order_wp2_wp3 = ", order_wp2_wp3
+         write(fstderr,*) "order_xp2_xpyp = ", order_xp2_xpyp
+         write(fstderr,*) "order_xm_wpxp = ", order_xm_wpxp
+         write(fstderr,*) "Fatal error in setup_clubb_core"
+         err_code = clubb_fatal_error
+         err_code_out = clubb_fatal_error
+         return
+      endif
 
       ! Setup grid
       call setup_grid( nzmax, sfc_elevation, l_implemented,     & ! intent(in)
