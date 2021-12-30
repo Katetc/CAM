@@ -2903,10 +2903,10 @@ end subroutine clubb_init_cnst
             rcm_inout(i,:), cloud_frac_inout(i,:), &
             wpthvp_in(i,:), wp2thvp_in(i,:), rtpthvp_in(i,:), thlpthvp_in(i,:), &
             sclrpthvp_inout(i,:,:), &
-            wp2rtp_inout(i,:,:), wp2thlp_inout(i,:,:), uprcp_inout(i,:,:), &
-            vprcp_inout(i,:,:), rc_coef_inout(i,:,:), &
-            wp4_inout(i,:,:), wpup2_inout(i,:,:), wpvp2_inout(i,:,:), &
-            wp2up2_inout(i,:,:), wp2vp2_inout(i,:,:), &
+            wp2rtp_inout(i,:), wp2thlp_inout(i,:), uprcp_inout(i,:), &
+            vprcp_inout(i,:), rc_coef_inout(i,:), &
+            wp4_inout(i,:), wpup2_inout(i,:), wpvp2_inout(i,:), &
+            wp2up2_inout(i,:), wp2vp2_inout(i,:), &
             pdf_params_single_col(i), pdf_params_zm_single_col(i), &
             pdf_implicit_coefs_terms_chnk(i,lchnk), &
             khzm_out(i,:), khzt_out(i,:), &
