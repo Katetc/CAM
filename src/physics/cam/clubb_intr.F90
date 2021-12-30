@@ -257,6 +257,16 @@ module clubb_intr
     rtpthvp_idx, &      ! moisture buoyancy correlation
     thlpthvp_idx, &     ! temperature buoyancy correlation
     sclrpthvp_idx, &    ! passive scalar buoyancy correlation
+    wp2rtp_idx, &       ! w'^2 rt'
+    wp2thlp_idx, &      ! w'^2 thl'
+    uprcp_idx, &        ! < u' r_c' >
+    vprcp_idx, &        ! < v' r_c' >
+    rc_coef_idx, &      ! Coefficient of X'r_c' in Eq. (34)
+    wp4_idx, &          ! w'^4
+    wpup2_idx, &        ! w'u'^2
+    wpvp2_idx, &        ! w'v'^2
+    wp2up2_idx, &       ! w'^2 u'^2
+    wp2vp2_idx, &       ! w'^2 v'^2
     cloud_frac_idx, &   ! CLUBB's cloud fraction
     cld_idx, &         	! Cloud fraction
     concld_idx, &       ! Convective cloud fraction
@@ -434,6 +444,16 @@ module clubb_intr
     call pbuf_add_field('ISS_FRAC',   'physpkg', dtype_r8, (/pcols,pverp/), ice_supersat_idx)
     call pbuf_add_field('RCM',        'physpkg', dtype_r8, (/pcols,pverp/), rcm_idx)
     call pbuf_add_field('ZTODT',      'physpkg', dtype_r8, (/pcols/),       ztodt_idx)
+    call pbuf_add_field('WP2RTP',     'global', dtype_r8, (/pcols,pverp/), wp2rtp_idx)
+    call pbuf_add_field('WP2THLP',    'global', dtype_r8, (/pcols,pverp/), wp2thlp_idx)
+    call pbuf_add_field('UPRCP',      'global', dtype_r8, (/pcols,pverp/), uprcp_idx)
+    call pbuf_add_field('VPRCP',      'global', dtype_r8, (/pcols,pverp/), vprcp_idx)
+    call pbuf_add_field('RC_COEF',    'global', dtype_r8, (/pcols,pverp/), rc_coef_idx)
+    call pbuf_add_field('WP4',        'global', dtype_r8, (/pcols,pverp/), wp4_idx)
+    call pbuf_add_field('WPUP2',      'global', dtype_r8, (/pcols,pverp/), wpup2_idx)
+    call pbuf_add_field('WPVP2',      'global', dtype_r8, (/pcols,pverp/), wpvp2_idx)
+    call pbuf_add_field('WP2UP2',     'global', dtype_r8, (/pcols,pverp/), wp2up2_idx)
+    call pbuf_add_field('WP2VP2',     'global', dtype_r8, (/pcols,pverp/), wp2vp2_idx)
 
     ! For SILHS microphysical covariance contributions
     call pbuf_add_field('rtp2_mc_zt', 'global', dtype_r8, (/pcols,pverp/), rtp2_mc_zt_idx)
@@ -1603,6 +1623,16 @@ end subroutine clubb_init_cnst
        call pbuf_set_field(pbuf2d, tke_idx,     0.0_r8)
        call pbuf_set_field(pbuf2d, kvh_idx,     0.0_r8)
        call pbuf_set_field(pbuf2d, radf_idx,    0.0_r8)
+       call pbuf_set_field(pbuf2d, wp2rtp_idx,  0.0_r8)
+       call pbuf_set_field(pbuf2d, wp2thlp_idx, 0.0_r8)
+       call pbuf_set_field(pbuf2d, uprcp_idx,   0.0_r8)
+       call pbuf_set_field(pbuf2d, vprcp_idx,   0.0_r8)
+       call pbuf_set_field(pbuf2d, rc_coef_idx, 0.0_r8)
+       call pbuf_set_field(pbuf2d, wp4_idx,     0.0_r8)
+       call pbuf_set_field(pbuf2d, wpup2_idx,   0.0_r8)
+       call pbuf_set_field(pbuf2d, wpvp2_idx,   0.0_r8)
+       call pbuf_set_field(pbuf2d, wp2up2_idx,  0.0_r8)
+       call pbuf_set_field(pbuf2d, wp2vp2_idx,  0.0_r8)
 
        ! Initialize SILHS covariance contributions
        call pbuf_set_field(pbuf2d, rtp2_mc_zt_idx,    0.0_r8)
@@ -1849,6 +1879,16 @@ end subroutine clubb_init_cnst
    real(r8) :: sclrprtp(pcols,pverp+1-top_lev,sclr_dim)         ! sclr'rt' (momentum levels)          [{units vary} (kg/kg)]
    real(r8) :: sclrpthlp(pcols,pverp+1-top_lev,sclr_dim)        ! sclr'thlp' (momentum levels)        [{units vary} (K)]
    real(r8) :: sclrpthvp_inout(pcols,pverp,sclr_dim)  ! sclr'th_v' (momentum levels)                  [{units vary} (K)]
+   real(r8) :: wp2rtp_inout(pcols,pverp+1-top_lev)    ! w'^2 rt' (thermodynamic levels)
+   real(r8) :: wp2thlp_inout(pcols,pverp+1-top_lev)   ! w'^2 thl' (thermodynamic levels)
+   real(r8) :: uprcp_inout(pcols,pverp+1-top_lev)     ! < u' r_c' > (momentum levels)
+   real(r8) :: vprcp_inout(pcols,pverp+1-top_lev)     ! < v' r_c' > (momentum levels)
+   real(r8) :: rc_coef_inout(pcols,pverp+1-top_lev)   ! Coef. of X'r_c' in Eq. (34) (t-levs.)
+   real(r8) :: wp4_inout(pcols,pverp+1-top_lev)       ! w'^4 (momentum levels
+   real(r8) :: wpup2_inout(pcols,pverp+1-top_lev)     ! w'u'^2 (thermodynamic levels)
+   real(r8) :: wpvp2_inout(pcols,pverp+1-top_lev)     ! w'v'^2 (thermodynamic levels)
+   real(r8) :: wp2up2_inout(pcols,pverp+1-top_lev)    ! w'^2 u'^2 (momentum levels)
+   real(r8) :: wp2vp2_inout(pcols,pverp+1-top_lev)    ! w'^2 v'^2 (momentum levels)
    real(r8) :: hydromet(pcols,pverp+1-top_lev,hydromet_dim)
    real(r8) :: wphydrometp(pcols,pverp+1-top_lev,hydromet_dim)
    real(r8) :: wp2hmp(pcols,pverp+1-top_lev,hydromet_dim)
@@ -1949,6 +1989,16 @@ end subroutine clubb_init_cnst
    real(r8), pointer, dimension(:,:) :: rtpthvp  ! r_t'th_v' (momentum levels)			[kg/kg K]
    real(r8), pointer, dimension(:,:) :: thlpthvp ! th_l'th_v' (momentum levels)			[K^2]
    real(r8), pointer, dimension(:,:) :: cloud_frac ! Cloud fraction (thermodynamic levels)	[K^2]
+   real(r8), pointer, dimension(:,:) :: wp2rtp    ! w'^2 rt' (thermodynamic levels)
+   real(r8), pointer, dimension(:,:) :: wp2thlp   ! w'^2 thl' (thermodynamic levels)
+   real(r8), pointer, dimension(:,:) :: uprcp     ! < u' r_c' > (momentum levels)
+   real(r8), pointer, dimension(:,:) :: vprcp     ! < v' r_c' > (momentum levels)
+   real(r8), pointer, dimension(:,:) :: rc_coef   ! Coef. of X'r_c' in Eq. (34) (t-levs.)
+   real(r8), pointer, dimension(:,:) :: wp4       ! w'^4 (momentum levels
+   real(r8), pointer, dimension(:,:) :: wpup2     ! w'u'^2 (thermodynamic levels)
+   real(r8), pointer, dimension(:,:) :: wpvp2     ! w'v'^2 (thermodynamic levels)
+   real(r8), pointer, dimension(:,:) :: wp2up2    ! w'^2 u'^2 (momentum levels)
+   real(r8), pointer, dimension(:,:) :: wp2vp2    ! w'^2 v'^2 (momentum levels)
    real(r8), pointer, dimension(:,:) :: thlm     ! mean temperature				[K]
    real(r8), pointer, dimension(:,:) :: rtm      ! mean moisture mixing ratio			[kg/kg]
    real(r8), pointer, dimension(:,:) :: rcm      ! CLUBB cloud water mixing ratio               [kg/kg]
@@ -2153,6 +2203,16 @@ end subroutine clubb_init_cnst
    call pbuf_get_field(pbuf, thlpthvp_idx,thlpthvp)
    call pbuf_get_field(pbuf, rcm_idx,     rcm)
    call pbuf_get_field(pbuf, cloud_frac_idx, cloud_frac)
+   call pbuf_get_field(pbuf, wp2rtp_idx, wp2rtp)
+   call pbuf_get_field(pbuf, wp2thlp_idx, wp2thlp)
+   call pbuf_get_field(pbuf, uprcp_idx, uprcp)
+   call pbuf_get_field(pbuf, vprcp_idx, vprcp)
+   call pbuf_get_field(pbuf, rc_coef_idx, rc_coef)
+   call pbuf_get_field(pbuf, wp4_idx, wp4)
+   call pbuf_get_field(pbuf, wpup2_idx, wpup2)
+   call pbuf_get_field(pbuf, wpvp2_idx, wpvp2)
+   call pbuf_get_field(pbuf, wp2up2_idx, wp2up2)
+   call pbuf_get_field(pbuf, wp2vp2_idx, wp2vp2)
    call pbuf_get_field(pbuf, thlm_idx,    thlm,    start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
    call pbuf_get_field(pbuf, rtm_idx,     rtm,     start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
    call pbuf_get_field(pbuf, um_idx,      um,      start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
@@ -2650,6 +2710,16 @@ end subroutine clubb_init_cnst
          rcm_inout(i,k)  = rcm(i,pverp-k+1)
          cloud_frac_inout(i,k) = cloud_frac(i,pverp-k+1)
          sclrpthvp_inout(i,k,:) = 0._r8
+         wp2rtp_inout(i,k)  = wp2rtp(i,pverp-k+1)
+         wp2thlp_inout(i,k) = wp2thlp(i,pverp-k+1)
+         uprcp_inout(i,k)   = uprcp(i,pverp-k+1)
+         vprcp_inout(i,k)   = vprcp(i,pverp-k+1)
+         rc_coef_inout(i,k) = rc_coef(i,pverp-k+1)
+         wp4_inout(i,k)     = wp4(i,pverp-k+1)
+         wpup2_inout(i,k)   = wpup2(i,pverp-k+1)
+         wpvp2_inout(i,k)   = wpvp2(i,pverp-k+1)
+         wp2up2_inout(i,k)  = wp2up2(i,pverp-k+1)
+         wp2vp2_inout(i,k)  = wp2vp2(i,pverp-k+1)
  
          if (k .ne. 1) then
             pre_in(i,k)    = prer_evap(i,pverp-k+1)
@@ -2833,6 +2903,10 @@ end subroutine clubb_init_cnst
             rcm_inout(i,:), cloud_frac_inout(i,:), &
             wpthvp_in(i,:), wp2thvp_in(i,:), rtpthvp_in(i,:), thlpthvp_in(i,:), &
             sclrpthvp_inout(i,:,:), &
+            wp2rtp_inout(i,:,:), wp2thlp_inout(i,:,:), uprcp_inout(i,:,:), &
+            vprcp_inout(i,:,:), rc_coef_inout(i,:,:), &
+            wp4_inout(i,:,:), wpup2_inout(i,:,:), wpvp2_inout(i,:,:), &
+            wp2up2_inout(i,:,:), wp2vp2_inout(i,:,:), &
             pdf_params_single_col(i), pdf_params_zm_single_col(i), &
             pdf_implicit_coefs_terms_chnk(i,lchnk), &
             khzm_out(i,:), khzt_out(i,:), &
@@ -2962,6 +3036,16 @@ end subroutine clubb_init_cnst
          khzm(i,pverp-k+1)         = khzm_out(i,k)
          qclvar(i,pverp-k+1)       = min(1._r8,qclvar_out(i,k))
          wm_zt_out(i,pverp-k+1)    = wm_zt(i,k)
+         wp2rtp(i,pverp-k+1)       = wp2rtp_inout(i,k)
+         wp2thlp(i,pverp-k+1)      = wp2thlp_inout(i,k)
+         uprcp(i,pverp-k+1)        = uprcp_inout(i,k)
+         vprcp(i,pverp-k+1)        = vprcp_inout(i,k)
+         rc_coef(i,pverp-k+1)      = rc_coef_inout(i,k)
+         wp4(i,pverp-k+1)          = wp4_inout(i,k)
+         wpup2(i,pverp-k+1)        = wpup2_inout(i,k)
+         wpvp2(i,pverp-k+1)        = wpvp2_inout(i,k)
+         wp2up2(i,pverp-k+1)       = wp2up2_inout(i,k)
+         wp2vp2(i,pverp-k+1)       = wp2vp2_inout(i,k)
 
          rtp2_zt_out(i,pverp-k+1)  = rtp2_zt(i,k)
          thl2_zt_out(i,pverp-k+1)  = thl2_zt(i,k)
