@@ -1712,11 +1712,8 @@ end subroutine clubb_init_cnst
         fstderr, &
         copy_single_pdf_params_to_multi, &
         pdf_parameter, &
-        init_pdf_params_api
-        
-   use grid_class, only : &
-      setup_grid
-   
+        init_pdf_params_api, &
+        setup_grid_api
 
    use clubb_api_module, only: &
        clubb_fatal_error    ! Error code value to indicate a fatal error
@@ -2621,10 +2618,10 @@ end subroutine clubb_init_cnst
       !                   operators (such as zt2zm_api, etc.) until AFTER the
       !                   call to setup_grid_heights_api.
       
-      call setup_grid( nlev+1, sfc_elevation(i), l_implemented,     & ! intent(in)
-                       grid_type, zi_g(i,2), zi_g(i,1), zi_g(i,nlev+1),      & ! intent(in)
-                       zi_g(i,:), zt_g(i,:), & ! intent(in)
-                       gr(i), begin_height, end_height             ) ! intent(out)
+      call setup_grid_api( nlev+1, sfc_elevation(i), l_implemented,         & ! intent(in)
+                           grid_type, zi_g(i,2), zi_g(i,1), zi_g(i,nlev+1), & ! intent(in)
+                           zi_g(i,:), zt_g(i,:),                            & ! intent(in)
+                           gr(i), begin_height, end_height )                  ! intent(out)
 
       call setup_parameters_api( zi_g(i,2), clubb_params, nlev+1, grid_type, &
                                  zi_g(i,:), zt_g(i,:), &
