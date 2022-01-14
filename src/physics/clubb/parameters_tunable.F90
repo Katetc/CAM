@@ -351,7 +351,7 @@ module parameters_tunable
 
     C_invrs_tau_bkgnd          = 1.1_core_rknd 
     C_invrs_tau_sfc            = 0.1_core_rknd
-    C_invrs_tau_shear          = 0.02_core_rknd
+    C_invrs_tau_shear          = 0.15_core_rknd
     C_invrs_tau_N2             = 0.4_core_rknd 
     C_invrs_tau_N2_wp2         = 0.1_core_rknd
     C_invrs_tau_N2_xp2         = 0.05_core_rknd
@@ -441,7 +441,7 @@ module parameters_tunable
     altitude_threshold = 100.0_core_rknd ! Altitude above which damping should occur for wpxp
     rtp2_clip_coef = 0.5_core_rknd       ! Coef. appled the clipping threshold on rtp2
 
-    Cx_min = 1.0_core_rknd/3.0_core_rknd ! Threshold on Cx_fnc_Richardson
+    Cx_min = 0.33_core_rknd              ! Threshold on Cx_fnc_Richardson
     Cx_max = 0.95_core_rknd              ! Threshold on Cx_fnc_Richardson
     Richardson_num_min = 0.25_core_rknd  ! Threshold on Richardson number
     Richardson_num_max = 400.0_core_rknd ! Threshold on Richardson number
