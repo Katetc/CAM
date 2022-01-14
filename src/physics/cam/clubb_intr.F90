@@ -207,6 +207,7 @@ module clubb_intr
   logical  :: clubb_l_e3sm_config = .false.
   logical  :: clubb_l_use_tke_in_wp3_pr_turb_term = .false.
   logical  :: clubb_l_use_tke_in_wp2_wp3_K_dfsn = .false.
+  logical  :: clubb_l_smooth_Heaviside_tau_wpxp = .false.
 
 !  Constant parameters
   logical, parameter, private :: &
@@ -621,7 +622,7 @@ end subroutine clubb_init_cnst
                                clubb_l_call_pdf_closure_twice, clubb_l_use_cloud_cover, &
                                clubb_l_diag_Lscale_from_tau, clubb_l_damp_wp2_using_em, &
                                clubb_l_lmm_stepping, clubb_l_e3sm_config, clubb_l_use_tke_in_wp3_pr_turb_term, &
-                               clubb_l_use_tke_in_wp2_wp3_K_dfsn, &
+                               clubb_l_use_tke_in_wp2_wp3_K_dfsn, clubb_l_smooth_Heaviside_tau_wpxp, &
                                clubb_l_min_xp2_from_corr_wx, clubb_l_upwind_xpyp_ta, clubb_l_vert_avg_closure, &
                                clubb_l_trapezoidal_rule_zt, clubb_l_trapezoidal_rule_zm, &
                                clubb_l_call_pdf_closure_twice, clubb_l_use_cloud_cover, &
@@ -843,6 +844,8 @@ end subroutine clubb_init_cnst
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_l_use_tke_in_wp3_pr_turb_term")
     call mpi_bcast(clubb_l_use_tke_in_wp2_wp3_K_dfsn,   1, mpi_logical, mstrid, mpicom, ierr)
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_l_use_tke_in_wp2_wp3_K_dfsn")
+    call mpi_bcast(clubb_l_smooth_Heaviside_tau_wpxp,   1, mpi_logical, mstrid, mpicom, ierr)
+    if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_l_smooth_Heaviside_tau_wpxp")
 
     !  Overwrite defaults if they are true
     if (clubb_history) l_stats = .true.
@@ -1301,6 +1304,7 @@ end subroutine clubb_init_cnst
     clubb_config_flags%l_e3sm_config = clubb_l_e3sm_config
     clubb_config_flags%l_use_tke_in_wp3_pr_turb_term = clubb_l_use_tke_in_wp3_pr_turb_term
     clubb_config_flags%l_use_tke_in_wp2_wp3_K_dfsn = clubb_l_use_tke_in_wp2_wp3_K_dfsn
+    clubb_config_flags%l_smooth_Heaviside_tau_wpxp = clubb_l_smooth_Heaviside_tau_wpxp
    
     !  Set up CLUBB core.  Note that some of these inputs are overwritten
     !  when clubb_tend_cam is called.  The reason is that heights can change
@@ -5134,6 +5138,7 @@ end function diag_ustar
                                       ! Looking at issue #905 on the clubb repo
       l_use_tke_in_wp3_pr_turb_term,& ! Use TKE formulation for wp3 pr_turb term
       l_use_tke_in_wp2_wp3_K_dfsn,  & ! Use TKE in eddy diffusion for wp2 and wp3
+      l_smooth_Heaviside_tau_wpxp,  & ! Use smooth Heaviside 'Peskin' in computation of invrs_tau
       l_single_C2_Skw,              & ! Use a single Skewness dependent C2 for rtp2, thlp2, and
                                       ! rtpthlp
       l_damp_wp3_Skw_squared,       & ! Set damping on wp3 to use Skw^2 rather than Skw^4
@@ -5189,7 +5194,8 @@ end function diag_ustar
                                                l_e3sm_config, & ! Intent(out)
                                                l_vary_convect_depth, & ! Intent(out)
                                                l_use_tke_in_wp3_pr_turb_term, & ! Intent(out)
-                                               l_use_tke_in_wp2_wp3_K_dfsn ) ! Intent(out)
+                                               l_use_tke_in_wp2_wp3_K_dfsn, & ! Intent(out)
+                                               l_smooth_Heaviside_tau_wpxp ) ! Intent(out)
 
       call initialize_clubb_config_flags_type_api( iiPDF_type, & ! In
                                                    ipdf_call_placement, & ! In
@@ -5237,6 +5243,7 @@ end function diag_ustar
                                                    l_vary_convect_depth, & ! In
                                                    l_use_tke_in_wp3_pr_turb_term, & ! In
                                                    l_use_tke_in_wp2_wp3_K_dfsn, & ! In 
+                                                   l_smooth_Heaviside_tau_wpxp, & ! In
                                                    clubb_config_flags_in ) ! Out
 
       first_call = .false.
