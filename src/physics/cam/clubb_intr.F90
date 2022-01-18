@@ -1715,6 +1715,7 @@ end subroutine clubb_init_cnst
         sat_mixrat_liq_api, &
         fstderr, &
         copy_single_pdf_params_to_multi, &
+        copy_multi_pdf_params_to_single, &
         pdf_parameter, &
         init_pdf_params_api, &
         setup_grid_api
@@ -1846,7 +1847,7 @@ end subroutine clubb_init_cnst
    real(r8) :: zi_g(pcols,pverp+1-top_lev)			  ! Momentum grid of CLUBB		      	[m]
    real(r8) :: zt_out(pcols,pverp)                        ! output for the thermo CLUBB grid           	[m] 
    real(r8) :: zi_out(pcols,pverp)                        ! output for momentum CLUBB grid             	[m]
-   real(r8) :: fcor				          ! Coriolis forcing 			      	[s^-1]
+   real(r8) :: fcor(pcols)				          ! Coriolis forcing 			      	[s^-1]
    real(r8) :: sfc_elevation(pcols)    		          ! Elevation of ground			      	[m AMSL]			      	[m]
    real(r8) :: ubar				          ! surface wind                                [m/s]
    real(r8) :: ustar				          ! surface stress				[m/s]								
@@ -2498,7 +2499,7 @@ end subroutine clubb_init_cnst
     ! Determine Coriolis force at given latitude. This is never used
     ! when CLUBB is implemented in a host model, therefore just set
     ! to zero.
-    fcor = 0._r8 
+    fcor(:) = 0._r8 
 
     ! Define the CLUBB momentum grid (in height, units of m)
     do k=1, nlev+1
@@ -2960,66 +2961,104 @@ end subroutine clubb_init_cnst
         end do
 
       end if
-       
-      do i=1, ncol
+      
+      ! Arrays are allocated as if they have pcols grid columns, but there can be less.
+      ! So if pcols=ncol, we have no problem, but if that isn't the case, then ncol<pcol, 
+      ! and we will have to slice the input arrays. This is very annoying, and we should
+      ! change it.
+      if ( pcols == ncol ) then
 
         !  Advance CLUBB CORE one timestep in the future
-        call advance_clubb_core_api( &
-            gr(i), l_implemented, dtime, fcor, sfc_elevation(i), hydromet_dim, &
-            thlm_forcing(i,:), rtm_forcing(i,:), um_forcing(i,:), vm_forcing(i,:), &
-            sclrm_forcing(i,:,:), edsclrm_forcing(i,:,:), wprtp_forcing(i,:), &
-            wpthlp_forcing(i,:), rtp2_forcing(i,:), thlp2_forcing(i,:), &
-            rtpthlp_forcing(i,:), wm_zm(i,:), wm_zt(i,:), &
-            wpthlp_sfc(i), wprtp_sfc(i), upwp_sfc(i), vpwp_sfc(i), &
-            wpsclrp_sfc(i,:), wpedsclrp_sfc(i,:), &
-            rtm_ref(i,:), thlm_ref(i,:), um_ref(i,:), vm_ref(i,:), ug(i,:), vg(i,:), &
-            p_in_Pa(i,:), rho_zm(i,:), rho_in(i,:), exner(i,:), &
-            rho_ds_zm(i,:), rho_ds_zt(i,:), invrs_rho_ds_zm(i,:), &
-            invrs_rho_ds_zt(i,:), thv_ds_zm(i,:), thv_ds_zt(i,:), hydromet(i,:,:), &
-            rfrzm(i,:), radf(i,:), &
-            wphydrometp(i,:,:), wp2hmp(i,:,:), rtphmp_zt(i,:,:), thlphmp_zt(i,:,:), &
-            grid_dx(i), grid_dy(i), &
-            clubb_params, nu_vert_res_dep(i), lmin(i), &
+        call advance_clubb_core_api( gr(:), pverp+1-top_lev, ncol, &
+            l_implemented, dtime, fcor(:), sfc_elevation(:), hydromet_dim, &
+            thlm_forcing(:,:), rtm_forcing(:,:), um_forcing(:,:), vm_forcing(:,:), &
+            sclrm_forcing(:,:,:), edsclrm_forcing(:,:,:), wprtp_forcing(:,:), &
+            wpthlp_forcing(:,:), rtp2_forcing(:,:), thlp2_forcing(:,:), &
+            rtpthlp_forcing(:,:), wm_zm(:,:), wm_zt(:,:), &
+            wpthlp_sfc(:), wprtp_sfc(:), upwp_sfc(:), vpwp_sfc(:), &
+            wpsclrp_sfc(:,:), wpedsclrp_sfc(:,:), &
+            rtm_ref(:,:), thlm_ref(:,:), um_ref(:,:), vm_ref(:,:), ug(:,:), vg(:,:), &
+            p_in_Pa(:,:), rho_zm(:,:), rho_in(:,:), exner(:,:), &
+            rho_ds_zm(:,:), rho_ds_zt(:,:), invrs_rho_ds_zm(:,:), &
+            invrs_rho_ds_zt(:,:), thv_ds_zm(:,:), thv_ds_zt(:,:), hydromet(:,:,:), &
+            rfrzm(:,:), radf(:,:), &
+            wphydrometp(:,:,:), wp2hmp(:,:,:), rtphmp_zt(:,:,:), thlphmp_zt(:,:,:), &
+            grid_dx(:), grid_dy(:), &
+            clubb_params, nu_vert_res_dep(:), lmin(:), &
             clubb_config_flags, &
-            stats_zt(i), stats_zm(i), stats_sfc(i), &
-            um_in(i,:), vm_in(i,:), upwp_in(i,:), vpwp_in(i,:), up2_in(i,:), vp2_in(i,:), up3_in(i,:), vp3_in(i,:), &
-            thlm_in(i,:), rtm_in(i,:), wprtp_in(i,:), wpthlp_in(i,:), &
-            wp2_in(i,:), wp3_in(i,:), rtp2_in(i,:), rtp3_in(i,:), thlp2_in(i,:), thlp3_in(i,:), rtpthlp_in(i,:), &
-            sclrm(i,:,:), &
-            sclrp2(i,:,:), sclrp3(i,:,:), sclrprtp(i,:,:), sclrpthlp(i,:,:), &
-            wpsclrp(i,:,:), edsclr_in(i,:,:), err_code(i), &
-            rcm_inout(i,:), cloud_frac_inout(i,:), &
-            wpthvp_in(i,:), wp2thvp_in(i,:), rtpthvp_in(i,:), thlpthvp_in(i,:), &
-            sclrpthvp_inout(i,:,:), &
-            wp2rtp_inout(i,:), wp2thlp_inout(i,:), uprcp_inout(i,:), &
-            vprcp_inout(i,:), rc_coef_inout(i,:), &
-            wp4_inout(i,:), wpup2_inout(i,:), wpvp2_inout(i,:), &
-            wp2up2_inout(i,:), wp2vp2_inout(i,:), &
-            pdf_params_single_col(i), pdf_params_zm_single_col(i), &
-            pdf_implicit_coefs_terms_chnk(i,lchnk), &
-            khzm_out(i,:), khzt_out(i,:), &
-            qclvar_out(i,:), thlprcp_out(i,:), &
-            wprcp_out(i,:), w_up_in_cloud_out(i,:), ice_supersat_frac_out(i,:), &
-            rcm_in_layer_out(i,:), cloud_cover_out(i,:), invrs_tau_zm_out(i,:) )
-      end do
+            stats_zt(:), stats_zm(:), stats_sfc(:), &
+            um_in(:,:), vm_in(:,:), upwp_in(:,:), vpwp_in(:,:), up2_in(:,:), vp2_in(:,:), up3_in(:,:), vp3_in(:,:), &
+            thlm_in(:,:), rtm_in(:,:), wprtp_in(:,:), wpthlp_in(:,:), &
+            wp2_in(:,:), wp3_in(:,:), rtp2_in(:,:), rtp3_in(:,:), thlp2_in(:,:), thlp3_in(:,:), rtpthlp_in(:,:), &
+            sclrm(:,:,:), &
+            sclrp2(:,:,:), sclrp3(:,:,:), sclrprtp(:,:,:), sclrpthlp(:,:,:), &
+            wpsclrp(:,:,:), edsclr_in(:,:,:), err_code(1), &
+            rcm_inout(:,:), cloud_frac_inout(:,:), &
+            wpthvp_in(:,:), wp2thvp_in(:,:), rtpthvp_in(:,:), thlpthvp_in(:,:), &
+            sclrpthvp_inout(:,:,:), &
+            wp2rtp_inout(:,:), wp2thlp_inout(:,:), uprcp_inout(:,:), &
+            vprcp_inout(:,:), rc_coef_inout(:,:), &
+            wp4_inout(:,:), wpup2_inout(:,:), wpvp2_inout(:,:), &
+            wp2up2_inout(:,:), wp2vp2_inout(:,:), &
+            pdf_params_chnk(lchnk), pdf_params_zm_chnk(lchnk), &
+            pdf_implicit_coefs_terms_chnk(:,lchnk), &
+            khzm_out(:,:), khzt_out(:,:), &
+            qclvar_out(:,:), thlprcp_out(:,:), &
+            wprcp_out(:,:), w_up_in_cloud_out(:,:), ice_supersat_frac_out(:,:), &
+            rcm_in_layer_out(:,:), cloud_cover_out(:,:), invrs_tau_zm_out(:,:) )
+            
+      else
+          
+        !  Advance CLUBB CORE one timestep in the future
+        call advance_clubb_core_api( gr(:ncol), pverp+1-top_lev, ncol, &
+            l_implemented, dtime, fcor(:ncol), sfc_elevation(:ncol), hydromet_dim, &
+            thlm_forcing(:ncol,:), rtm_forcing(:ncol,:), um_forcing(:ncol,:), vm_forcing(:ncol,:), &
+            sclrm_forcing(:ncol,:,:), edsclrm_forcing(:ncol,:,:), wprtp_forcing(:ncol,:), &
+            wpthlp_forcing(:ncol,:), rtp2_forcing(:ncol,:), thlp2_forcing(:ncol,:), &
+            rtpthlp_forcing(:ncol,:), wm_zm(:ncol,:), wm_zt(:ncol,:), &
+            wpthlp_sfc(:ncol), wprtp_sfc(:ncol), upwp_sfc(:ncol), vpwp_sfc(:ncol), &
+            wpsclrp_sfc(:ncol,:), wpedsclrp_sfc(:ncol,:), &
+            rtm_ref(:ncol,:), thlm_ref(:ncol,:), um_ref(:ncol,:), vm_ref(:ncol,:), ug(:ncol,:), vg(:ncol,:), &
+            p_in_Pa(:ncol,:), rho_zm(:ncol,:), rho_in(:ncol,:), exner(:ncol,:), &
+            rho_ds_zm(:ncol,:), rho_ds_zt(:ncol,:), invrs_rho_ds_zm(:ncol,:), &
+            invrs_rho_ds_zt(:ncol,:), thv_ds_zm(:ncol,:), thv_ds_zt(:ncol,:), hydromet(:ncol,:,:), &
+            rfrzm(:ncol,:), radf(:ncol,:), &
+            wphydrometp(:ncol,:,:), wp2hmp(:ncol,:,:), rtphmp_zt(:ncol,:,:), thlphmp_zt(:ncol,:,:), &
+            grid_dx(:ncol), grid_dy(:ncol), &
+            clubb_params, nu_vert_res_dep(:ncol), lmin(:ncol), &
+            clubb_config_flags, &
+            stats_zt(:ncol), stats_zm(:ncol), stats_sfc(:ncol), &
+            um_in(:ncol,:), vm_in(:ncol,:), upwp_in(:ncol,:), vpwp_in(:ncol,:), up2_in(:ncol,:), vp2_in(:ncol,:), up3_in(:ncol,:), vp3_in(:ncol,:), &
+            thlm_in(:ncol,:), rtm_in(:ncol,:), wprtp_in(:ncol,:), wpthlp_in(:ncol,:), &
+            wp2_in(:ncol,:), wp3_in(:ncol,:), rtp2_in(:ncol,:), rtp3_in(:ncol,:), thlp2_in(:ncol,:), thlp3_in(:ncol,:), rtpthlp_in(:ncol,:), &
+            sclrm(:ncol,:,:), &
+            sclrp2(:ncol,:,:), sclrp3(:ncol,:,:), sclrprtp(:ncol,:,:), sclrpthlp(:ncol,:,:), &
+            wpsclrp(:ncol,:,:), edsclr_in(:ncol,:,:), err_code(1), &
+            rcm_inout(:ncol,:), cloud_frac_inout(:ncol,:), &
+            wpthvp_in(:ncol,:), wp2thvp_in(:ncol,:), rtpthvp_in(:ncol,:), thlpthvp_in(:ncol,:), &
+            sclrpthvp_inout(:ncol,:,:), &
+            wp2rtp_inout(:ncol,:), wp2thlp_inout(:ncol,:), uprcp_inout(:ncol,:), &
+            vprcp_inout(:ncol,:), rc_coef_inout(:ncol,:), &
+            wp4_inout(:ncol,:), wpup2_inout(:ncol,:), wpvp2_inout(:ncol,:), &
+            wp2up2_inout(:ncol,:), wp2vp2_inout(:ncol,:), &
+            pdf_params_chnk(lchnk), pdf_params_zm_chnk(lchnk), &
+            pdf_implicit_coefs_terms_chnk(:ncol,lchnk), &
+            khzm_out(:ncol,:), khzt_out(:ncol,:), &
+            qclvar_out(:ncol,:), thlprcp_out(:ncol,:), &
+            wprcp_out(:ncol,:), w_up_in_cloud_out(:ncol,:), ice_supersat_frac_out(:ncol,:), &
+            rcm_in_layer_out(:ncol,:), cloud_cover_out(:ncol,:), invrs_tau_zm_out(:ncol,:) )
+            
+      end if
       
-      do i=1, ncol
-        if ( err_code(i) == clubb_fatal_error ) then
-          write(fstderr,*) "Fatal error in CLUBB: at timestep ", get_nstep(), "LAT: ", state1%lat(i), " LON: ", state1%lon(i), " COLUMN # i = ", i
-          call endrun(subr//':  Fatal error in CLUBB library')
-        end if
-      end do
-         
-      do i=1, ncol
-        ! Copy single column versiosn of PDF params to multi column versions
-        call copy_single_pdf_params_to_multi( pdf_params_single_col(i), i, &
-                                              pdf_params_chnk(lchnk)  )
-      end do
-
-      do i=1, ncol
-        call copy_single_pdf_params_to_multi( pdf_params_zm_single_col(i), i, &
-                                              pdf_params_zm_chnk(lchnk)  )
-      end do
+      
+      ! Clubb does not accept err_code as as array yet. Whether or not it will in the future
+      ! is questionable. For now we will check only one.
+      !do i=1, ncol
+      if ( err_code(1) == clubb_fatal_error ) then
+        write(fstderr,*) "Fatal error in CLUBB: at timestep ", get_nstep(), "LAT: ", state1%lat(i), " LON: ", state1%lon(i)
+        call endrun(subr//':  Fatal error in CLUBB library')
+      end if
+      !end do
       
       if (do_rainturb) then
         
@@ -3028,6 +3067,11 @@ end subroutine clubb_init_cnst
         end do
         
         do i=1, ncol  
+          
+          call copy_multi_pdf_params_to_single( pdf_params_chnk(lchnk), i, &
+                                                pdf_params_single_col(i))
+          
+          
           call update_xp2_mc_api( gr(i), nlev+1, dtime, cloud_frac_inout(i,:), &
             rcm_inout(i,:), rvm_in(i,:), thlm_in(i,:), wm_zt(i,:), exner(i,:), pre_in(i,:), pdf_params_single_col(i), &
             rtp2_mc_out(i,:), thlp2_mc_out(i,:), &
