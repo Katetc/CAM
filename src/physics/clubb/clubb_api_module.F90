@@ -275,7 +275,9 @@ module clubb_api_module
 
 
   public &
-    advance_clubb_core_api, &
+        advance_clubb_core_api, &
+        advance_clubb_core_api_single_col, &
+        advance_clubb_core_api_multi_col, &
         pdf_parameter, &
         implicit_coefs_terms, &
         ! A hydromet array is required, and these variables are required for a hydromet array:
@@ -1196,14 +1198,16 @@ contains
     !     stats_sfc = stats_sfc_col(1)
     ! because of some mysterious pointer issue. However, the only thing that 
     ! updates in stats is the field values, so we can copy only those instead.
-    stats_zm%accum_field_values = stats_zm_col(1)%accum_field_values
-    stats_zm%accum_num_samples = stats_zm_col(1)%accum_num_samples
-    
-    stats_zt%accum_field_values = stats_zt_col(1)%accum_field_values
-    stats_zt%accum_num_samples = stats_zt_col(1)%accum_num_samples
-    
-    stats_sfc%accum_field_values = stats_sfc_col(1)%accum_field_values
-    stats_sfc%accum_num_samples = stats_sfc_col(1)%accum_num_samples
+    if ( l_stats ) then 
+      stats_zm%accum_field_values = stats_zm_col(1)%accum_field_values
+      stats_zm%accum_num_samples = stats_zm_col(1)%accum_num_samples
+      
+      stats_zt%accum_field_values = stats_zt_col(1)%accum_field_values
+      stats_zt%accum_num_samples = stats_zt_col(1)%accum_num_samples
+      
+      stats_sfc%accum_field_values = stats_sfc_col(1)%accum_field_values
+      stats_sfc%accum_num_samples = stats_sfc_col(1)%accum_num_samples
+    end if
       
       
     um = um_col(1,:)
