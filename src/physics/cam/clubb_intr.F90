@@ -1048,12 +1048,6 @@ end subroutine clubb_init_cnst
        pdf_params_zm_chnk(begchunk:endchunk), &
        pdf_implicit_coefs_terms_chnk(pcols,begchunk:endchunk) )
     
-    ! Allocate arrays in multi column version of pdf_params
-    do l = begchunk, endchunk, 1
-       call init_pdf_params_api( pverp+1-top_lev, pcols, pdf_params_chnk(l) )
-       call init_pdf_params_api( pverp+1-top_lev, pcols, pdf_params_zm_chnk(l) )
-    end do
-    
     do j = 1, pcols, 1
        do l = begchunk, endchunk, 1
           call init_pdf_implicit_coefs_terms_api( pverp+1-top_lev, sclr_dim, &
@@ -2960,6 +2954,11 @@ end subroutine clubb_init_cnst
           end do
         end do
 
+      end if
+      
+      if ( .not. allocated(pdf_params_chnk(lchnk)%mixt_frac) ) then
+        call init_pdf_params_api( pverp+1-top_lev, ncol, pdf_params_chnk(lchnk) )
+        call init_pdf_params_api( pverp+1-top_lev, ncol, pdf_params_zm_chnk(lchnk) )
       end if
       
       ! Arrays are allocated as if they have pcols grid columns, but there can be less.
