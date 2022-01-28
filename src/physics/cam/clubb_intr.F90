@@ -1835,7 +1835,7 @@ end subroutine clubb_init_cnst
    real(r8) :: rtp2_forcing(pcols,pverp+1-top_lev)
    real(r8) :: thlp2_forcing(pcols,pverp+1-top_lev)
    real(r8) :: rtpthlp_forcing(pcols,pverp+1-top_lev)
-   real(r8) :: ice_supersat_frac_out(pcols,pverp+1-top_lev)
+   real(r8) :: ice_supersat_frac_inout(pcols,pverp+1-top_lev)
    real(r8) :: w_up_in_cloud_out(pcols,pverp+1-top_lev)
    real(r8) :: zt_g(pcols,pverp+1-top_lev)			  ! Thermodynamic grid of CLUBB		      	[m]
    real(r8) :: zi_g(pcols,pverp+1-top_lev)			  ! Momentum grid of CLUBB		      	[m]
@@ -2666,7 +2666,7 @@ end subroutine clubb_init_cnst
     ug(:,:) = 0.0_r8
     vg(:,:) = 0.0_r8
     
-    ice_supersat_frac_out(:,:) = 0._r8
+    ice_supersat_frac_inout(:,:) = 0._r8
     
     do i=1,ncol
       ! Add forcings for SILHS covariance contributions
@@ -2998,12 +2998,12 @@ end subroutine clubb_init_cnst
             wp2rtp_inout(:,:), wp2thlp_inout(:,:), uprcp_inout(:,:), &
             vprcp_inout(:,:), rc_coef_inout(:,:), &
             wp4_inout(:,:), wpup2_inout(:,:), wpvp2_inout(:,:), &
-            wp2up2_inout(:,:), wp2vp2_inout(:,:), &
+            wp2up2_inout(:,:), wp2vp2_inout(:,:), ice_supersat_frac_inout(:,:), &
             pdf_params_chnk(lchnk), pdf_params_zm_chnk(lchnk), &
             pdf_implicit_coefs_terms_chnk(:,lchnk), &
             khzm_out(:,:), khzt_out(:,:), &
             qclvar_out(:,:), thlprcp_out(:,:), &
-            wprcp_out(:,:), w_up_in_cloud_out(:,:), ice_supersat_frac_out(:,:), &
+            wprcp_out(:,:), w_up_in_cloud_out(:,:), &
             rcm_in_layer_out(:,:), cloud_cover_out(:,:), invrs_tau_zm_out(:,:) )
             
       else
@@ -3039,12 +3039,12 @@ end subroutine clubb_init_cnst
             wp2rtp_inout(:ncol,:), wp2thlp_inout(:ncol,:), uprcp_inout(:ncol,:), &
             vprcp_inout(:ncol,:), rc_coef_inout(:ncol,:), &
             wp4_inout(:ncol,:), wpup2_inout(:ncol,:), wpvp2_inout(:ncol,:), &
-            wp2up2_inout(:ncol,:), wp2vp2_inout(:ncol,:), &
+            wp2up2_inout(:ncol,:), wp2vp2_inout(:ncol,:), ice_supersat_frac_inout(:ncol,:), &
             pdf_params_chnk(lchnk), pdf_params_zm_chnk(lchnk), &
             pdf_implicit_coefs_terms_chnk(:ncol,lchnk), &
             khzm_out(:ncol,:), khzt_out(:ncol,:), &
             qclvar_out(:ncol,:), thlprcp_out(:ncol,:), &
-            wprcp_out(:ncol,:), w_up_in_cloud_out(:ncol,:), ice_supersat_frac_out(:ncol,:), &
+            wprcp_out(:ncol,:), w_up_in_cloud_out(:ncol,:),  &
             rcm_in_layer_out(:ncol,:), cloud_cover_out(:ncol,:), invrs_tau_zm_out(:ncol,:) )
             
       end if
@@ -3209,7 +3209,7 @@ end subroutine clubb_init_cnst
         thl2_zt_out(i,pverp-k+1)  = thl2_zt(i,k)
         wp2_zt_out(i,pverp-k+1)   = wp2_zt(i,k)
         
-        ice_supersat_frac(i,pverp-k+1) = ice_supersat_frac_out(i,k)
+        ice_supersat_frac(i,pverp-k+1) = ice_supersat_frac_inout(i,k)
       end do
     end do
 
