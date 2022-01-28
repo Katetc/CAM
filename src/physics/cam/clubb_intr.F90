@@ -442,7 +442,7 @@ module clubb_intr
     call pbuf_add_field('RTPTHVP',    'physpkg', dtype_r8, (/pcols,pverp/), rtpthvp_idx)
     call pbuf_add_field('THLPTHVP',   'physpkg', dtype_r8, (/pcols,pverp/), thlpthvp_idx)
     call pbuf_add_field('CLOUD_FRAC', 'physpkg', dtype_r8, (/pcols,pverp/), cloud_frac_idx)
-    call pbuf_add_field('ISS_FRAC',   'physpkg', dtype_r8, (/pcols,pverp/), ice_supersat_idx)
+    call pbuf_add_field('ISS_FRAC',   'global',  dtype_r8, (/pcols,pverp/), ice_supersat_idx)
     call pbuf_add_field('RCM',        'physpkg', dtype_r8, (/pcols,pverp/), rcm_idx)
     call pbuf_add_field('ZTODT',      'physpkg', dtype_r8, (/pcols/),       ztodt_idx)
     call pbuf_add_field('WP2RTP',     'global', dtype_r8, (/pcols,pverp/), wp2rtp_idx)
@@ -1631,6 +1631,7 @@ end subroutine clubb_init_cnst
        call pbuf_set_field(pbuf2d, wpvp2_idx,   0.0_r8)
        call pbuf_set_field(pbuf2d, wp2up2_idx,  0.0_r8)
        call pbuf_set_field(pbuf2d, wp2vp2_idx,  0.0_r8)
+       call pbuf_set_field(pbuf2d, ice_supersat_idx, 0.0_r8)
 
        ! Initialize SILHS covariance contributions
        call pbuf_set_field(pbuf2d, rtp2_mc_zt_idx,    0.0_r8)
@@ -2666,8 +2667,6 @@ end subroutine clubb_init_cnst
     ug(:,:) = 0.0_r8
     vg(:,:) = 0.0_r8
     
-    ice_supersat_frac_inout(:,:) = 0._r8
-    
     do i=1,ncol
       ! Add forcings for SILHS covariance contributions
       rtp2_forcing(i,:)    = zt2zm_api( gr(i), rtp2_mc_zt(i,:) )
@@ -2743,6 +2742,7 @@ end subroutine clubb_init_cnst
         wpvp2_inout(i,k)   = wpvp2(i,pverp-k+1)
         wp2up2_inout(i,k)  = wp2up2(i,pverp-k+1)
         wp2vp2_inout(i,k)  = wp2vp2(i,pverp-k+1)
+        ice_supersat_frac_inout(i,k) = ice_supersat_frac(i,pverp-k+1)
       end do
     end do
         
@@ -3204,12 +3204,12 @@ end subroutine clubb_init_cnst
         wpvp2(i,pverp-k+1)        = wpvp2_inout(i,k)
         wp2up2(i,pverp-k+1)       = wp2up2_inout(i,k)
         wp2vp2(i,pverp-k+1)       = wp2vp2_inout(i,k)
+        ice_supersat_frac(i,pverp-k+1) = ice_supersat_frac_inout(i,k)
 
         rtp2_zt_out(i,pverp-k+1)  = rtp2_zt(i,k)
         thl2_zt_out(i,pverp-k+1)  = thl2_zt(i,k)
         wp2_zt_out(i,pverp-k+1)   = wp2_zt(i,k)
         
-        ice_supersat_frac(i,pverp-k+1) = ice_supersat_frac_inout(i,k)
       end do
     end do
 
