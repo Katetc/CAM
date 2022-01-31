@@ -1,0 +1,33 @@
+pipeline {
+  agent any
+  stages {
+    stage('Clone SysAdmin to tmp') {
+      steps {
+        sh '''rm -rf /home/jenkins/cam_bit_diff_test_workspace/sys_admin
+              git clone https://github.com/larson-group/sys_admin.git /home/jenkins/cam_bit_diff_test_workspace/sys_admin'''
+      }
+    }
+    stage('Run Python Test') {
+      steps {
+        sh '''source /opt/intel/oneapi/setvars.sh --force
+              rm -rf /home/jenkins/cam_output/scratch/subcol_SILHS_UWM_debug_f10_f10_mg37
+              python3 /home/jenkins/cam_bit_diff_test_workspace/sys_admin/python_nightly_test_suite/run_test.py -c /home/jenkins/cam_bit_diff_test_workspace/bit_diff_cam_config'''
+      }
+    }
+  }
+  post {
+    always {
+      script {
+      if ( "${env.JOB_NAME}" == "cam_coarse_res_bin_diff_regression_gfortran_test" )
+      	cleanWs(cleanWhenSuccess: true, cleanWhenFailure: true)
+        sh 'chmod -R 755 /home/jenkins/cam_output'
+      }
+    }
+    failure {
+      script {
+      if ( "${env.JOB_NAME}" ==	"cam_coarse_res_bin_diff_regression_gfortran_test" )
+      	emailext(to: 'messnermet@uwm.edu', subject: "${env.JOB_NAME} build ${env.BUILD_NUMBER} has Failed", attachLog: true, body: "${env.JOB_NAME} build ${env.BUILD_NUMBER} has failed. See the attached build log and the build results (${env.BUILD_URL}) for help troubleshooting.")
+      }
+    }
+  }
+}
