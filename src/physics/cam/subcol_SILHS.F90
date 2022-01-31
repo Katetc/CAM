@@ -339,8 +339,7 @@ contains
                                          init_precip_fracs_api, &
                                          set_clubb_debug_level_api
 
-      use clubb_intr,              only: init_clubb_config_flags, &
-                                         clubb_config_flags
+      use clubb_intr,              only: clubb_config_flags
 
 #endif
 #endif
@@ -378,8 +377,6 @@ contains
       !-------------------------------
       ! CLUBB-SILHS Parameters (global module variables)
       !-------------------------------
-
-      call init_clubb_config_flags( clubb_config_flags ) ! In/Out
       clubb_config_flags%l_fix_w_chi_eta_correlations = .true.
       clubb_config_flags%l_diagnose_correlations = .false.
       clubb_config_flags%l_calc_w_corr = .false.
