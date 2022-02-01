@@ -3,15 +3,15 @@ pipeline {
   stages {
     stage('Clone SysAdmin to tmp') {
       steps {
-        sh '''rm -rf /home/jenkins/cam_r8029_flags_bit_diff_test_workspace/sys_admin
-              git clone https://github.com/larson-group/sys_admin.git /home/jenkins/cam_r8029_flags_bit_diff_test_workspace/sys_admin'''
+        sh '''rm -rf /home/jenkins/cam_bit_diff_test_workspace/sys_admin
+              git clone https://github.com/larson-group/sys_admin.git /home/jenkins/cam_bit_diff_test_workspace/sys_admin'''
       }
     }
     stage('Run Python Test') {
       steps {
         sh '''source /opt/intel/oneapi/setvars.sh --force
-              rm -rf /home/jenkins/cam_output/scratch/UWM_debug_r8029_flags_f10_f10_mg37
-              python3 /home/jenkins/cam_r8029_flags_bit_diff_test_workspace/sys_admin/python_nightly_test_suite/run_test.py -c /home/jenkins/cam_r8029_flags_bit_diff_test_workspace/bit_diff_cam_r8029_config'''
+              rm -rf /home/jenkins/cam_output/scratch/subcol_SILHS_UWM_debug_f10_f10_mg37
+              python3 /home/jenkins/cam_bit_diff_test_workspace/sys_admin/python_nightly_test_suite/run_test.py -c /home/jenkins/cam_bit_diff_test_workspace/bit_diff_cam_config'''
       }
     }
   }
