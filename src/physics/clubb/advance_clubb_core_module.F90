@@ -851,12 +851,6 @@ module advance_clubb_core_module
     integer :: advance_order_loop_iter
 
     !----- Begin Code -----
-    
-     ! Allocate arrays in single column versions of pdf_params
-     do i = 1, ngrdcol
-       call init_pdf_params( nz, 1, pdf_params_single_col(i) )
-       call init_pdf_params( nz, 1, pdf_params_zm_single_col(i) )
-     end do
 
     if ( clubb_config_flags%l_lmm_stepping ) then
       dt_advance = two * dt
@@ -1673,43 +1667,40 @@ module advance_clubb_core_module
       !   scalar turbulent fluxes (wprtp, wpthlp, and wpsclrp)
       !   by one time step.
       ! advance_xm_wpxp_bad_wp2 ! Test error comment, DO NOT modify or move
-      do i = 1, ngrdcol
-        call advance_xm_wpxp( gr(i), dt_advance, sigma_sqd_w(i,:), wm_zm(i,:), wm_zt(i,:), wp2(i,:),       & ! intent(in)
-                              Lscale(i,:), wp3_on_wp2(i,:), wp3_on_wp2_zt(i,:), Kh_zt(i,:), Kh_zm(i,:),      & ! intent(in)
-                              invrs_tau_C6_zm(i,:), tau_max_zm(i,:), Skw_zm(i,:), wp2rtp(i,:), rtpthvp(i,:), & ! intent(in)
-                              rtm_forcing(i,:), wprtp_forcing(i,:), rtm_ref(i,:), wp2thlp(i,:),         & ! intent(in)
-                              thlpthvp(i,:), thlm_forcing(i,:), wpthlp_forcing(i,:), thlm_ref(i,:),     & ! intent(in)
-                              rho_ds_zm(i,:), rho_ds_zt(i,:), invrs_rho_ds_zm(i,:),                & ! intent(in)
-                              invrs_rho_ds_zt(i,:), thv_ds_zm(i,:), rtp2(i,:), thlp2(i,:),              & ! intent(in)
-                              w_1_zm(i,:), w_2_zm(i,:), varnce_w_1_zm(i,:), varnce_w_2_zm(i,:),         & ! intent(in)
-                              mixt_frac_zm(i,:), l_implemented, em(i,:), wp2sclrp(i,:,:),            & ! intent(in)
-                              sclrpthvp(i,:,:), sclrm_forcing(i,:,:), sclrp2(i,:,:), exner(i,:), rcm(i,:),         & ! intent(in)
-                              p_in_Pa(i,:), thvm(i,:), Cx_fnc_Richardson(i,:),                     & ! intent(in)
-                              ice_supersat_frac(i,:),                                    & ! intent(in)
-                              pdf_implicit_coefs_terms(i),                             & ! intent(in)
-                              um_forcing(i,:), vm_forcing(i,:), ug(i,:), vg(i,:), wpthvp(i,:),               & ! intent(in)
-                              fcor(i), um_ref(i,:), vm_ref(i,:), up2(i,:), vp2(i,:),                       & ! intent(in)
-                              uprcp(i,:), vprcp(i,:), rc_coef(i,:),                                & ! intent(in)
-                              clubb_params, nu_vert_res_dep(i),                        & ! intent(in)
-                              clubb_config_flags%iiPDF_type,                        & ! intent(in)
-                              clubb_config_flags%l_predict_upwp_vpwp,               & ! intent(in)
-                              clubb_config_flags%l_diffuse_rtm_and_thlm,            & ! intent(in)
-                              clubb_config_flags%l_stability_correct_Kh_N2_zm,      & ! intent(in)
-                              clubb_config_flags%l_godunov_upwind_wpxp_ta,          & ! intent(in)
-                              clubb_config_flags%l_upwind_xm_ma,                    & ! intent(in)
-                              clubb_config_flags%l_uv_nudge,                        & ! intent(in)
-                              clubb_config_flags%l_tke_aniso,                       & ! intent(in)
-                              clubb_config_flags%l_diag_Lscale_from_tau,            & ! intent(in)
-                              clubb_config_flags%l_use_C7_Richardson,               & ! intent(in)
-                              clubb_config_flags%l_brunt_vaisala_freq_moist,        & ! intent(in)
-                              clubb_config_flags%l_use_thvm_in_bv_freq,             & ! intent(in)
-                              clubb_config_flags%l_lmm_stepping,                    & ! intent(in)
-                              order_xm_wpxp, order_xp2_xpyp, order_wp2_wp3,         & ! intent(in)
-                              stats_zt(i), stats_zm(i), stats_sfc(i),                        & ! intent(i/o)
-                              rtm(i,:), wprtp(i,:), thlm(i,:), wpthlp(i,:),                             & ! intent(i/o)
-                              sclrm(i,:,:), wpsclrp(i,:,:), um(i,:), upwp(i,:), vm(i,:), vpwp(i,:) )                    ! intent(i/o)
-
-      end do
+      call advance_xm_wpxp( nz, ngrdcol, gr, dt_advance, sigma_sqd_w, wm_zm, wm_zt, wp2, & ! intent(in)
+                            Lscale, wp3_on_wp2, wp3_on_wp2_zt, Kh_zt, Kh_zm,      & ! intent(in)
+                            invrs_tau_C6_zm, tau_max_zm, Skw_zm, wp2rtp, rtpthvp, & ! intent(in)
+                            rtm_forcing, wprtp_forcing, rtm_ref, wp2thlp,         & ! intent(in)
+                            thlpthvp, thlm_forcing, wpthlp_forcing, thlm_ref,     & ! intent(in)
+                            rho_ds_zm, rho_ds_zt, invrs_rho_ds_zm,                & ! intent(in)
+                            invrs_rho_ds_zt, thv_ds_zm, rtp2, thlp2,              & ! intent(in)
+                            w_1_zm, w_2_zm, varnce_w_1_zm, varnce_w_2_zm,         & ! intent(in)
+                            mixt_frac_zm, l_implemented, em, wp2sclrp,            & ! intent(in)
+                            sclrpthvp, sclrm_forcing, sclrp2, exner, rcm,         & ! intent(in)
+                            p_in_Pa, thvm, Cx_fnc_Richardson,                     & ! intent(in)
+                            ice_supersat_frac,                                    & ! intent(in)
+                            pdf_implicit_coefs_terms,                             & ! intent(in)
+                            um_forcing, vm_forcing, ug, vg, wpthvp,               & ! intent(in)
+                            fcor, um_ref, vm_ref, up2, vp2,                       & ! intent(in)
+                            uprcp, vprcp, rc_coef,                                & ! intent(in)
+                            clubb_params, nu_vert_res_dep,                        & ! intent(in)
+                            clubb_config_flags%iiPDF_type,                        & ! intent(in)
+                            clubb_config_flags%l_predict_upwp_vpwp,               & ! intent(in)
+                            clubb_config_flags%l_diffuse_rtm_and_thlm,            & ! intent(in)
+                            clubb_config_flags%l_stability_correct_Kh_N2_zm,      & ! intent(in)
+                            clubb_config_flags%l_godunov_upwind_wpxp_ta,          & ! intent(in)
+                            clubb_config_flags%l_upwind_xm_ma,                    & ! intent(in)
+                            clubb_config_flags%l_uv_nudge,                        & ! intent(in)
+                            clubb_config_flags%l_tke_aniso,                       & ! intent(in)
+                            clubb_config_flags%l_diag_Lscale_from_tau,            & ! intent(in)
+                            clubb_config_flags%l_use_C7_Richardson,               & ! intent(in)
+                            clubb_config_flags%l_brunt_vaisala_freq_moist,        & ! intent(in)
+                            clubb_config_flags%l_use_thvm_in_bv_freq,             & ! intent(in)
+                            clubb_config_flags%l_lmm_stepping,                    & ! intent(in)
+                            order_xm_wpxp, order_xp2_xpyp, order_wp2_wp3,         & ! intent(in)
+                            stats_zt, stats_zm, stats_sfc,                        & ! intent(i/o)
+                            rtm, wprtp, thlm, wpthlp,                             & ! intent(i/o)
+                            sclrm, wpsclrp, um, upwp, vm, vpwp )                    ! intent(i/o)
 
       if ( clubb_at_least_debug_level( 0 ) ) then
          if ( err_code == clubb_fatal_error ) then
@@ -2064,11 +2055,7 @@ module advance_clubb_core_module
       vp2_zt(:,:)  = max( zm2zt( nz, ngrdcol, gr, vp2(:,:) ), w_tol_sqd ) ! Positive def. quantity
 
       thvm_zm(:,:) = zt2zm( nz, ngrdcol, gr, thvm(:,:) )
-              
-      do i = 1, ngrdcol
-        ddzm_thvm_zm(i,:) = ddzm( gr(i), thvm_zm(i,:) )
-      end do
-      
+      ddzm_thvm_zm(:,:) = ddzm( nz, ngrdcol, gr, thvm_zm(:,:) )
       brunt_vaisala_freq_sqd_zt(:,:) = max( ( grav / thvm(:,:) ) * ddzm_thvm_zm(:,:), zero )
 
       ! The xp3_coef_fnc is used in place of sigma_sqd_w_zt when the ADG1 PDF
@@ -2080,19 +2067,23 @@ module advance_clubb_core_module
       xp3_coef_base = clubb_params(ixp3_coef_base)
       xp3_coef_slope = clubb_params(ixp3_coef_slope)
 
-      do i = 1, ngrdcol
-        xp3_coef_fnc(i,:) = xp3_coef_base &
-                            + ( one - xp3_coef_base ) &
-                              * ( one - exp( brunt_vaisala_freq_sqd_zt(i,:) / xp3_coef_slope ) )
-
-        up3(i,:) = xp3_LG_2005_ansatz( gr(i), Skw_zt(i,:), upwp_zt(i,:), wp2_zt(i,:), &
-                                 up2_zt(i,:), xp3_coef_fnc(i,:), &
-                                 beta, Skw_denom_coef, w_tol )
-
-        vp3(i,:) = xp3_LG_2005_ansatz( gr(i), Skw_zt(i,:), vpwp_zt(i,:), wp2_zt(i,:), &
-                                 vp2_zt(i,:), xp3_coef_fnc(i,:), &
-                                 beta, Skw_denom_coef, w_tol )
+      do k = 1, nz
+        do i = 1, ngrdcol
+          xp3_coef_fnc(i,k) = xp3_coef_base &
+                              + ( one - xp3_coef_base ) &
+                                * ( one - exp( brunt_vaisala_freq_sqd_zt(i,k) / xp3_coef_slope ) )
+        end do
       end do
+      
+      call xp3_LG_2005_ansatz( nz, ngrdcol, Skw_zt, upwp_zt, wp2_zt, &
+                               up2_zt, xp3_coef_fnc, &
+                               beta, Skw_denom_coef, w_tol, &
+                               up3 )
+
+      call xp3_LG_2005_ansatz( nz, ngrdcol, Skw_zt, vpwp_zt, wp2_zt, &
+                               vp2_zt, xp3_coef_fnc, &
+                               beta, Skw_denom_coef, w_tol, &
+                               vp3 )
 
     else ! .not. l_advance_xp3 .or. clubb_config_flags%iiPDF_type = iiPDF_ADG1
 
@@ -2117,34 +2108,35 @@ module advance_clubb_core_module
         ! calculate <rt'^3>, <thl'^3>, <u'^3>, <v'^3>, and <sclr'^3>.
         sigma_sqd_w_zt(:,:) = max( zm2zt( nz, ngrdcol, gr, sigma_sqd_w(:,:) ), zero_threshold )
 
-        do i = 1, ngrdcol
-          thlp3(i,:) = xp3_LG_2005_ansatz( gr(i), Skw_zt(i,:), wpthlp_zt(i,:), wp2_zt(i,:), &
-                                      thlp2_zt(i,:), sigma_sqd_w_zt(i,:), &
-                                      beta, Skw_denom_coef, thl_tol )
+        call xp3_LG_2005_ansatz( nz, ngrdcol, Skw_zt, wpthlp_zt, wp2_zt, &
+                                 thlp2_zt, sigma_sqd_w_zt, &
+                                 beta, Skw_denom_coef, thl_tol, &
+                                 thlp3 )
 
-          rtp3(i,:) = xp3_LG_2005_ansatz( gr(i), Skw_zt(i,:), wprtp_zt(i,:), wp2_zt(i,:), &
-                                     rtp2_zt(i,:), sigma_sqd_w_zt(i,:), &
-                                     beta, Skw_denom_coef, rt_tol )
+        call xp3_LG_2005_ansatz( nz, ngrdcol, Skw_zt, wprtp_zt, wp2_zt, &
+                                 rtp2_zt, sigma_sqd_w_zt, &
+                                 beta, Skw_denom_coef, rt_tol, &
+                                 rtp3 )
 
-          up3(i,:) = xp3_LG_2005_ansatz( gr(i), Skw_zt(i,:), upwp_zt(i,:), wp2_zt(i,:), &
-                                    up2_zt(i,:), sigma_sqd_w_zt(i,:), &
-                                    beta, Skw_denom_coef, w_tol )
+        call xp3_LG_2005_ansatz( nz, ngrdcol, Skw_zt, upwp_zt, wp2_zt, &
+                                 up2_zt, sigma_sqd_w_zt, &
+                                 beta, Skw_denom_coef, w_tol, &
+                                 up3 )
 
-          vp3(i,:) = xp3_LG_2005_ansatz( gr(i), Skw_zt(i,:), vpwp_zt(i,:), wp2_zt(i,:), &
-                                    vp2_zt(i,:), sigma_sqd_w_zt(i,:), &
-                                    beta, Skw_denom_coef, w_tol )
-        end do
+        call xp3_LG_2005_ansatz( nz, ngrdcol, Skw_zt, vpwp_zt, wp2_zt, &
+                                 vp2_zt, sigma_sqd_w_zt, &
+                                 beta, Skw_denom_coef, w_tol, &
+                                 vp3 )
 
         do j = 1, sclr_dim, 1
           
           wpsclrp_zt(:,:) = zm2zt( nz, ngrdcol, gr, wpsclrp(:,:,j) )
           sclrp2_zt(:,:)  = max( zm2zt( nz, ngrdcol, gr, sclrp2(:,:,j) ), sclr_tol(j)**2 )
 
-          do i = 1, ngrdcol
-            sclrp3(i,:,j) = xp3_LG_2005_ansatz( gr(i), Skw_zt(i,:), wpsclrp_zt(i,:), wp2_zt(i,:), &
-                                                sclrp2_zt(i,:), sigma_sqd_w_zt(i,:), &
-                                                beta, Skw_denom_coef, sclr_tol(j) )
-          end do
+          call xp3_LG_2005_ansatz( nz, ngrdcol, Skw_zt, wpsclrp_zt, wp2_zt, &
+                                   sclrp2_zt, sigma_sqd_w_zt, &
+                                   beta, Skw_denom_coef, sclr_tol(j), &
+                                   sclrp3 )
 
         enddo ! i = 1, sclr_dim
 
@@ -2153,11 +2145,7 @@ module advance_clubb_core_module
         ! Use a modified form of the Larson and Golaz (2005) ansatz for the
         ! ADG1 PDF to calculate <u'^3> and <v'^3> for another type of PDF.
         thvm_zm(:,:) = zt2zm( nz, ngrdcol, gr, thvm(:,:) )
-          
-        do i = 1, ngrdcol
-          ddzm_thvm_zm(i,:) = ddzm( gr(i), thvm_zm(i,:) )
-        end do
-      
+        ddzm_thvm_zm(:,:) = ddzm( nz, ngrdcol, gr, thvm_zm(:,:) )
         brunt_vaisala_freq_sqd_zt(:,:) = max( ( grav / thvm(:,:) ) * ddzm_thvm_zm(:,:), zero )
         
         
@@ -2181,41 +2169,43 @@ module advance_clubb_core_module
         xp3_coef_base = clubb_params(ixp3_coef_base)
         xp3_coef_slope = clubb_params(ixp3_coef_slope)
 
-        do i = 1, ngrdcol
-          xp3_coef_fnc(i,:) &
-          = xp3_coef_base &
-            + ( one - xp3_coef_base ) &
-              * ( one - exp( brunt_vaisala_freq_sqd_zt(i,:) / xp3_coef_slope ) )
+        do k = 1, nz
+          do i = 1, ngrdcol
+            xp3_coef_fnc(i,k) = xp3_coef_base &
+              + ( one - xp3_coef_base ) &
+                * ( one - exp( brunt_vaisala_freq_sqd_zt(i,k) / xp3_coef_slope ) )
+          end do
         end do
+        
+        call xp3_LG_2005_ansatz( nz, ngrdcol, Skw_zt, wpthlp_zt, wp2_zt, &
+                                 thlp2_zt, xp3_coef_fnc, &
+                                 beta, Skw_denom_coef, thl_tol, &
+                                 thlp3 )
 
-        do i = 1, ngrdcol
-          thlp3(i,:) = xp3_LG_2005_ansatz( gr(i), Skw_zt(i,:), wpthlp_zt(i,:), wp2_zt(i,:), &
-                                      thlp2_zt(i,:), xp3_coef_fnc(i,:), &
-                                      beta, Skw_denom_coef, thl_tol )
+        call xp3_LG_2005_ansatz( nz, ngrdcol, Skw_zt, wprtp_zt, wp2_zt, &
+                                 rtp2_zt, xp3_coef_fnc, &
+                                 beta, Skw_denom_coef, rt_tol, &
+                                 rtp3 )
 
-          rtp3(i,:) = xp3_LG_2005_ansatz( gr(i), Skw_zt(i,:), wprtp_zt(i,:), wp2_zt(i,:), &
-                                     rtp2_zt(i,:), xp3_coef_fnc(i,:), &
-                                     beta, Skw_denom_coef, rt_tol )
+        call xp3_LG_2005_ansatz( nz, ngrdcol, Skw_zt, upwp_zt, wp2_zt, &
+                                 up2_zt, xp3_coef_fnc, &
+                                 beta, Skw_denom_coef, w_tol, &
+                                 up3 )
 
-          up3(i,:) = xp3_LG_2005_ansatz( gr(i), Skw_zt(i,:), upwp_zt(i,:), wp2_zt(i,:), &
-                                    up2_zt(i,:), xp3_coef_fnc(i,:), &
-                                    beta, Skw_denom_coef, w_tol )
-
-          vp3(i,:) = xp3_LG_2005_ansatz( gr(i), Skw_zt(i,:), vpwp_zt(i,:), wp2_zt(i,:), &
-                                    vp2_zt(i,:), xp3_coef_fnc(i,:), &
-                                    beta, Skw_denom_coef, w_tol )
-        end do
+        call xp3_LG_2005_ansatz( nz, ngrdcol, Skw_zt, vpwp_zt, wp2_zt, &
+                                 vp2_zt, xp3_coef_fnc, &
+                                 beta, Skw_denom_coef, w_tol, &
+                                 vp3 )
 
         do j = 1, sclr_dim, 1
           
           wpsclrp_zt(:,:) = zm2zt( nz, ngrdcol, gr, wpsclrp(:,:,j) )
           sclrp2_zt(:,:)  = max( zm2zt( nz, ngrdcol, gr, sclrp2(:,:,j) ), sclr_tol(j)**2 )
 
-          do i = 1, ngrdcol
-            sclrp3(i,:,j) = xp3_LG_2005_ansatz( gr(i), Skw_zt(i,:), wpsclrp_zt(i,:), wp2_zt(i,:), &
-                                                sclrp2_zt(i,:), xp3_coef_fnc(i,:), &
-                                                beta, Skw_denom_coef, sclr_tol(j) )
-          end do
+          call xp3_LG_2005_ansatz( nz, ngrdcol, Skw_zt(:,:), wpsclrp_zt(:,:), wp2_zt(:,:), &
+                                   sclrp2_zt(:,:), xp3_coef_fnc(:,:), &
+                                   beta, Skw_denom_coef, sclr_tol(j), &
+                                   sclrp3(:,:,j) )
         end do ! i = 1, sclr_dim
 
       end if ! clubb_config_flags%iiPDF_type == iiPDF_ADG1
@@ -2307,7 +2297,7 @@ module advance_clubb_core_module
 #ifdef CLUBB_CAM
     do k = 1, nz
       do i = 1, ngrdcol
-        qclvar(i,:) = rcp2_zt(i,:)
+        qclvar(i,k) = rcp2_zt(i,k)
       end do
     end do
 #endif
@@ -2383,7 +2373,12 @@ module advance_clubb_core_module
     end if
     
     do i = 1, ngrdcol
-        
+      
+      ! Allocate arrays in single column versions of pdf_params
+      call init_pdf_params( nz, 1, pdf_params_single_col(i) )
+      call init_pdf_params( nz, 1, pdf_params_zm_single_col(i) )
+      
+      ! Copy multicolumn pdf_params to single column version  
       call copy_multi_pdf_params_to_single( pdf_params, i, &
                                             pdf_params_single_col(i) )
                                             
