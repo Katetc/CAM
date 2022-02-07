@@ -36,20 +36,20 @@ pipeline {
       	if ( "${env.JOB_NAME}" == "cam_global_regression_gfortran_test" )
 		      cleanWs(cleanWhenSuccess: true, cleanWhenFailure: true)
         
-	      sh 'chmod -R 755 /home/jenkins/cam_output'
-	
-	      try {
-		      sh '''gzip -d /home/jenkins/cam_output/scratch/ERP_Ln9.f10_f10_mg37.F2000climo.nelson_gnu.cam-outfrq9s.*/bld/atm.bldlog.*.gz
-                cat /home/jenkins/cam_output/scratch/ERP_Ln9.f10_f10_mg37.F2000climo.nelson_gnu.cam-outfrq9s.*/bld/atm.bldlog.*'''
+	sh 'chmod -R 755 /home/jenkins/cam_output'
+
+	try {
+	  sh '''gzip -d /home/jenkins/cam_output/scratch/ERP_Ln9.f10_f10_mg37.F2000climo.nelson_gnu.cam-outfrq9s.*/bld/atm.bldlog.*.gz
+		cat /home/jenkins/cam_output/scratch/ERP_Ln9.f10_f10_mg37.F2000climo.nelson_gnu.cam-outfrq9s.*/bld/atm.bldlog.*'''
           sh '''gzip -d /home/jenkins/cam_output/scratch/ERP_Ln9.f10_f10_mg37.F2000climo.nelson_gnu.cam-outfrq9s.*/bld/cesm.bldlog.*.gz
-        	      cat /home/jenkins/cam_output/scratch/ERP_Ln9.f10_f10_mg37.F2000climo.nelson_gnu.cam-outfrq9s.*/bld/cesm.bldlog.*'''
+        	cat /home/jenkins/cam_output/scratch/ERP_Ln9.f10_f10_mg37.F2000climo.nelson_gnu.cam-outfrq9s.*/bld/cesm.bldlog.*'''
           sh '''gzip -d /home/jenkins/cam_output/scratch/ERP_Ln9.f10_f10_mg37.F2000climo.nelson_gnu.cam-outfrq9s.*/run/atm.log.*.gz
-        	      cat /home/jenkins/cam_output/scratch/ERP_Ln9.f10_f10_mg37.F2000climo.nelson_gnu.cam-outfrq9s.*/run/atm.log.*'''
+        	cat /home/jenkins/cam_output/scratch/ERP_Ln9.f10_f10_mg37.F2000climo.nelson_gnu.cam-outfrq9s.*/run/atm.log.*'''
           sh '''gzip -d /home/jenkins/cam_output/scratch/ERP_Ln9.f10_f10_mg37.F2000climo.nelson_gnu.cam-outfrq9s.*/run/cesm.log.*.gz
                 cat /home/jenkins/cam_output/scratch/ERP_Ln9.f10_f10_mg37.F2000climo.nelson_gnu.cam-outfrq9s.*/run/cesm.log.*'''
         } catch (Exception e) {
           echo 'Not all logs were made.'  	
-	      }
+	}
       }
     }
     failure {

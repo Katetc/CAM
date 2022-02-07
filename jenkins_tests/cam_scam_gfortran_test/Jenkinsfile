@@ -38,12 +38,12 @@ pipeline {
     always {
       script {
         if ( "${env.JOB_NAME}" == "cam_scam_gfortran_test" )
-	        cleanWs(cleanWhenSuccess: true, cleanWhenFailure: true)
+          cleanWs(cleanWhenSuccess: true, cleanWhenFailure: true)
         
         sh 'chmod -R 755 /home/jenkins/cam_output/'
 
         try {
-		      sh '''gzip -d /home/jenkins/cam_output/scratch/test_scam_atex/bld/atm.bldlog.*.gz
+          sh '''gzip -d /home/jenkins/cam_output/scratch/test_scam_atex/bld/atm.bldlog.*.gz
                 cat /home/jenkins/cam_output/scratch/test_scam_atex/bld/atm.bldlog.*'''
           sh '''gzip -d /home/jenkins/cam_output/scratch/test_scam_atex/bld/cesm.bldlog.*.gz
                 cat /home/jenkins/cam_output/scratch/test_scam_atex/bld/cesm.bldlog.*'''
@@ -53,7 +53,7 @@ pipeline {
                 cat /home/jenkins/cam_output/scratch/test_scam_atex/run/cesm.log.*'''
         } catch (Exception e) {
           echo 'Not all logs were made for atex.'  	
-	      }
+        }
 
         try {
 		      sh '''gzip -d /home/jenkins/cam_output/scratch/test_scam_arm97/bld/atm.bldlog.*.gz
@@ -66,7 +66,7 @@ pipeline {
                 cat /home/jenkins/cam_output/scratch/test_scam_arm97/run/cesm.log.*'''
         } catch (Exception e) {
           echo 'Not all logs were made for arm97.'  	
-	      }
+        }
       }
     }
     failure {
