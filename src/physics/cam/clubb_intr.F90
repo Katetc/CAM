@@ -536,7 +536,7 @@ module clubb_intr
     call pbuf_add_field('THLPTHVP',   'global', dtype_r8, (/pcols,pverp/), thlpthvp_idx)
     call pbuf_add_field('CLOUD_FRAC', 'global', dtype_r8, (/pcols,pverp/), cloud_frac_idx)
     call pbuf_add_field('ISS_FRAC',   'global',  dtype_r8, (/pcols,pverp/), ice_supersat_idx)
-    call pbuf_add_field('RCM',        'physpkg', dtype_r8, (/pcols,pverp/), rcm_idx)
+    call pbuf_add_field('RCM',        'global', dtype_r8, (/pcols,pverp/), rcm_idx)
     call pbuf_add_field('ZTODT',      'physpkg', dtype_r8, (/pcols/),       ztodt_idx)
     call pbuf_add_field('WP2RTP',     'global', dtype_r8, (/pcols,pverp/), wp2rtp_idx)
     call pbuf_add_field('WP2THLP',    'global', dtype_r8, (/pcols,pverp/), wp2thlp_idx)
