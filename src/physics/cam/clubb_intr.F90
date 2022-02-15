@@ -2004,11 +2004,6 @@ end subroutine clubb_init_cnst
    real(r8) :: rcm_out_zm(pcols,pverp+1-top_lev)
    real(r8) :: wprcp_out(pcols,pverp+1-top_lev)			! CLUBB output of flux of liquid water		[kg/kg m/s]
    real(r8) :: cloud_frac_inout(pcols,pverp+1-top_lev)		! CLUBB output of cloud fraction		[fraction]
-   real(r8) :: pdf_zm_w_1_inout(pcols,pverp+1-top_lev)          ! work array for pdf_params_zm%w_1
-   real(r8) :: pdf_zm_w_2_inout(pcols,pverp+1-top_lev)          ! work array for pdf_params_zm%w_2
-   real(r8) :: pdf_zm_varnce_w_1_inout(pcols,pverp+1-top_lev)   ! work array for pdf_params_zm%varnce_w_1
-   real(r8) :: pdf_zm_varnce_w_2_inout(pcols,pverp+1-top_lev)   ! work array for pdf_params_zm%varnce_w_2
-   real(r8) :: pdf_zm_mixt_frac_inout(pcols,pverp+1-top_lev)    ! work array for pdf_params_zm%mixt_frac
    real(r8) :: rcm_in_layer_out(pcols,pverp+1-top_lev)		! CLUBB output of in-cloud liq. wat. mix. ratio [kg/kg]
    real(r8) :: cloud_cover_out(pcols,pverp+1-top_lev)		! CLUBB output of in-cloud cloud fraction	[fraction]
    real(r8) :: invrs_tau_zm_out(pcols,pverp+1-top_lev)		! CLUBB output of 1 divided by time-scale	[1/s]
@@ -2297,8 +2292,7 @@ end subroutine clubb_init_cnst
 
    character(len=*), parameter :: subr='clubb_tend_cam'
    
-   type(pdf_parameter) :: pdf_params_single_col(pcols), &
-                          pdf_params_zm_single_col(pcols)
+   type(pdf_parameter) :: pdf_params_single_col
                           
    type(grid) :: gr(pcols)
    integer :: begin_height, end_height
@@ -2376,7 +2370,6 @@ end subroutine clubb_init_cnst
    itim_old = pbuf_old_tim_idx()
 
    !  Establish associations between pointers and physics buffer fields   
-
    call pbuf_get_field(pbuf, wp2_idx,     wp2,     start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
    call pbuf_get_field(pbuf, wp3_idx,     wp3,     start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
    call pbuf_get_field(pbuf, wpthlp_idx,  wpthlp,  start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
@@ -2456,12 +2449,14 @@ end subroutine clubb_init_cnst
    call pbuf_get_field(pbuf, wpthlp_mc_zt_idx,  wpthlp_mc_zt)
    call pbuf_get_field(pbuf, rtpthlp_mc_zt_idx, rtpthlp_mc_zt)
    
+   ! Allocate arrays in the single column versions of pdf_params
+   call init_pdf_params_api( pverp+1-top_lev, 1, pdf_params_single_col )
    
-   ! Allocate arrays in single column versions of pdf_params
-   do i = 1, ncol
-     call init_pdf_params_api( pverp+1-top_lev, 1, pdf_params_single_col(i) )
-     call init_pdf_params_api( pverp+1-top_lev, 1, pdf_params_zm_single_col(i) )
-   end do
+   ! Allocate pdf_params only if they aren't allocated already.
+   if ( .not. allocated(pdf_params_chnk(lchnk)%mixt_frac) ) then
+     call init_pdf_params_api( pverp+1-top_lev, ncol, pdf_params_chnk(lchnk) )
+     call init_pdf_params_api( pverp+1-top_lev, ncol, pdf_params_zm_chnk(lchnk) )
+   end if
 
    ! Initialize the apply_const variable (note special logic is due to eularian backstepping)
    if (clubb_do_adv .and. (is_first_step() .or. all(wpthlp(1:ncol,1:pver)  ==  0._r8))) then
@@ -2934,11 +2929,16 @@ end subroutine clubb_init_cnst
         rcm_inout(i,k)  = rcm(i,pverp-k+1)
         cloud_frac_inout(i,k) = cloud_frac(i,pverp-k+1)
 
-        pdf_zm_w_1_inout(i,k) = pdf_zm_w_1(i,pverp-k+1)
-        pdf_zm_w_2_inout(i,k) = pdf_zm_w_2(i,pverp-k+1)
-        pdf_zm_varnce_w_1_inout(i,k) = pdf_zm_varnce_w_1(i,pverp-k+1)
-        pdf_zm_varnce_w_2_inout(i,k) = pdf_zm_varnce_w_2(i,pverp-k+1)
-        pdf_zm_mixt_frac_inout(i,k) =  pdf_zm_mixt_frac(i,pverp-k+1)
+        ! We only need to copy pdf_params from pbuf if this is a restart and the
+        ! we're calling pdf_closure at the end of advance_clubb_core
+        if ( is_first_restart_step() &
+             .and. clubb_config_flags%ipdf_call_placement .eq. ipdf_post_advance_fields ) then
+          pdf_params_zm_chnk(lchnk)%w_1(i,k)        = pdf_zm_w_1(i,pverp-k+1)
+          pdf_params_zm_chnk(lchnk)%w_2(i,k)        = pdf_zm_w_2(i,pverp-k+1)
+          pdf_params_zm_chnk(lchnk)%varnce_w_1(i,k) = pdf_zm_varnce_w_1(i,pverp-k+1)
+          pdf_params_zm_chnk(lchnk)%varnce_w_2(i,k) = pdf_zm_varnce_w_2(i,pverp-k+1)
+          pdf_params_zm_chnk(lchnk)%mixt_frac(i,k)  = pdf_zm_mixt_frac(i,pverp-k+1)
+        end if
 
         sclrpthvp_inout(i,k,:) = 0._r8
         wp2rtp_inout(i,k)  = wp2rtp(i,pverp-k+1)
@@ -3165,22 +3165,6 @@ end subroutine clubb_init_cnst
 
       end if
       
-      if ( .not. allocated(pdf_params_chnk(lchnk)%mixt_frac) ) then
-        call init_pdf_params_api( pverp+1-top_lev, ncol, pdf_params_chnk(lchnk) )
-        call init_pdf_params_api( pverp+1-top_lev, ncol, pdf_params_zm_chnk(lchnk) )
-      end if
-
-      if ( is_first_restart_step() &
-           .and. clubb_config_flags%ipdf_call_placement .eq. ipdf_post_advance_fields ) then
-         ! assign the values read back from restart file
-         ! This is necessary when ipdf_call_placement = 2
-         pdf_params_zm_chnk(lchnk)%w_1(:,:) = pdf_zm_w_1_inout
-         pdf_params_zm_chnk(lchnk)%w_2(:,:) = pdf_zm_w_2_inout
-         pdf_params_zm_chnk(lchnk)%varnce_w_1(:,:) = pdf_zm_varnce_w_1_inout
-         pdf_params_zm_chnk(lchnk)%varnce_w_2(:,:) = pdf_zm_varnce_w_2_inout
-         pdf_params_zm_chnk(lchnk)%mixt_frac(:,:) = pdf_zm_mixt_frac_inout
-      end if
-      
       ! Arrays are allocated as if they have pcols grid columns, but there can be less.
       ! So if pcols=ncol, we have no problem, but if that isn't the case, then ncol<pcol, 
       ! and we will have to slice the input arrays. This is very annoying, and we should
@@ -3269,12 +3253,6 @@ end subroutine clubb_init_cnst
             
       end if
       
-      pdf_zm_w_1_inout = pdf_params_zm_chnk(lchnk)%w_1(:,:)
-      pdf_zm_w_2_inout = pdf_params_zm_chnk(lchnk)%w_2(:,:)
-      pdf_zm_varnce_w_1_inout = pdf_params_zm_chnk(lchnk)%varnce_w_1(:,:)
-      pdf_zm_varnce_w_2_inout = pdf_params_zm_chnk(lchnk)%varnce_w_2(:,:)
-      pdf_zm_mixt_frac_inout = pdf_params_zm_chnk(lchnk)%mixt_frac(:,:)
-      
       ! Clubb does not accept err_code as as array yet. Whether or not it will in the future
       ! is questionable. For now we will check only one.
       !do i=1, ncol
@@ -3293,11 +3271,11 @@ end subroutine clubb_init_cnst
         do i=1, ncol  
           
           call copy_multi_pdf_params_to_single( pdf_params_chnk(lchnk), i, &
-                                                pdf_params_single_col(i))
+                                                pdf_params_single_col)
           
           
           call update_xp2_mc_api( gr(i), nlev+1, dtime, cloud_frac_inout(i,:), &
-            rcm_inout(i,:), rvm_in(i,:), thlm_in(i,:), wm_zt(i,:), exner(i,:), pre_in(i,:), pdf_params_single_col(i), &
+            rcm_inout(i,:), rvm_in(i,:), thlm_in(i,:), wm_zt(i,:), exner(i,:), pre_in(i,:), pdf_params_single_col, &
             rtp2_mc_out(i,:), thlp2_mc_out(i,:), &
             wprtp_mc_out(i,:), wpthlp_mc_out(i,:), &
             rtpthlp_mc_out(i,:))
@@ -3412,11 +3390,11 @@ end subroutine clubb_init_cnst
         rcm(i,pverp-k+1)          = rcm_inout(i,k)
         wprcp(i,pverp-k+1)        = wprcp_out(i,k)
         cloud_frac(i,pverp-k+1)   = min(cloud_frac_inout(i,k),1._r8)
-        pdf_zm_w_1(i,pverp-k+1)   = pdf_zm_w_1_inout(i,k)
-        pdf_zm_w_2(i,pverp-k+1)   = pdf_zm_w_2_inout(i,k)
-        pdf_zm_varnce_w_1(i,pverp-k+1) = pdf_zm_varnce_w_1_inout(i,k)
-        pdf_zm_varnce_w_2(i,pverp-k+1) = pdf_zm_varnce_w_2_inout(i,k)
-        pdf_zm_mixt_frac(i,pverp-k+1)  = pdf_zm_mixt_frac_inout(i,k)
+        pdf_zm_w_1(i,pverp-k+1)   = pdf_params_zm_chnk(lchnk)%w_1(i,k)
+        pdf_zm_w_2(i,pverp-k+1)   = pdf_params_zm_chnk(lchnk)%w_2(i,k)
+        pdf_zm_varnce_w_1(i,pverp-k+1) = pdf_params_zm_chnk(lchnk)%varnce_w_1(i,k)
+        pdf_zm_varnce_w_2(i,pverp-k+1) = pdf_params_zm_chnk(lchnk)%varnce_w_2(i,k)
+        pdf_zm_mixt_frac(i,pverp-k+1)  = pdf_params_zm_chnk(lchnk)%mixt_frac(i,k)
         rcm_in_layer(i,pverp-k+1) = rcm_in_layer_out(i,k)
         cloud_cover(i,pverp-k+1)  = min(cloud_cover_out(i,k),1._r8)
         zt_out(i,pverp-k+1)       = zt_g(i,k)
