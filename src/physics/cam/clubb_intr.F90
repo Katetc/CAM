@@ -3245,12 +3245,12 @@ end subroutine clubb_init_cnst
       
       ! Clubb does not accept err_code as as array yet. Whether or not it will in the future
       ! is questionable. For now we will check only one.
-      !do i=1, ncol
       if ( err_code(1) == clubb_fatal_error ) then
-        write(fstderr,*) "Fatal error in CLUBB: at timestep ", get_nstep(), "LAT: ", state1%lat(i), " LON: ", state1%lon(i)
+        write(fstderr,*) "Fatal error in CLUBB: at timestep ", get_nstep()
+        write(fstderr,*) "LAT Range: ", state1%lat(1), " -- ", state1%lat(ncol)
+        write(fstderr,*) "LON: Range:", state1%lon(1), " -- ", state1%lon(ncol)
         call endrun(subr//':  Fatal error in CLUBB library')
       end if
-      !end do
       
       if (do_rainturb) then
         
