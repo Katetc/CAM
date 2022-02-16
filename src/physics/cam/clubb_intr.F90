@@ -2864,14 +2864,12 @@ end subroutine clubb_init_cnst
     ug(:,:) = 0.0_r8
     vg(:,:) = 0.0_r8
     
-    do i=1,ncol
-      ! Add forcings for SILHS covariance contributions
-      rtp2_forcing(i,:)    = zt2zm_api( gr(i), rtp2_mc_zt(i,:) )
-      thlp2_forcing(i,:)   = zt2zm_api( gr(i), thlp2_mc_zt(i,:) )
-      wprtp_forcing(i,:)   = zt2zm_api( gr(i), wprtp_mc_zt(i,:) )
-      wpthlp_forcing(i,:)  = zt2zm_api( gr(i), wpthlp_mc_zt(i,:) )
-      rtpthlp_forcing(i,:) = zt2zm_api( gr(i), rtpthlp_mc_zt(i,:) )
-    end do
+    ! Add forcings for SILHS covariance contributions
+    rtp2_forcing(1:ncol,:)    = zt2zm_api( pverp+1-top_lev, ncol, gr, rtp2_mc_zt(1:ncol,:) )
+    thlp2_forcing(1:ncol,:)   = zt2zm_api( pverp+1-top_lev, ncol, gr, thlp2_mc_zt(1:ncol,:) )
+    wprtp_forcing(1:ncol,:)   = zt2zm_api( pverp+1-top_lev, ncol, gr, wprtp_mc_zt(1:ncol,:) )
+    wpthlp_forcing(1:ncol,:)  = zt2zm_api( pverp+1-top_lev, ncol, gr, wpthlp_mc_zt(1:ncol,:) )
+    rtpthlp_forcing(1:ncol,:) = zt2zm_api( pverp+1-top_lev, ncol, gr, rtpthlp_mc_zt(1:ncol,:) )
 
     ! Zero out SILHS covariance contribution terms
     rtp2_mc_zt(:,:) = 0.0_r8
@@ -2883,13 +2881,11 @@ end subroutine clubb_init_cnst
 
     !  Compute some inputs from the thermodynamic grid
     !  to the momentum grid
-    do i=1,ncol
-      rho_ds_zm(i,:)       = zt2zm_api( gr(i), rho_ds_zt(i,:))
-      rho_zm(i,:)          = zt2zm_api( gr(i), rho_zt(i,:))
-      invrs_rho_ds_zm(i,:) = zt2zm_api( gr(i), invrs_rho_ds_zt(i,:))
-      thv_ds_zm(i,:)       = zt2zm_api( gr(i), thv_ds_zt(i,:))
-      wm_zm(i,:)           = zt2zm_api( gr(i), wm_zt(i,:))
-    end do
+    rho_ds_zm(1:ncol,:)       = zt2zm_api( pverp+1-top_lev, ncol, gr, rho_ds_zt(1:ncol,:))
+    rho_zm(1:ncol,:)          = zt2zm_api( pverp+1-top_lev, ncol, gr, rho_zt(1:ncol,:))
+    invrs_rho_ds_zm(1:ncol,:) = zt2zm_api( pverp+1-top_lev, ncol, gr, invrs_rho_ds_zt(1:ncol,:))
+    thv_ds_zm(1:ncol,:)       = zt2zm_api( pverp+1-top_lev, ncol, gr, thv_ds_zt(1:ncol,:))
+    wm_zm(1:ncol,:)           = zt2zm_api( pverp+1-top_lev, ncol, gr, wm_zt(1:ncol,:))
  
     !  Surface fluxes provided by host model
     do i=1,ncol                                                                  
@@ -3021,9 +3017,7 @@ end subroutine clubb_init_cnst
         invrs_exner_zt(i,1) = invrs_exner_zt(i,2)
       end do
 
-      do i=1,ncol
-        kappa_zm(i,:) = zt2zm_api(gr(i), kappa_zt(i,:)) 
-      end do
+      kappa_zm(:,:) = zt2zm_api(pverp+1-top_lev, ncol, gr, kappa_zt(1:ncol,:)) 
       
       do k=1,pverp
         do i=1,ncol
@@ -3038,16 +3032,14 @@ end subroutine clubb_init_cnst
     if (clubb_do_adv) then
       if (macmic_it  ==  1) then
         
-        do i=1,ncol
-          wp2_in(i,:)     = zt2zm_api(gr(i), wp2_in(i,:))    
-          wpthlp_in(i,:)  = zt2zm_api(gr(i), wpthlp_in(i,:))
-          wprtp_in(i,:)   = zt2zm_api(gr(i), wprtp_in(i,:))
-          up2_in(i,:)     = zt2zm_api(gr(i), up2_in(i,:))
-          vp2_in(i,:)     = zt2zm_api(gr(i), vp2_in(i,:))
-          thlp2_in(i,:)   = zt2zm_api(gr(i), thlp2_in(i,:))
-          rtp2_in(i,:)    = zt2zm_api(gr(i), rtp2_in(i,:))
-          rtpthlp_in(i,:) = zt2zm_api(gr(i), rtpthlp_in(i,:))
-        end do
+        wp2_in(1:ncol,:)     = zt2zm_api(pverp+1-top_lev, ncol, gr, wp2_in(1:ncol,:))    
+        wpthlp_in(1:ncol,:)  = zt2zm_api(pverp+1-top_lev, ncol, gr, wpthlp_in(1:ncol,:))
+        wprtp_in(1:ncol,:)   = zt2zm_api(pverp+1-top_lev, ncol, gr, wprtp_in(1:ncol,:))
+        up2_in(1:ncol,:)     = zt2zm_api(pverp+1-top_lev, ncol, gr, up2_in(1:ncol,:))
+        vp2_in(1:ncol,:)     = zt2zm_api(pverp+1-top_lev, ncol, gr, vp2_in(1:ncol,:))
+        thlp2_in(1:ncol,:)   = zt2zm_api(pverp+1-top_lev, ncol, gr, thlp2_in(1:ncol,:))
+        rtp2_in(1:ncol,:)    = zt2zm_api(pverp+1-top_lev, ncol, gr, rtp2_in(1:ncol,:))
+        rtpthlp_in(1:ncol,:) = zt2zm_api(pverp+1-top_lev, ncol, gr, rtpthlp_in(1:ncol,:))
 
         do k=1,nlev+1
           do i=1,ncol
@@ -3122,10 +3114,8 @@ end subroutine clubb_init_cnst
           invrs_dzt(i,:) = 1._r8/dzt(i,:)
         end do
         
-        do i=1, ncol
-          rtm_zm_in(i,:)  = zt2zm_api( gr(i), rtm_in(i,:) )
-          thlm_zm_in(i,:) = zt2zm_api( gr(i), thlm_in(i,:) )
-        end do
+        rtm_zm_in(1:ncol,:)  = zt2zm_api( pverp+1-top_lev, ncol, gr, rtm_in(1:ncol,:) )
+        thlm_zm_in(1:ncol,:) = zt2zm_api( pverp+1-top_lev, ncol, gr, thlm_in(1:ncol,:) )
 
         do i=1, ncol
           call integrate_mf( pverp, dzt(i,:), zi_g(i,:), p_in_Pa_zm(i,:), invrs_exner_zm(i,:), & ! input
@@ -3298,11 +3288,9 @@ end subroutine clubb_init_cnst
 
       if (do_cldcool) then
         
-        do i=1, ncol
-          rcm_out_zm(i,:) = zt2zm_api(gr(i), rcm_inout(i,:))
-          qrl_zm(i,:)     = zt2zm_api(gr(i), qrl_clubb(i,:))
-          thlp2_rad_out(i,:) = 0._r8
-        end do
+        rcm_out_zm(1:ncol,:) = zt2zm_api(pverp+1-top_lev, ncol, gr, rcm_inout(1:ncol,:))
+        qrl_zm(1:ncol,:)     = zt2zm_api(pverp+1-top_lev, ncol, gr, qrl_clubb(1:ncol,:))
+        thlp2_rad_out(:,:) = 0._r8
         
         do i=1, ncol
           call calculate_thlp2_rad_api(nlev+1, rcm_out_zm(i,:), thlprcp_out(i,:), qrl_zm(i,:), clubb_params, &
@@ -3330,16 +3318,14 @@ end subroutine clubb_init_cnst
     if (clubb_do_adv) then
       if (macmic_it  ==  cld_macmic_num_steps) then 
         
-        do i=1, ncol
-          wp2_in(i,:)     = zm2zt_api(gr(i), wp2_in(i,:))   
-          wpthlp_in(i,:)  = zm2zt_api(gr(i), wpthlp_in(i,:))
-          wprtp_in(i,:)   = zm2zt_api(gr(i), wprtp_in(i,:))
-          up2_in(i,:)     = zm2zt_api(gr(i), up2_in(i,:))
-          vp2_in(i,:)     = zm2zt_api(gr(i), vp2_in(i,:))
-          thlp2_in(i,:)   = zm2zt_api(gr(i), thlp2_in(i,:))
-          rtp2_in(i,:)    = zm2zt_api(gr(i), rtp2_in(i,:))
-          rtpthlp_in(i,:) = zm2zt_api(gr(i), rtpthlp_in(i,:)) 
-        end do
+        wp2_in(1:ncol,:)     = zm2zt_api(pverp+1-top_lev, ncol, gr, wp2_in(1:ncol,:))   
+        wpthlp_in(1:ncol,:)  = zm2zt_api(pverp+1-top_lev, ncol, gr, wpthlp_in(1:ncol,:))
+        wprtp_in(1:ncol,:)   = zm2zt_api(pverp+1-top_lev, ncol, gr, wprtp_in(1:ncol,:))
+        up2_in(1:ncol,:)     = zm2zt_api(pverp+1-top_lev, ncol, gr, up2_in(1:ncol,:))
+        vp2_in(1:ncol,:)     = zm2zt_api(pverp+1-top_lev, ncol, gr, vp2_in(1:ncol,:))
+        thlp2_in(1:ncol,:)   = zm2zt_api(pverp+1-top_lev, ncol, gr, thlp2_in(1:ncol,:))
+        rtp2_in(1:ncol,:)    = zm2zt_api(pverp+1-top_lev, ncol, gr, rtp2_in(1:ncol,:))
+        rtpthlp_in(1:ncol,:) = zm2zt_api(pverp+1-top_lev, ncol, gr, rtpthlp_in(1:ncol,:)) 
 
         do k=1,nlev+1
           do i=1, ncol
@@ -3354,12 +3340,10 @@ end subroutine clubb_init_cnst
       end if
     end if
     
-    do i=1, ncol
-      ! Convert RTP2 and THLP2 to thermo grid for output
-      rtp2_zt(i,:) = zm2zt_api(gr(i), rtp2_in(i,:))
-      thl2_zt(i,:) = zm2zt_api(gr(i), thlp2_in(i,:))
-      wp2_zt(i,:)  = zm2zt_api(gr(i), wp2_in(i,:))
-    end do 
+    ! Convert RTP2 and THLP2 to thermo grid for output
+    rtp2_zt(1:ncol,:) = zm2zt_api(pverp+1-top_lev, ncol, gr, rtp2_in(1:ncol,:))
+    thl2_zt(1:ncol,:) = zm2zt_api(pverp+1-top_lev, ncol, gr, thlp2_in(1:ncol,:))
+    wp2_zt(1:ncol,:)  = zm2zt_api(pverp+1-top_lev, ncol, gr, wp2_in(1:ncol,:))
 
     !  Arrays need to be "flipped" to CAM grid 
     do k=1, nlev+1
