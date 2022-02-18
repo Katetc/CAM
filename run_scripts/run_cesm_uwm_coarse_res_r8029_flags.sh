@@ -98,7 +98,6 @@ clubb_do_adv = .false.
 clubb_expldiff = .false.
 clubb_rainevap_turb = .false.
 clubb_cloudtop_cooling = .false.
-clubb_C14 = 1.0
 fincl1 = 'U:A','PS:A','T:A','V:A','OMEGA:A','Z3:A','PRECT:A',
 'CLDLIQ:A', 'CLDICE:A', 'LWCF:A', 'SWCF:A', 'FLUT:A',
 'TMQ:A', 'PRECC:A', 'PRECL:A', 'CME:A', 'PRODPREC:A',
@@ -165,6 +164,48 @@ clubb_l_use_tke_in_wp3_pr_turb_term = .false.,
 clubb_l_use_tke_in_wp2_wp3_K_dfsn   = .false.
 clubb_l_smooth_Heaviside_tau_wpxp   = .false.
 
+! Backwards compatible clubb params   
+clubb_c1 = 1.000000 
+clubb_c1b = 1.000000
+clubb_C2rt = 1.000000
+clubb_C2thl = 1.000000
+clubb_C2rtthl = 2.000000
+clubb_C4 = 5.200000
+clubb_C_uu_shr = 0.300000
+clubb_C_uu_buoy = 0.300000
+clubb_C6rt = 4.000000
+clubb_c6rtb = 6.000000
+clubb_c6rtc = 1.000000
+clubb_c6thl = 4.000000
+clubb_c6thlb = 6.000000
+clubb_c6thlc = 1.000000
+clubb_C8 = 3.000000
+clubb_C8b = 0.000000
+clubb_C7 = 0.500000
+clubb_C7b = 0.800000
+clubb_c11 = 0.800000
+clubb_c11b = 0.350000
+clubb_c14 = 1.000000
+clubb_C_wp3_pr_turb = 0.400000
+clubb_c_K1 = 0.750000
+clubb_c_K2 = 0.125000
+clubb_nu2 = 5.000000
+clubb_c_K8 = 1.250000
+clubb_c_K9 = 0.250000
+clubb_nu9 = 20.00000
+clubb_c_K10 = 1.0
+clubb_c_K10h = 1.0
+clubb_gamma_coef = 0.320000
+clubb_gamma_coefb = 0.320000
+clubb_beta = 2.400000
+clubb_lambda0_stability_coef = 0.03
+clubb_lmin_coef = 0.500000
+clubb_mult_coef = 0.500000
+clubb_Skw_denom_coef = 4.0
+clubb_skw_max_mag = 4.5
+clubb_up2_sfc_coef = 2.0
+clubb_C_wp2_splat = 0.000000
+clubb_wpxp_L_thresh = 60.0
 
 ! CLUBB history!!!
 clubb_history = .true.
