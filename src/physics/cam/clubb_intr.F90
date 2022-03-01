@@ -115,7 +115,7 @@ module clubb_intr
       p0_clubb = 100000._r8
       
   integer, parameter :: & 
-    sclr_dim = 0                        ! Higher-order scalars, set to zero
+    sclr_dim = 1                        ! Higher-order scalars, set to zero
 
   real(r8), parameter :: &
     wp3_const = 1._r8                   ! Constant to add to wp3 when moments are advected
@@ -4157,7 +4157,7 @@ end subroutine clubb_init_cnst
    enddo
  
    ! diagnose surface friction and obukhov length (inputs to diagnose PBL depth)
-   rrho(1:ncol) = (1._r8/gravit)*(state1%pdel(1:ncol,pver)/dz_g(i,pver)) 
+   rrho(1:ncol) = (1._r8/gravit)*(state1%pdel(1:ncol,pver)/dz_g(1:ncol,pver)) 
    call calc_ustar( ncol, state1%t(1:ncol,pver), state1%pmid(1:ncol,pver), cam_in%wsx(1:ncol), cam_in%wsy(1:ncol), &
                     rrho(1:ncol), ustar2(1:ncol))
    ! use correct qflux from coupler
