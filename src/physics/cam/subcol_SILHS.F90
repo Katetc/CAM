@@ -116,9 +116,6 @@ module subcol_SILHS
     type(hmp2_ip_on_hmm2_ip_intrcpt_type) :: subcol_SILHS_hmp2_ip_on_hmm2_ip_intrcpt
 
     type(silhs_config_flags_type) :: silhs_config_flags
-    
-    type(precipitation_fractions), dimension(:), allocatable :: precip_fracs
-    
 #endif
 #endif
 
@@ -346,7 +343,6 @@ contains
                                          setup_corr_varnce_array_api, &
                                          init_pdf_hydromet_arrays_api, &
                                          Ncnp2_on_Ncnm2, &
-                                         init_precip_fracs_api, &
                                          set_clubb_debug_level_api
 
 #endif
@@ -408,16 +404,6 @@ contains
 !      mu = subcol_SILHS_mu
 
       !call set_clubb_debug_level( 0 )  !#KTCtodo: Add a namelist variable to set debug level
-      
-      ! Allocate a precip_fracs variable for each chunk
-      allocate( precip_fracs(begchunk:endchunk) )
-      
-      ! Allocate 2D arrays in precip_fracs for all grid columns and vertical levels in each chunk
-      do l = begchunk, endchunk
-        call init_precip_fracs_api( pverp-top_lev+1, pcols, &
-                                    precip_fracs(l) )
-      end do
-     
 
       ! Get constituent indices
       call cnst_get_ind('Q', ixq)
@@ -657,7 +643,8 @@ contains
                                          nparams, ic_K, &
                                          read_parameters_api, &
                                          Cp, Lv, &
-                                         grid, setup_grid_api
+                                         grid, setup_grid_api, &
+                                         init_precip_fracs_api
    
       use silhs_api_module, only :       generate_silhs_sample_api, & ! Ncn_to_Nc, &
                                          clip_transform_silhs_output_api, &
@@ -871,6 +858,8 @@ contains
       logical, parameter :: l_outfld_subcol         = .false.
       
       type(grid) :: gr(state%ngrdcol)
+      
+      type(precipitation_fractions) :: precip_fracs      
       
       !------------------------------------------------
       !                     Begin Code
@@ -1160,6 +1149,10 @@ contains
           khzm(i,k) = khzm_in(i,pverp-k+1)
         end do
       end do
+      
+      ! Allocate 2D arrays in precip_fracs for all grid columns and vertical levels
+      call init_precip_fracs_api( pverp-top_lev+1, ngrdcol, &
+                                  precip_fracs )
        
       call setup_pdf_parameters_api( gr, pverp-top_lev+1, ngrdcol, pdf_dim, ztodt, &    ! In
                                      Nc_in_cloud, rcm_in, cld_frac_in, khzm, &          ! In
@@ -1180,7 +1173,7 @@ contains
                                      sigma_x_1, sigma_x_2, &                            ! Out
                                      corr_array_1, corr_array_2, &                      ! Out
                                      corr_cholesky_mtx_1, corr_cholesky_mtx_2, &        ! Out
-                                     precip_fracs(lchnk) )                              ! Inout
+                                     precip_fracs )                                     ! Inout
       
       ! In order for Lscale to be used properly, it needs to be passed out of
       ! advance_clubb_core, saved to the pbuf, and then pulled out of the
@@ -1254,7 +1247,7 @@ contains
                     rho_ds_zt, &                                          ! In 
                     mu_x_1, mu_x_2, sigma_x_1, sigma_x_2, &               ! In 
                     corr_cholesky_mtx_1, corr_cholesky_mtx_2, &           ! In
-                    precip_fracs(lchnk), silhs_config_flags, &            ! In
+                    precip_fracs, silhs_config_flags, &                   ! In
                     clubb_params, &                                       ! In
                     clubb_config_flags%l_uv_nudge, &                      ! In
                     clubb_config_flags%l_tke_aniso, &                     ! In
@@ -1655,7 +1648,7 @@ contains
         ! Pack precip_frac for output
         do k = 2, pverp-top_lev+1
           do i = 1, ngrdcol
-            precip_frac_out(i,pver-k+2) = precip_fracs(lchnk)%precip_frac(i,k)
+            precip_frac_out(i,pver-k+2) = precip_fracs%precip_frac(i,k)
           end do
         end do
         
