@@ -37,8 +37,6 @@ module clubb_intr
 
   implicit none
 #ifdef CLUBB_SGS
-  type(grid), target :: gr
-
   ! Variables that contains all the statistics
 
   type (stats), target, save :: stats_zt(pcols),      & ! stats_zt grid
@@ -47,15 +45,8 @@ module clubb_intr
                                 stats_rad_zm(pcols),  & ! stats_rad_zm grid
                                 stats_sfc(pcols)        ! stats_sfc
                                 
-  type (stats), target, save :: stats_lh_zt,   &
-                                stats_lh_sfc
-
 !$omp threadprivate(stats_zt, stats_zm, stats_rad_zt, stats_rad_zm, stats_sfc)
-!$omp threadprivate(stats_lh_zt, stats_lh_sfc)
 
-
-
-!$omp threadprivate(gr)
 #endif
 
   private
@@ -69,10 +60,8 @@ module clubb_intr
 #ifdef CLUBB_SGS
             ! This utilizes CLUBB specific variables in its interface
             stats_init_clubb, &
-            gr, &
             stats_zt, stats_zm, stats_sfc, &
             stats_rad_zt, stats_rad_zm, &
-            stats_lh_zt, stats_lh_sfc, &
 #endif
             stats_end_timestep_clubb, & 
             clubb_readnl, &
@@ -90,8 +79,6 @@ module clubb_intr
 #ifdef CLUBB_SGS
   type(clubb_config_flags_type), public, save :: clubb_config_flags
   real(r8), dimension(nparams), public, save :: clubb_params    ! Adjustable CLUBB parameters (C1, C2 ...)
-  type(nu_vertical_res_dep), private, save :: nu_vert_res_dep   ! Vertical resolution dependent nu values
-  real(r8), private, save :: lmin
 #endif
 
   ! ------------ !
@@ -1215,6 +1202,10 @@ end subroutine clubb_init_cnst
 
     ! CAM defines zi at the surface to be zero.
     real(r8), parameter :: sfc_elevation = 0._r8
+    
+    type(grid), target :: dummy_gr
+    type(nu_vertical_res_dep) :: dummy_nu_vert_res_dep   ! Vertical resolution dependent nu values
+    real(r8) :: dummy_lmin
 
     integer :: nlev
 
@@ -1498,7 +1489,7 @@ end subroutine clubb_init_cnst
            clubb_config_flags%l_prescribed_avg_deltaz, &              ! In
            clubb_config_flags%l_damp_wp2_using_em, &                  ! In
            clubb_config_flags%l_stability_correct_tau_zm, &           ! In
-           gr, lmin, nu_vert_res_dep, err_code )                      ! Out
+           dummy_gr, dummy_lmin, dummy_nu_vert_res_dep, err_code )    ! Out
 
     if ( err_code == clubb_fatal_error ) then
        call endrun('clubb_ini_cam:  FATAL ERROR CALLING SETUP_CLUBB_CORE')
