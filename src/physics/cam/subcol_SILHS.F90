@@ -1161,7 +1161,7 @@ contains
         end do
       end do
        
-      call setup_pdf_parameters_api( gr(1), pverp-top_lev+1, ngrdcol, pdf_dim, ztodt, &    ! In
+      call setup_pdf_parameters_api( gr, pverp-top_lev+1, ngrdcol, pdf_dim, ztodt, &    ! In
                                      Nc_in_cloud, rcm_in, cld_frac_in, khzm, &          ! In
                                      ice_supersat_frac_in, hydromet, wphydrometp, &     ! In
                                      corr_array_n_cloud, corr_array_n_below, &          ! In
@@ -1174,7 +1174,7 @@ contains
                                      clubb_config_flags%l_calc_w_corr, &                ! In
                                      clubb_config_flags%l_const_Nc_in_cloud, &          ! In
                                      clubb_config_flags%l_fix_w_chi_eta_correlations, & ! In
-                                     stats_zt(1), stats_zm(1), stats_sfc(1), &          ! intent(inout)
+                                     stats_zt, stats_zm, stats_sfc, &                   ! In
                                      hydrometp2, &                                      ! Inout
                                      mu_x_1, mu_x_2, &                                  ! Out
                                      sigma_x_1, sigma_x_2, &                            ! Out
