@@ -2132,8 +2132,6 @@ end subroutine clubb_init_cnst
    real(r8) :: apply_const, rtm_test
    real(r8) :: dl_rad, di_rad, dt_low
 
-   real(r8), dimension(sclr_dim) :: sclr_tol 	! Tolerance on passive scalar 			[units vary]
-
    character(len=200) :: temp1, sub             ! Strings needed for CLUBB output
    real(kind=time_precision)                 :: time_elapsed                ! time keep track of stats          [s]
    integer :: stats_nsamp, stats_nout           ! Stats sampling and output intervals for CLUBB [timestep]
