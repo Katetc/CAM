@@ -1258,7 +1258,7 @@ contains
                     lh_sample_point_weights)                              ! Out
 
       ! Extract clipped variables from subcolumns
-      call clip_transform_silhs_output_api( gr(1), pverp-top_lev+1, ngrdcol, num_subcols, &   ! In
+      call clip_transform_silhs_output_api( gr, pverp-top_lev+1, ngrdcol, num_subcols, &   ! In
                                             pdf_dim, hydromet_dim, & ! In
                                             X_mixt_comp_all_levs, & ! In
                                             X_nl_all_levs, &        ! In
