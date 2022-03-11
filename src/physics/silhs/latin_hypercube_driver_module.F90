@@ -208,13 +208,6 @@ module latin_hypercube_driver_module
     real( kind = core_rknd ), dimension(ngrdcol,num_samples,nz) :: &
       cloud_frac ! Cloud fraction for grid level and sample
       
-    real(kind = core_rknd), dimension(ngrdcol,nz) :: &
-      cloud_frac_1,  & ! Array used to store pdf_params(:)%cloud_frac_1
-      cloud_frac_2,  & ! Array used to store pdf_params(:)%cloud_frac_2
-      mixt_frac,     & ! Array used to store pdf_params(:)%mixt_frac
-      precip_frac_1, & ! Array used to store precip_fracs%precip_frac_1
-      precip_frac_2    ! Array used to store precip_fracs%precip_frac_2
-      
     real( kind = core_rknd ), dimension(ngrdcol,nz) :: &
       Lscale_vert_avg, &  ! 3pt vertical average of Lscale                    [m]
       X_vert_corr         ! Vertical correlations between height levels       [-]
@@ -241,16 +234,6 @@ module latin_hypercube_driver_module
       error stop "CLUBB ERROR: Running SILHS with OpenACC requires lh_straight_mc=true"
     end if
 #endif
-
-    ! Copy type arrays to contiguous arrays, so they can be copied to the GPU
-    precip_frac_1 = precip_fracs%precip_frac_1
-    precip_frac_2 = precip_fracs%precip_frac_2
-    
-    do i = 1, ngrdcol
-      cloud_frac_1(i,:) = pdf_params%cloud_frac_1(i,:)
-      cloud_frac_2(i,:) = pdf_params%cloud_frac_2(i,:)
-      mixt_frac(i,:)    = pdf_params%mixt_frac(i,:)
-    end do
 
     ! Compute k_lh_start, the starting vertical grid level for SILHS sampling
     k_lh_start(:) = compute_k_lh_start( nz, ngrdcol, rcm, pdf_params, &
@@ -322,9 +305,9 @@ module latin_hypercube_driver_module
     call generate_all_uniform_samples( &
            iter, pdf_dim, d_uniform_extra, num_samples, sequence_length, & ! Intent(in)
            nz, ngrdcol, k_lh_start, X_vert_corr, rand_pool,              & ! Intent(in)
-           cloud_frac_1,                                                 & ! Intent(in)
-           cloud_frac_2,                                                 & ! Intent(in)
-           mixt_frac, precip_fracs,                                      & ! Intent(in)
+           pdf_params%cloud_frac_1,                                      & ! Intent(in)
+           pdf_params%cloud_frac_2,                                      & ! Intent(in)
+           pdf_params%mixt_frac, precip_fracs,                           & ! Intent(in)
            silhs_config_flags%cluster_allocation_strategy,               & ! Intent(in)
            silhs_config_flags%l_lh_importance_sampling,                  & ! Intent(in)
            silhs_config_flags%l_lh_straight_mc,                          & ! Intent(in)
@@ -337,7 +320,9 @@ module latin_hypercube_driver_module
            
     
     !$acc data create( cloud_frac, l_in_precip ) &
-    !$acc&     copyin( mixt_frac, cloud_frac_1, cloud_frac_2, precip_frac_1, precip_frac_2 ) &
+    !$acc&     copyin( pdf_params, precip_fracs, &
+    !$acc&             pdf_params%mixt_frac, pdf_params%cloud_frac_1, pdf_params%cloud_frac_2, &
+    !$acc&             precip_fracs%precip_frac_1, precip_fracs%precip_frac_2 ) &
     !$acc& async(3)
     
     !$acc parallel loop collapse(3) default(present) async(1) wait(3)
@@ -346,16 +331,16 @@ module latin_hypercube_driver_module
         do i = 1, ngrdcol
             
           ! Determine mixture component for all levels
-          if ( X_u_all_levs(i,sample,k,pdf_dim+1) < mixt_frac(i,k) ) then
+          if ( X_u_all_levs(i,sample,k,pdf_dim+1) < pdf_params%mixt_frac(i,k) ) then
             
             ! Set pdf component indicator to 1 for this sample and vertical level
             X_mixt_comp_all_levs(i,sample,k) = 1
             
             ! Copy 1st component values
-            cloud_frac(i,sample,k) = cloud_frac_1(i,k)
+            cloud_frac(i,sample,k) = pdf_params%cloud_frac_1(i,k)
             
             ! Determine precipitation
-            if ( X_u_all_levs(i,sample,k,pdf_dim+2) < precip_frac_1(i,k) ) then
+            if ( X_u_all_levs(i,sample,k,pdf_dim+2) < precip_fracs%precip_frac_1(i,k) ) then
               l_in_precip(i,sample,k) = .true.
             else
               l_in_precip(i,sample,k) = .false.
@@ -367,10 +352,10 @@ module latin_hypercube_driver_module
             X_mixt_comp_all_levs(i,sample,k) = 2
             
             ! Copy 2nd component values
-            cloud_frac(i,sample,k) = cloud_frac_2(i,k)
+            cloud_frac(i,sample,k) = pdf_params%cloud_frac_2(i,k)
             
             ! Determine precipitation
-            if ( X_u_all_levs(i,sample,k,pdf_dim+2) < precip_frac_2(i,k) ) then
+            if ( X_u_all_levs(i,sample,k,pdf_dim+2) < precip_fracs%precip_frac_2(i,k) ) then
               l_in_precip(i,sample,k) = .true.
             else
               l_in_precip(i,sample,k) = .false.
@@ -1012,7 +997,7 @@ module latin_hypercube_driver_module
 !-----------------------------------------------------------------------
 
 !-----------------------------------------------------------------------
-  subroutine clip_transform_silhs_output( gr, nz, ngrdcol, num_samples,       & ! In
+  subroutine clip_transform_silhs_output( gr, nz, ngrdcol, num_samples,   & ! In
                                           pdf_dim, hydromet_dim,          & ! In
                                           X_mixt_comp_all_levs,           & ! In
                                           X_nl_all_levs,                  & ! Inout
@@ -1020,9 +1005,6 @@ module latin_hypercube_driver_module
                                           lh_rt_clipped, lh_thl_clipped,  & ! Out
                                           lh_rc_clipped, lh_rv_clipped,   & ! Out
                                           lh_Nc_clipped                   ) ! Out
-
-
-    use grid_class, only: grid ! Type
 
   ! Description:
   !   Derives from the SILHS sampling structure X_nl_all_levs the variables
@@ -1061,8 +1043,6 @@ module latin_hypercube_driver_module
 
     implicit none
 
-    type (grid), target, intent(in) :: gr
-
     ! ------------------- Input Variables -------------------
     logical, intent(in) :: &
       l_use_Ncn_to_Nc  ! Whether to call Ncn_to_Nc (.true.) or not (.false.);
@@ -1076,6 +1056,8 @@ module latin_hypercube_driver_module
       num_samples,  & ! Number of SILHS sample points
       pdf_dim,      & ! Number of variates in X_nl
       hydromet_dim    ! Number of hydrometeor species
+
+    type (grid), target, dimension(ngrdcol), intent(in) :: gr
 
     integer, dimension(ngrdcol,num_samples,nz), intent(in) :: &
       X_mixt_comp_all_levs   ! Which component this sample is in (1 or 2)
@@ -1109,38 +1091,18 @@ module latin_hypercube_driver_module
     logical, parameter :: &
       l_clip_hydromet_samples = .false.
       
-    real( kind = core_rknd ), dimension(ngrdcol,nz) :: &
-      rt_1, rt_2,         & ! n dimensional column vector of rt         [kg/kg]
-      thl_1, thl_2,       & ! n dimensional column vector of thetal     [K]
-      crt_1, crt_2,       & ! Constants from plumes 1 & 2 of rt
-      cthl_1, cthl_2,     & ! Constants from plumes 1 & 2 of thetal
-      mu_chi_1, mu_chi_2    ! Mean for chi_1 and chi_2         [kg/kg]
-      
   !-----------------------------------------------------------------------
 
     ! Calculate (and clip) the SILHS sample point values of rt, thl, rc, rv,
     ! and Nc.
-    
-    do i = 1, ngrdcol
-      rt_1(i,:) = pdf_params%rt_1(i,:)
-      rt_2(i,:) = pdf_params%rt_2(i,:)
-      thl_1(i,:) = pdf_params%thl_1(i,:)
-      thl_2(i,:) = pdf_params%thl_2(i,:)
-      crt_1(i,:) = pdf_params%crt_1(i,:)
-      crt_2(i,:) = pdf_params%crt_2(i,:)
-      cthl_1(i,:) = pdf_params%cthl_1(i,:)
-      cthl_2(i,:) = pdf_params%cthl_2(i,:)
-      mu_chi_1(i,:) = pdf_params%chi_1(i,:)
-      mu_chi_2(i,:) = pdf_params%chi_2(i,:)
-    end do
         
     ! Compute lh_rt and lh_thl
     call chi_eta_2_rtthl( nz, ngrdcol, num_samples,                     & ! Intent(in)
-                          rt_1, thl_1,                                  & ! Intent(in)
-                          rt_2, thl_2,                                  & ! Intent(in)
-                          crt_1, cthl_1,                                & ! Intent(in)
-                          crt_2, cthl_2,                                & ! Intent(in)
-                          mu_chi_1, mu_chi_2,                           & ! Intent(in)
+                          pdf_params%rt_1, pdf_params%thl_1,            & ! Intent(in)
+                          pdf_params%rt_2, pdf_params%thl_2,            & ! Intent(in)
+                          pdf_params%crt_1, pdf_params%cthl_1,          & ! Intent(in)
+                          pdf_params%crt_2, pdf_params%cthl_2,          & ! Intent(in)
+                          pdf_params%chi_1, pdf_params%chi_2,           & ! Intent(in)
                           X_nl_all_levs(:,:,:,iiPDF_chi),               & ! Intent(in) 
                           X_nl_all_levs(:,:,:,iiPDF_eta),               & ! Intent(in)
                           X_mixt_comp_all_levs(:,:,:),                  & ! Intent(in)
@@ -1213,7 +1175,7 @@ module latin_hypercube_driver_module
            ! maintaining the value of the hydrometeor mixing ratio sample points
            ! and satisfying the maximum allowable mean volume radius for that
            ! hydrometeor species.
-           call clip_hydromet_conc_mvr( gr, hydromet_dim, hydromet_pts, & ! In
+           call clip_hydromet_conc_mvr( gr(i), hydromet_dim, hydromet_pts, & ! In
                                         hydromet_pts_clipped )        ! Out
 
            ! Unpack the clipped SILHS hydrometeor sample points, which are stored

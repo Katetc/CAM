@@ -2,8 +2,8 @@
 
 # Variables
 CASE="subcol_SILHS_UWM_debug_f10_f10_mg37"
-CASEROOT="/glade/scratch/$USER/$CASE"
-MACH="cheyenne"
+CASEROOT="/home/$USER/cam_output/caseroot/$CASE"
+MACH="nelson"
 COMPSET="F2000climo"
 RES="f10_f10_mg37"
 QUEUE="regular"  
@@ -17,7 +17,7 @@ MGVER=2 # Currently "1" and "2" are allowed
 if [ -d "$CASEROOT" ]; then
   echo 'Removing old code directory '$CASEROOT' in 10 seconds.'
   echo 'To abort, press ctrl-c'
-  sleep 10
+  sleep 3
   rm -rf $CASEROOT
 fi
 
@@ -28,7 +28,7 @@ CAM_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 # Set up case
 echo "----- Case Setup -----"
 cd "$CAM_DIR/cime/scripts"
-./create_newcase --case "$CASEROOT" --mach "$MACH" --compset "$COMPSET" --res "$RES" --run-unsupported || {
+./create_newcase --case "$CASEROOT" --mach "$MACH" --compset "$COMPSET" --res "$RES" --run-unsupported --handle-preexisting-dirs 'r'|| {
     echo "Error creating new case" >> /dev/stderr
     exit 1
 }
@@ -67,7 +67,8 @@ echo "----- Run configuration -----"
 ./xmlchange REST_OPTION=ndays
 ./xmlchange REST_N=1
 ./xmlchange DOUT_S="FALSE" # Turn on/off short-term archiving
-
+./xmlchange TIMER_DETAIL=9
+./xmlchange TIMER_LEVEL=9
 
 # A list of CLUBB variables
 clubb_vars_zt_list="'thlm', 'thvm', 'rtm', 'rcm', 'rvm', 'um', 'vm', 'um_ref','vm_ref','ug', 'vg', 'cloud_frac', 'cloud_cover', 'rcm_in_layer', 'rcm_in_cloud', 'p_in_Pa', 'exner', 'rho_ds_zt', 'thv_ds_zt', 'Lscale', 'Lscale_pert_1', 'Lscale_pert_2', 'T_in_K', 'rel_humidity', 'wp3', 'wpthlp2', 'wp2thlp', 'wprtp2', 'wp2rtp', 'Lscale_up', 'Lscale_down', 'tau_zt', 'Kh_zt', 'wp2thvp', 'wp2rcp', 'wprtpthlp', 'sigma_sqd_w_zt', 'rho', 'radht', 'radht_LW', 'radht_SW', 'Ncm', 'Nc_in_cloud', 'Nc_activated', 'snowslope', 'sed_rcm', 'rsat', 'rsati', 'diam', 'mass_ice_cryst', 'rcm_icedfs', 'u_T_cm', 'rtm_bt', 'rtm_ma', 'rtm_ta', 'rtm_mfl', 'rtm_tacl', 'rtm_cl', 'rtm_forcing', 'rtm_sdmp','rtm_mc', 'rtm_pd', 'rvm_mc', 'rcm_mc', 'rcm_sd_mg_morr', 'thlm_bt', 'thlm_ma', 'thlm_ta', 'thlm_mfl', 'thlm_tacl', 'thlm_cl', 'thlm_forcing', 'thlm_sdmp','thlm_mc', 'thlm_old', 'thlm_without_ta', 'thlm_mfl_min', 'thlm_mfl_max', 'thlm_enter_mfl', 'thlm_exit_mfl', 'rtm_old', 'rtm_without_ta', 'rtm_mfl_min', 'rtm_mfl_max', 'rtm_enter_mfl', 'rtm_exit_mfl', 'um_bt', 'um_ma', 'um_gf', 'um_cf', 'um_ta', 'um_f', 'um_sdmp', 'um_ndg', 'vm_bt', 'vm_ma', 'vm_gf', 'vm_cf', 'vm_ta', 'vm_f', 'vm_sdmp', 'vm_ndg', 'wp3_bt', 'wp3_ma', 'wp3_ta', 'wp3_tp', 'wp3_ac', 'wp3_bp1', 'wp3_pr_turb', 'wp3_pr_dfsn', 'wp3_pr1', 'wp3_pr2', 'wp3_dp1', 'wp3_cl', 'mixt_frac', 'w_1', 'w_2', 'varnce_w_1', 'varnce_w_2', 'thl_1', 'thl_2', 'varnce_thl_1', 'varnce_thl_2', 'rt_1', 'rt_2', 'varnce_rt_1', 'varnce_rt_2', 'rc_1', 'rc_2', 'rsatl_1', 'rsatl_2', 'cloud_frac_1', 'cloud_frac_2', 'a3_coef_zt', 'wp3_on_wp2_zt', 'chi_1', 'chi_2', 'stdev_chi_1', 'stdev_chi_2', 'stdev_eta_1', 'stdev_eta_2', 'covar_chi_eta_1', 'covar_chi_eta_2', 'corr_chi_eta_1', 'corr_chi_eta_2', 'corr_rt_thl_1', 'crt_1', 'crt_2', 'cthl_1', 'cthl_2', 'precip_frac', 'precip_frac_1', 'precip_frac_2', 'Ncnm', 'wp2_zt', 'thlp2_zt', 'wpthlp_zt', 'wprtp_zt', 'rtp2_zt', 'rtpthlp_zt', 'up2_zt', 'vp2_zt', 'upwp_zt', 'vpwp_zt', 'C11_Skw_fnc'"
