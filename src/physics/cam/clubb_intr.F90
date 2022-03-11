@@ -73,8 +73,8 @@ module clubb_intr
             stats_zt, stats_zm, stats_sfc, &
             stats_rad_zt, stats_rad_zm, &
             stats_lh_zt, stats_lh_sfc, &
-#endif
             stats_end_timestep_clubb, & 
+#endif
             clubb_readnl, &
             clubb_init_cnst, &
             clubb_implements_cnst
@@ -4988,17 +4988,16 @@ end function diag_ustar
   !                                                                                 !
   ! =============================================================================== !
 
-  
-    !-----------------------------------------------------------------------
+#ifdef CLUBB_SGS  
   subroutine stats_end_timestep_clubb(thecol, stats_zt, stats_zm, stats_rad_zt, stats_rad_zm, stats_sfc, &
                                       out_zt, out_zm, out_radzt, out_radzm, out_sfc)
-
+    !-----------------------------------------------------------------------
     !     Description: Called when the stats timestep has ended. This subroutine
     !     is responsible for calling statistics to be written to the output
     !     format.
     !-----------------------------------------------------------------------
 
-#ifdef CLUBB_SGS
+
 
     use shr_infnan_mod, only: is_nan => shr_infnan_isnan
 
@@ -5013,9 +5012,6 @@ end function diag_ustar
     use cam_abortutils,  only: endrun
 
     implicit none
-
-
-#endif
 
     integer :: thecol
     
@@ -5033,7 +5029,6 @@ end function diag_ustar
     real(r8), intent(inout) :: out_radzm(:,:,:)  ! (pcols,pverp,rad_zm%num_output_fields)
     real(r8), intent(inout) :: out_sfc(:,:,:)    ! (pcols,1,sfc%num_output_fields)
 
-#ifdef CLUBB_SGS
     ! Local Variables
 
     integer :: i, k
@@ -5118,10 +5113,8 @@ end function diag_ustar
 
     return
 
-#endif
-
   end subroutine stats_end_timestep_clubb
-  
+#endif  
   
   ! =============================================================================== !
   !                                                                                 !
