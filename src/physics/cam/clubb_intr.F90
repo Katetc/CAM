@@ -62,8 +62,8 @@ module clubb_intr
             stats_init_clubb, &
             stats_zt, stats_zm, stats_sfc, &
             stats_rad_zt, stats_rad_zm, &
-#endif
             stats_end_timestep_clubb, & 
+#endif
             clubb_readnl, &
             clubb_init_cnst, &
             clubb_implements_cnst
@@ -3151,43 +3151,43 @@ end subroutine clubb_init_cnst
       if ( pcols == ncol ) then
 
         !  Advance CLUBB CORE one timestep in the future
-        call advance_clubb_core_api( gr(:), pverp+1-top_lev, ncol, &
-            l_implemented, dtime, fcor(:), sfc_elevation(:), hydromet_dim, &
-            thlm_forcing(:,:), rtm_forcing(:,:), um_forcing(:,:), vm_forcing(:,:), &
-            sclrm_forcing(:,:,:), edsclrm_forcing(:,:,:), wprtp_forcing(:,:), &
-            wpthlp_forcing(:,:), rtp2_forcing(:,:), thlp2_forcing(:,:), &
-            rtpthlp_forcing(:,:), wm_zm(:,:), wm_zt(:,:), &
-            wpthlp_sfc(:), wprtp_sfc(:), upwp_sfc(:), vpwp_sfc(:), &
-            wpsclrp_sfc(:,:), wpedsclrp_sfc(:,:), &
-            rtm_ref(:,:), thlm_ref(:,:), um_ref(:,:), vm_ref(:,:), ug(:,:), vg(:,:), &
-            p_in_Pa(:,:), rho_zm(:,:), rho_in(:,:), exner(:,:), &
-            rho_ds_zm(:,:), rho_ds_zt(:,:), invrs_rho_ds_zm(:,:), &
-            invrs_rho_ds_zt(:,:), thv_ds_zm(:,:), thv_ds_zt(:,:), hydromet(:,:,:), &
-            rfrzm(:,:), radf(:,:), &
-            wphydrometp(:,:,:), wp2hmp(:,:,:), rtphmp_zt(:,:,:), thlphmp_zt(:,:,:), &
-            grid_dx(:), grid_dy(:), &
-            clubb_params, nu_vert_res_dep(:), lmin(:), &
+        call advance_clubb_core_api( gr, pverp+1-top_lev, ncol, &
+            l_implemented, dtime, fcor, sfc_elevation, hydromet_dim, &
+            thlm_forcing, rtm_forcing, um_forcing, vm_forcing, &
+            sclrm_forcing, edsclrm_forcing, wprtp_forcing, &
+            wpthlp_forcing, rtp2_forcing, thlp2_forcing, &
+            rtpthlp_forcing, wm_zm, wm_zt, &
+            wpthlp_sfc, wprtp_sfc, upwp_sfc, vpwp_sfc, &
+            wpsclrp_sfc, wpedsclrp_sfc, &
+            rtm_ref, thlm_ref, um_ref, vm_ref, ug, vg, &
+            p_in_Pa, rho_zm, rho_in, exner, &
+            rho_ds_zm, rho_ds_zt, invrs_rho_ds_zm, &
+            invrs_rho_ds_zt, thv_ds_zm, thv_ds_zt, hydromet, &
+            rfrzm, radf, &
+            wphydrometp, wp2hmp, rtphmp_zt, thlphmp_zt, &
+            grid_dx, grid_dy, &
+            clubb_params, nu_vert_res_dep, lmin, &
             clubb_config_flags, &
-            stats_zt(:), stats_zm(:), stats_sfc(:), &
-            um_in(:,:), vm_in(:,:), upwp_in(:,:), vpwp_in(:,:), up2_in(:,:), vp2_in(:,:), up3_in(:,:), vp3_in(:,:), &
-            thlm_in(:,:), rtm_in(:,:), wprtp_in(:,:), wpthlp_in(:,:), &
-            wp2_in(:,:), wp3_in(:,:), rtp2_in(:,:), rtp3_in(:,:), thlp2_in(:,:), thlp3_in(:,:), rtpthlp_in(:,:), &
-            sclrm(:,:,:), &
-            sclrp2(:,:,:), sclrp3(:,:,:), sclrprtp(:,:,:), sclrpthlp(:,:,:), &
-            wpsclrp(:,:,:), edsclr_in(:,:,:), err_code(1), &
-            rcm_inout(:,:), cloud_frac_inout(:,:), &
-            wpthvp_in(:,:), wp2thvp_in(:,:), rtpthvp_in(:,:), thlpthvp_in(:,:), &
-            sclrpthvp_inout(:,:,:), &
-            wp2rtp_inout(:,:), wp2thlp_inout(:,:), uprcp_inout(:,:), &
-            vprcp_inout(:,:), rc_coef_inout(:,:), &
-            wp4_inout(:,:), wpup2_inout(:,:), wpvp2_inout(:,:), &
-            wp2up2_inout(:,:), wp2vp2_inout(:,:), ice_supersat_frac_inout(:,:), &
+            stats_zt, stats_zm, stats_sfc, &
+            um_in, vm_in, upwp_in, vpwp_in, up2_in, vp2_in, up3_in, vp3_in, &
+            thlm_in, rtm_in, wprtp_in, wpthlp_in, &
+            wp2_in, wp3_in, rtp2_in, rtp3_in, thlp2_in, thlp3_in, rtpthlp_in, &
+            sclrm, &
+            sclrp2, sclrp3, sclrprtp, sclrpthlp, &
+            wpsclrp, edsclr_in, err_code(1), &
+            rcm_inout, cloud_frac_inout, &
+            wpthvp_in, wp2thvp_in, rtpthvp_in, thlpthvp_in, &
+            sclrpthvp_inout, &
+            wp2rtp_inout, wp2thlp_inout, uprcp_inout, &
+            vprcp_inout, rc_coef_inout, &
+            wp4_inout, wpup2_inout, wpvp2_inout, &
+            wp2up2_inout, wp2vp2_inout, ice_supersat_frac_inout, &
             pdf_params_chnk(lchnk), pdf_params_zm_chnk(lchnk), &
             pdf_implicit_coefs_terms_chnk(:,lchnk), &
-            khzm_out(:,:), khzt_out(:,:), &
-            qclvar_out(:,:), thlprcp_out(:,:), &
-            wprcp_out(:,:), w_up_in_cloud_out(:,:), &
-            rcm_in_layer_out(:,:), cloud_cover_out(:,:), invrs_tau_zm_out(:,:) )
+            khzm_out, khzt_out, &
+            qclvar_out, thlprcp_out, &
+            wprcp_out, w_up_in_cloud_out, &
+            rcm_in_layer_out, cloud_cover_out, invrs_tau_zm_out )
             
       else
           
@@ -4146,7 +4146,7 @@ end subroutine clubb_init_cnst
    enddo
  
    ! diagnose surface friction and obukhov length (inputs to diagnose PBL depth)
-   rrho(1:ncol) = (1._r8/gravit)*(state1%pdel(1:ncol,pver)/dz_g(i,pver)) 
+   rrho(1:ncol) = (1._r8/gravit)*(state1%pdel(1:ncol,pver)/dz_g(1:ncol,pver)) 
    call calc_ustar( ncol, state1%t(1:ncol,pver), state1%pmid(1:ncol,pver), cam_in%wsx(1:ncol), cam_in%wsy(1:ncol), &
                     rrho(1:ncol), ustar2(1:ncol))
    ! use correct qflux from coupler
@@ -4977,17 +4977,16 @@ end function diag_ustar
   !                                                                                 !
   ! =============================================================================== !
 
-  
-    !-----------------------------------------------------------------------
+#ifdef CLUBB_SGS  
   subroutine stats_end_timestep_clubb(thecol, stats_zt, stats_zm, stats_rad_zt, stats_rad_zm, stats_sfc, &
                                       out_zt, out_zm, out_radzt, out_radzm, out_sfc)
-
+    !-----------------------------------------------------------------------
     !     Description: Called when the stats timestep has ended. This subroutine
     !     is responsible for calling statistics to be written to the output
     !     format.
     !-----------------------------------------------------------------------
 
-#ifdef CLUBB_SGS
+
 
     use shr_infnan_mod, only: is_nan => shr_infnan_isnan
 
@@ -5002,9 +5001,6 @@ end function diag_ustar
     use cam_abortutils,  only: endrun
 
     implicit none
-
-
-#endif
 
     integer :: thecol
     
@@ -5022,7 +5018,6 @@ end function diag_ustar
     real(r8), intent(inout) :: out_radzm(:,:,:)  ! (pcols,pverp,rad_zm%num_output_fields)
     real(r8), intent(inout) :: out_sfc(:,:,:)    ! (pcols,1,sfc%num_output_fields)
 
-#ifdef CLUBB_SGS
     ! Local Variables
 
     integer :: i, k
@@ -5107,10 +5102,8 @@ end function diag_ustar
 
     return
 
-#endif
-
   end subroutine stats_end_timestep_clubb
-  
+#endif  
   
   ! =============================================================================== !
   !                                                                                 !
