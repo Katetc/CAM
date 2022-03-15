@@ -47,6 +47,12 @@ module clubb_intr
                                 
 !$omp threadprivate(stats_zt, stats_zm, stats_rad_zt, stats_rad_zm, stats_sfc)
 
+  type(grid), target :: dummy_gr
+  type(nu_vertical_res_dep), private, save :: dummy_nu_vert_res_dep   ! Vertical resolution dependent nu values
+  real(r8), private, save :: dummy_lmin
+
+!$omp threadprivate(dummy_gr)
+
 #endif
 
   private
@@ -1202,10 +1208,6 @@ end subroutine clubb_init_cnst
 
     ! CAM defines zi at the surface to be zero.
     real(r8), parameter :: sfc_elevation = 0._r8
-    
-    type(grid), target :: dummy_gr
-    type(nu_vertical_res_dep) :: dummy_nu_vert_res_dep   ! Vertical resolution dependent nu values
-    real(r8) :: dummy_lmin
 
     integer :: nlev
 
