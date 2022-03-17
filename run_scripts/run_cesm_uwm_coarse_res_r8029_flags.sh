@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Variables
+# Variables 
 CASE="UWM_debug_r8029_flags_f10_f10_mg37"
 CASEROOT="/home/$USER/cam_output/caseroot/$CASE"
 MACH="nelson"
