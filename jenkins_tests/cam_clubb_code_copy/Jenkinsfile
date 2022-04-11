@@ -1,0 +1,15 @@
+pipeline {
+  agent any
+  stages {
+    stage('Copy CLUBB Code') {
+      steps {
+        jenkins_tests/cam_clubb_code_copy/cam_clubb_code_copy.bash 
+      }
+    }
+    stage('Load Jenkinsfile') {
+      node {
+        load jenkins_tests/cam_scam_gfortran_test/Jenkinsfile
+      }
+    }
+  }
+}
