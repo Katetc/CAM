@@ -3,7 +3,7 @@ pipeline {
   stages {
     stage('Copy CLUBB Code') {
       steps {
-        sh './jenkins_tests/cam_clubb_code_copy/cam_clubb_code_copy.bash' 
+        sh './jenkins_tests/cam_clubb_code_copy/cam_clubb_code_copy.bash master ${WORKSPACE}' 
       }
     }
     stage('Load Jenkinsfile') {
