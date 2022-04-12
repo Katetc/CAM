@@ -7,8 +7,9 @@ pipeline {
       }
     }
     stage('Load Jenkinsfile') {
-      node {
-        load jenkins_tests/cam_scam_gfortran_test/Jenkinsfile
+      steps {
+        def JenkinsTest = load "jenkins_tests/cam_scam_gfortran_test/Jenkinsfile"
+	JenkinsTest.run()
       }
     }
   }
