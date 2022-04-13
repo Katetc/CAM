@@ -1,17 +1,14 @@
-pipeline {
-  agent any
-  stages {
-    stage('Copy CLUBB Code') {
-      steps {
-        sh './jenkins_tests/cam_clubb_code_copy/cam_clubb_code_copy.bash master ${WORKSPACE}' 
-      }
+node {
+  stage('Copy CLUBB Code') {
+    steps {
+      sh './jenkins_tests/cam_clubb_code_copy/cam_clubb_code_copy.bash master ${WORKSPACE}' 
     }
-    stage('Load Jenkinsfile') {
-      steps {
-        script {
-          def JenkinsTest = load "jenkins_tests/cam_scam_gfortran_test/Jenkinsfile"
-	  JenkinsTest.run()
-        }
+  }
+  stage('Load Jenkinsfile') {
+    steps {
+      script {
+        def JenkinsTest = load "jenkins_tests/cam_scam_gfortran_test/Jenkinsfile"
+    	  JenkinsTest.run()
       }
     }
   }
