@@ -286,6 +286,7 @@ module clubb_intr
     clubb_l_use_tke_in_wp2_wp3_K_dfsn,  & ! Use TKE in eddy diffusion for wp2 and wp3
     clubb_l_smooth_Heaviside_tau_wpxp,  & ! Use smooth Heaviside 'Peskin' in computation of invrs_tau
     clubb_l_enable_relaxed_clipping,    & ! Flag to relax clipping on wpxp in xm_wpxp_clipping_and_stats
+    clubb_l_linearize_pbl_winds,        & ! Code to linearize PBL winds
     clubb_l_single_C2_Skw,              & ! Use a single Skewness dependent C2 for rtp2, thlp2, and
                                           ! rtpthlp
     clubb_l_damp_wp3_Skw_squared,       & ! Set damping on wp3 to use Skw^2 rather than Skw^4
@@ -791,7 +792,8 @@ end subroutine clubb_init_cnst
                                              clubb_l_use_tke_in_wp3_pr_turb_term, & ! Out
                                              clubb_l_use_tke_in_wp2_wp3_K_dfsn, & ! Out
                                              clubb_l_smooth_Heaviside_tau_wpxp, & ! Out
-                                             clubb_l_enable_relaxed_clipping ) ! Out
+                                             clubb_l_enable_relaxed_clipping, & ! Out
+                                             clubb_l_linearize_pbl_winds ) ! Out
 
     !  Call CLUBB+MF namelist
     call clubb_mf_readnl(nlfile)
@@ -1106,6 +1108,7 @@ end subroutine clubb_init_cnst
                                                  clubb_l_use_tke_in_wp2_wp3_K_dfsn, & ! In 
                                                  clubb_l_smooth_Heaviside_tau_wpxp, & ! In
                                                  clubb_l_enable_relaxed_clipping, & ! In
+                                                 clubb_l_linearize_pbl_winds, & ! In
                                                  clubb_config_flags ) ! Out
 
 #endif
@@ -2052,9 +2055,11 @@ end subroutine clubb_init_cnst
    real(r8) :: wprtp_sfc(pcols)                        ! w' r_t' at surface                            [(kg m)/( kg s)]
    real(r8) :: upwp_sfc(pcols)                         ! u'w' at surface                               [m^2/s^2]
    real(r8) :: vpwp_sfc(pcols)                         ! v'w' at surface                               [m^2/s^2]   
-   real(r8) :: sclrm_forcing(pcols,pverp+1-top_lev,sclr_dim)    ! Passive scalar forcing                        [{units vary}/s]
+   real(r8) :: upwp_sfc_pert(pcols)                    ! perturbed u'w' at surface                     [m^2/s^2]
+   real(r8) :: vpwp_sfc_pert(pcols)                    ! perturbed v'w' at surface                     [m^2/s^2]   
+   real(r8) :: sclrm_forcing(pcols,pverp+1-top_lev,sclr_dim)    ! Passive scalar forcing              [{units vary}/s]
    real(r8) :: wpsclrp_sfc(pcols,sclr_dim)            ! Scalar flux at surface                        [{units vary} m/s]
-   real(r8) :: edsclrm_forcing(pcols,pverp+1-top_lev,edsclr_dim)! Eddy passive scalar forcing                   [{units vary}/s]
+   real(r8) :: edsclrm_forcing(pcols,pverp+1-top_lev,edsclr_dim)! Eddy passive scalar forcing         [{units vary}/s]
    real(r8) :: wpedsclrp_sfc(pcols,edsclr_dim)        ! Eddy-scalar flux at surface                   [{units vary} m/s]
    real(r8) :: sclrm(pcols,pverp+1-top_lev,sclr_dim)  ! Passive scalar mean (thermo. levels)          [units vary]
    real(r8) :: wpsclrp(pcols,pverp+1-top_lev,sclr_dim)! w'sclr' (momentum levels)                     [{units vary} m/s]
@@ -2078,7 +2083,11 @@ end subroutine clubb_init_cnst
    real(r8) :: wp2hmp(pcols,pverp+1-top_lev,hydromet_dim)
    real(r8) :: rtphmp_zt(pcols,pverp+1-top_lev,hydromet_dim)
    real(r8) :: thlphmp_zt (pcols,pverp+1-top_lev,hydromet_dim)
-   real(r8) :: bflx22(pcols)                           ! Variable for buoyancy flux for pbl            [K m/s]
+   real(r8) :: um_pert_inout(pcols,pverp+1-top_lev)   ! Perturbed U wind                          [m/s]
+   real(r8) :: vm_pert_inout(pcols,pverp+1-top_lev)   ! Perturbed V wind                          [m/s]
+   real(r8) :: upwp_pert_inout(pcols,pverp+1-top_lev) ! Perturbed u'w'                            [m^2/s^2]
+   real(r8) :: vpwp_pert_inout(pcols,pverp+1-top_lev) ! Perturbed v'w'                            [m^2/s^2]
+   real(r8) :: bflx22(pcols)                          ! Variable for buoyancy flux for pbl            [K m/s]
    real(r8) :: khzm_out(pcols,pverp+1-top_lev)        ! Eddy diffusivity of heat/moisture on momentum (i.e. interface) levels  [m^2/s]
    real(r8) :: khzt_out(pcols,pverp+1-top_lev)        ! eddy diffusivity on thermo grids              [m^2/s]
    real(r8) :: qclvar_out(pcols,pverp+1-top_lev)      ! cloud water variance                          [kg^2/kg^2]
@@ -2892,6 +2901,10 @@ end subroutine clubb_init_cnst
       upwp_sfc(i)   = cam_in%wsx(i)/rho_ds_zm(i,1)               ! Surface meridional momentum flux
       vpwp_sfc(i)   = cam_in%wsy(i)/rho_ds_zm(i,1)               ! Surface zonal momentum flux  
     end do
+
+    ! Perturbed winds are not used in CAM
+    upwp_sfc_pert = 0.0_r8
+    vpwp_sfc_pert = 0.0_r8
     
     !  Need to flip arrays around for CLUBB core
     do k=1,nlev+1
@@ -2948,6 +2961,12 @@ end subroutine clubb_init_cnst
         ice_supersat_frac_inout(i,k) = ice_supersat_frac(i,pverp-k+1)
       end do
     end do
+
+    ! Perturbed winds are not used in CAM
+    um_pert_inout   = 0.0_r8
+    vm_pert_inout   = 0.0_r8
+    upwp_pert_inout = 0.0_r8
+    vpwp_pert_inout = 0.0_r8
         
     do k=2,nlev+1
       do i=1,ncol
@@ -3168,6 +3187,7 @@ end subroutine clubb_init_cnst
             rtpthlp_forcing, wm_zm, wm_zt, &
             wpthlp_sfc, wprtp_sfc, upwp_sfc, vpwp_sfc, &
             wpsclrp_sfc, wpedsclrp_sfc, &
+            upwp_sfc_pert, vpwp_sfc_pert, &
             rtm_ref, thlm_ref, um_ref, vm_ref, ug, vg, &
             p_in_Pa, rho_zm, rho_in, exner, &
             rho_ds_zm, rho_ds_zt, invrs_rho_ds_zm, &
@@ -3191,6 +3211,7 @@ end subroutine clubb_init_cnst
             vprcp_inout, rc_coef_inout, &
             wp4_inout, wpup2_inout, wpvp2_inout, &
             wp2up2_inout, wp2vp2_inout, ice_supersat_frac_inout, &
+            um_pert_inout, vm_pert_inout, upwp_pert_inout, vpwp_pert_inout, &
             pdf_params_chnk(lchnk), pdf_params_zm_chnk(lchnk), &
             pdf_implicit_coefs_terms_chnk(:,lchnk), &
             khzm_out, khzt_out, &
