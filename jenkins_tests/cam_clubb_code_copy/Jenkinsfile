@@ -4,16 +4,12 @@ node {
     choice(name: "TEST", choices: ["cam_scam_gfortran", "cam_global_ERP_Ln9_gfortran_test"], trim: true, description: "Choose which test from CAM you want to run.")
   }
   stage('Clone Repo') {
-    git credentialsId: 'Larson_Group_Key',
-        branch: ${GIT_LOCAL_BRANCH},
-        poll: false,
-        url: 'https:/github.com/larson-group/cam.git'
+    checkout scm
   }
   stage('Copy CLUBB Code') {
     sh './jenkins_tests/cam_clubb_code_copy/cam_clubb_code_copy.bash ${CLUBB_BRANCH} ${WORKSPACE}' 
   }
   stage('Load Jenkinsfile') {
-    def JenkinsTest = load "jenkins_tests/${TEST}/Jenkinsfile"
-    JenkinsTest.run()
+    load "jenkins_tests/${TEST}/Jenkinsfile"
   }
 }
