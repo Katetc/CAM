@@ -4,7 +4,10 @@ node {
     choice(name: "TEST", choices: ["cam_scam_gfortran", "cam_global_ERP_Ln9_gfortran_test"], trim: true, description: "Choose which test from CAM you want to run.")
   }
   stage('Clone Repo') {
-    checkout scm 
+    git credentialsId: 'Larson_Group_Key',
+        branch: ${GIT_LOCAL_BRANCH},
+        poll: false,
+        url: 'https:/github.com/larson-group/cam.git'
   }
   stage('Copy CLUBB Code') {
     sh './jenkins_tests/cam_clubb_code_copy/cam_clubb_code_copy.bash ${CLUBB_BRANCH} ${WORKSPACE}' 
