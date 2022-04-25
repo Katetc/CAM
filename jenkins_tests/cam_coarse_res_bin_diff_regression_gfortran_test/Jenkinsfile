@@ -9,6 +9,7 @@ pipeline {
     }
     stage('Run Python Test') {
       steps {
+        // The source step is done to bring in all the needed intel path variables to run the rest of the commands 
         sh '''source /opt/intel/oneapi/setvars.sh --force
               rm -rf /home/jenkins/cam_output/scratch/subcol_SILHS_UWM_debug_f10_f10_mg37
               python3 /home/jenkins/cam_bit_diff_test_workspace/sys_admin/python_nightly_test_suite/run_test.py -c /home/jenkins/cam_bit_diff_test_workspace/bit_diff_cam_config'''
@@ -17,16 +18,22 @@ pipeline {
   }
   post {
     always {
+      // Certain logical functions like IF statements can only operate while in a script{} block
       script {
-      if ( "${env.JOB_NAME}" == "cam_coarse_res_bin_diff_regression_gfortran_test" )
-      	cleanWs(cleanWhenSuccess: true, cleanWhenFailure: true)
+        // This checks if the current test matches the name of the official test
+        // We do this to prevent the branch tests and the clubb copy tests from removing its output
+        // so they can be referenced later for debugging
+        if ( "${env.JOB_NAME}" == "cam_coarse_res_bin_diff_regression_gfortran_test" )
+      	   cleanWs(cleanWhenSuccess: true, cleanWhenFailure: true)
+        // This done to make log and ouput availabel for later debugging
         sh 'chmod -R 755 /home/jenkins/cam_output'
       }
     }
     failure {
       script {
       if ( "${env.JOB_NAME}" ==	"cam_coarse_res_bin_diff_regression_gfortran_test" )
-      	emailext(to: 'messnermet@uwm.edu', subject: "${env.JOB_NAME} build ${env.BUILD_NUMBER} has Failed", attachLog: true, body: "${env.JOB_NAME} build ${env.BUILD_NUMBER} has failed. See the attached build log and the build results (${env.BUILD_URL}) for help troubleshooting.")
+         // This command handles the email on failure feature of the jenkins test. This line is the same on every jenkins test.
+      	 emailext(to: 'messnermet@uwm.edu', subject: "${env.JOB_NAME} build ${env.BUILD_NUMBER} has Failed", attachLog: true, body: "${env.JOB_NAME} build ${env.BUILD_NUMBER} has failed. See the attached build log and the build results (${env.BUILD_URL}) for help troubleshooting.")
       }
     }
   }

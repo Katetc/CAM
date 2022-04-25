@@ -1,15 +1,20 @@
+// This node{} block means that this is a Declarative Pipeline rather than the usual Scripted Pipeline
+// This is so we can load a Jenkinsfile from a Scripted Pipeline without errors
 node {
   parameters {
     string(name: "CLUBB_BRANCH", defaultvalue: "origin/master", trim: true, description: "The branch of CLUBB with you're changes to be copied over.")
     choice(name: "TEST", choices: ["cam_scam_gfortran", "cam_global_ERP_Ln9_gfortran_test"], trim: true, description: "Choose which test from CAM you want to run.")
   }
   stage('Clone Repo') {
+    // This step is needed to clone CAM branch into the jenkins workspace
+    // A node{} block does not do this step by default, however a pipeline{} block does 
     checkout scm
   }
   stage('Copy CLUBB Code') {
     sh './jenkins_tests/cam_clubb_code_copy/cam_clubb_code_copy.bash ${CLUBB_BRANCH} ${WORKSPACE}' 
   }
   stage('Load Jenkinsfile') {
+    // This command both loads and runs the Jenkinsfile, it can only be used in a node{} block
     load "jenkins_tests/${TEST}/Jenkinsfile"
   }
 }

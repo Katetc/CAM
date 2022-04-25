@@ -3,59 +3,71 @@ pipeline {
   stages {
     stage('Check out externals') {
       steps {
-        sh 'python manage_externals/checkout_externals -e Externals.cfg'
+         sh 'python manage_externals/checkout_externals -e Externals.cfg'
       }
     }
     stage('Copy Config Files') {
       steps {
-        sh '''cp -f cime_config_cesm_machines_files/config_compilers.xml cime/config/cesm/machines/config_compilers.xml
+         sh '''cp -f cime_config_cesm_machines_files/config_compilers.xml cime/config/cesm/machines/config_compilers.xml
               cp -f cime_config_cesm_machines_files/config_machines.xml cime/config/cesm/machines/config_machines.xml'''
       }
     }
     stage('Make cprnc') {
       steps {
         dir(path: 'cime/tools/cprnc') {
-          sh 'bash -c "export LIB_NETCDF=/usr/local/NETCDF-Fortran-4.4.5-gfortran/lib; export INC_NETCDF=/usr/local/NETCDF-Fortran-4.4.5-gfortran/include; ../configure --macros-format=Makefile --mpilib=mpi-serial; source ./.env_mach_specific.sh; make"'
+           sh 'bash -c "export LIB_NETCDF=/usr/local/NETCDF-Fortran-4.4.5-gfortran/lib; export INC_NETCDF=/usr/local/NETCDF-Fortran-4.4.5-gfortran/include; ../configure --macros-format=Makefile --mpilib=mpi-serial; source ./.env_mach_specific.sh; make"'
         }
 
       }
     }
     stage('Run CAM') {
       steps {
-        sh '''source /opt/intel/oneapi/setvars.sh --force
-              rm -rf /home/jenkins/cam_output/scratch/ERP_Ln9.f10_f10_mg37.F2000climo.nelson_gnu.cam-outfrq9s.*
-              sed -i \'s|clubb_params(iC14) = clubb_c14|clubb_params(iC14) = clubb_c1|\' src/physics/cam/clubb_intr.F90
-              sed -i \'s|clubb_config_flags%l_stability_correct_tau_zm = clubb_l_stability_correct_tau_zm|clubb_config_flags%l_stability_correct_tau_zm = .false.|\' src/physics/cam/clubb_intr.F90
-              cime/scripts/create_test ERP_Ln9.f10_f10_mg37.F2000climo.nelson_gnu.cam-outfrq9s'''
+         // The source step is done to bring in all the needed intel path variables to run the rest of the commands
+         sh '''source /opt/intel/oneapi/setvars.sh --force
+               rm -rf /home/jenkins/cam_output/scratch/ERP_Ln9.f10_f10_mg37.F2000climo.nelson_gnu.cam-outfrq9s.*
+               sed -i \'s|clubb_params(iC14) = clubb_c14|clubb_params(iC14) = clubb_c1|\' src/physics/cam/clubb_intr.F90
+               sed -i \'s|clubb_config_flags%l_stability_correct_tau_zm = clubb_l_stability_correct_tau_zm|clubb_config_flags%l_stability_correct_tau_zm = .false.|\' src/physics/cam/clubb_intr.F90
+               cime/scripts/create_test ERP_Ln9.f10_f10_mg37.F2000climo.nelson_gnu.cam-outfrq9s'''
       }
     }
   }
   post {
     always {
+      // Certain logical functions like IF statements or TRY-CATCH blocks can only operate while in a script{} block
       script {
+        // This checks if the current test matches the name of the official test
+        // We do this to prevent the branch tests and the clubb copy tests from removing its output
+        // so they can be referenced later for debugging
       	if ( "${env.JOB_NAME}" == "cam_global_ERP_Ln9_gfortran_test" )
-		      cleanWs(cleanWhenSuccess: true, cleanWhenFailure: true)
+	   cleanWs(cleanWhenSuccess: true, cleanWhenFailure: true)
         
 	sh 'chmod -R 755 /home/jenkins/cam_output'
 
+        // The try catch block here is to prevent the script from ending the run if the logs are not present to be displayed
+        // It catches the exception and prints a statement then moves on to the next step
 	try {
-	  sh '''gzip -d /home/jenkins/cam_output/scratch/ERP_Ln9.f10_f10_mg37.F2000climo.nelson_gnu.cam-outfrq9s.*/bld/atm.bldlog.*.gz
-		cat /home/jenkins/cam_output/scratch/ERP_Ln9.f10_f10_mg37.F2000climo.nelson_gnu.cam-outfrq9s.*/bld/atm.bldlog.*'''
-          sh '''gzip -d /home/jenkins/cam_output/scratch/ERP_Ln9.f10_f10_mg37.F2000climo.nelson_gnu.cam-outfrq9s.*/bld/cesm.bldlog.*.gz
-        	cat /home/jenkins/cam_output/scratch/ERP_Ln9.f10_f10_mg37.F2000climo.nelson_gnu.cam-outfrq9s.*/bld/cesm.bldlog.*'''
-          sh '''gzip -d /home/jenkins/cam_output/scratch/ERP_Ln9.f10_f10_mg37.F2000climo.nelson_gnu.cam-outfrq9s.*/run/atm.log.*.gz
-        	cat /home/jenkins/cam_output/scratch/ERP_Ln9.f10_f10_mg37.F2000climo.nelson_gnu.cam-outfrq9s.*/run/atm.log.*'''
-          sh '''gzip -d /home/jenkins/cam_output/scratch/ERP_Ln9.f10_f10_mg37.F2000climo.nelson_gnu.cam-outfrq9s.*/run/cesm.log.*.gz
-                cat /home/jenkins/cam_output/scratch/ERP_Ln9.f10_f10_mg37.F2000climo.nelson_gnu.cam-outfrq9s.*/run/cesm.log.*'''
+           // These logs are made during a normal run of this test and are unzipped 
+           // and displayed to the console so they are easily accessible for debugging
+           // On a failed run it msy not have all these logs
+	   sh '''gzip -d /home/jenkins/cam_output/scratch/ERP_Ln9.f10_f10_mg37.F2000climo.nelson_gnu.cam-outfrq9s.*/bld/atm.bldlog.*.gz
+	 	 cat /home/jenkins/cam_output/scratch/ERP_Ln9.f10_f10_mg37.F2000climo.nelson_gnu.cam-outfrq9s.*/bld/atm.bldlog.*'''
+           sh '''gzip -d /home/jenkins/cam_output/scratch/ERP_Ln9.f10_f10_mg37.F2000climo.nelson_gnu.cam-outfrq9s.*/bld/cesm.bldlog.*.gz
+        	 cat /home/jenkins/cam_output/scratch/ERP_Ln9.f10_f10_mg37.F2000climo.nelson_gnu.cam-outfrq9s.*/bld/cesm.bldlog.*'''
+           sh '''gzip -d /home/jenkins/cam_output/scratch/ERP_Ln9.f10_f10_mg37.F2000climo.nelson_gnu.cam-outfrq9s.*/run/atm.log.*.gz
+        	 cat /home/jenkins/cam_output/scratch/ERP_Ln9.f10_f10_mg37.F2000climo.nelson_gnu.cam-outfrq9s.*/run/atm.log.*'''
+           sh '''gzip -d /home/jenkins/cam_output/scratch/ERP_Ln9.f10_f10_mg37.F2000climo.nelson_gnu.cam-outfrq9s.*/run/cesm.log.*.gz
+                 cat /home/jenkins/cam_output/scratch/ERP_Ln9.f10_f10_mg37.F2000climo.nelson_gnu.cam-outfrq9s.*/run/cesm.log.*'''
         } catch (Exception e) {
-          echo 'Not all logs were made.'  	
+           // This message prints to the Jenkins test console when an error occurs in the above block, usually a log is missing
+           echo 'Not all logs were made.'  	
 	}
       }
     }
     failure {
       script {
       if ( "${env.JOB_NAME}" ==	"cam_global_ERP_Ln9_gfortran_test" )
-	      emailext(to: 'messnermet@uwm.edu', subject: "${env.JOB_NAME} build ${env.BUILD_NUMBER} has Failed", attachLog: true, body: "${env.JOB_NAME} build ${env.BUILD_NUMBER} has failed. See the attached build log and the build results (${env.BUILD_URL}) for help troubleshooting.")
+         // This command handles the email on failure feature of the jenkins test. This line is the same on every jenkins test.
+	 emailext(to: 'messnermet@uwm.edu', subject: "${env.JOB_NAME} build ${env.BUILD_NUMBER} has Failed", attachLog: true, body: "${env.JOB_NAME} build ${env.BUILD_NUMBER} has failed. See the attached build log and the build results (${env.BUILD_URL}) for help troubleshooting.")
       }
     }
   }
