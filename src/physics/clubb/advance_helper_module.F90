@@ -17,7 +17,13 @@ module advance_helper_module
     compute_Cx_fnc_Richardson, &
     term_wp2_splat, term_wp3_splat, &
     smooth_min, smooth_max, &
-    smooth_heaviside_peskin
+    smooth_heaviside_peskin, &
+    calc_xpwp
+    
+  interface calc_xpwp
+    module procedure calc_xpwp_1D
+    module procedure calc_xpwp_2D
+  end interface
 
   private ! Set Default Scope
 
@@ -32,8 +38,8 @@ module advance_helper_module
     ! 'min' is applied to guarantee that the smoothing did not violate
     ! the original min requirement.
 
-    module procedure smooth_min_sclr_array
-    module procedure smooth_min_array_sclr
+    module procedure smooth_min_scalar_array
+    module procedure smooth_min_array_scalar
     module procedure smooth_min_arrays
 
   end interface
@@ -49,8 +55,8 @@ module advance_helper_module
     ! 'max' is applied to guarantee that the smoothing did not violate
     ! the original max requirement.
 
-    module procedure smooth_max_sclr_array
-    module procedure smooth_max_array_sclr
+    module procedure smooth_max_scalar_array
+    module procedure smooth_max_array_scalar
     module procedure smooth_max_arrays
 
   end interface
@@ -1015,7 +1021,7 @@ module advance_helper_module
   end subroutine term_wp3_splat
 
 !===============================================================================
-  function smooth_min_sclr_array( nz, ngrdcol, input_var1, input_var2, smth_coef ) &
+  function smooth_min_scalar_array( nz, ngrdcol, input_var1, input_var2, smth_coef ) &
   result( output_var )
 
   ! Description:
@@ -1041,7 +1047,7 @@ module advance_helper_module
   ! Input Variables
     real ( kind = core_rknd ), intent(in) :: &
       input_var1, &       ! Units vary
-      smth_coef          ! smoothing happens on interval [-smth_range, +smth_range]
+      smth_coef          
 
     real ( kind = core_rknd ), dimension(ngrdcol, nz), intent(in) :: &
       input_var2          ! Units vary
@@ -1056,10 +1062,10 @@ module advance_helper_module
                               sqrt((input_var1-input_var2)**2 + smth_coef**2) )
 
     return
-  end function smooth_min_sclr_array
+  end function smooth_min_scalar_array
 
 !===============================================================================
-  function smooth_min_array_sclr( nz, ngrdcol, input_var1, input_var2, smth_coef ) &
+  function smooth_min_array_scalar( nz, ngrdcol, input_var1, input_var2, smth_coef ) &
   result( output_var )
 
   ! Description:
@@ -1088,7 +1094,7 @@ module advance_helper_module
 
     real ( kind = core_rknd ), intent(in) :: &
       input_var2, &       ! Units vary
-      smth_coef          ! smoothing happens on interval [-smth_range, +smth_range]
+      smth_coef          
 
   ! Output Variables
     real( kind = core_rknd ), dimension(ngrdcol, nz) :: &
@@ -1100,7 +1106,7 @@ module advance_helper_module
                               sqrt((input_var1-input_var2)**2 + smth_coef**2) )
 
     return
-  end function smooth_min_array_sclr
+  end function smooth_min_array_scalar
 
 !===============================================================================
   function smooth_min_arrays( nz, ngrdcol, input_var1, input_var2, smth_coef ) &
@@ -1132,7 +1138,7 @@ module advance_helper_module
       input_var2          ! Units vary
       
     real ( kind = core_rknd ), intent(in) :: &
-      smth_coef          ! smoothing happens on interval [-smth_range, +smth_range]
+      smth_coef          
 
   ! Output Variables
     real( kind = core_rknd ), dimension(ngrdcol, nz) :: &
@@ -1147,7 +1153,7 @@ module advance_helper_module
   end function smooth_min_arrays
 
 !===============================================================================
-  function smooth_max_sclr_array( nz, ngrdcol, input_var1, input_var2, smth_coef ) &
+  function smooth_max_scalar_array( nz, ngrdcol, input_var1, input_var2, smth_coef ) &
   result( output_var )
 
   ! Description:
@@ -1173,7 +1179,7 @@ module advance_helper_module
   ! Input Variables
     real ( kind = core_rknd ), intent(in) :: &
       input_var1, &       ! Units vary
-      smth_coef          ! smoothing happens on interval [-smth_range, +smth_range]
+      smth_coef
 
     real ( kind = core_rknd ), dimension(ngrdcol, nz), intent(in) :: &
       input_var2          ! Units vary
@@ -1188,10 +1194,10 @@ module advance_helper_module
                               sqrt((input_var1-input_var2)**2 + smth_coef**2) )
 
     return
-  end function smooth_max_sclr_array
+  end function smooth_max_scalar_array
 
 !===============================================================================
-  function smooth_max_array_sclr( nz, ngrdcol, input_var1, input_var2, smth_coef ) &
+  function smooth_max_array_scalar( nz, ngrdcol, input_var1, input_var2, smth_coef ) &
   result( output_var )
 
   ! Description:
@@ -1220,7 +1226,7 @@ module advance_helper_module
 
     real ( kind = core_rknd ), intent(in) :: &
       input_var2, &       ! Units vary
-      smth_coef          ! smoothing happens on interval [-smth_range, +smth_range]
+      smth_coef          
 
   ! Output Variables
     real( kind = core_rknd ), dimension(ngrdcol, nz) :: &
@@ -1232,7 +1238,7 @@ module advance_helper_module
                               sqrt((input_var1-input_var2)**2 + smth_coef**2) )
 
     return
-  end function smooth_max_array_sclr
+  end function smooth_max_array_scalar
 
 !===============================================================================
   function smooth_max_arrays( nz, ngrdcol, input_var1, input_var2, smth_coef ) &
@@ -1264,7 +1270,7 @@ module advance_helper_module
       input_var2          ! Units vary
       
     real( kind = core_rknd ), intent(in) :: &
-      smth_coef          ! smoothing happens on interval [-smth_range, +smth_range]
+      smth_coef          
 
   ! Output Variables
     real( kind = core_rknd ), dimension(ngrdcol, nz) :: &
@@ -1301,7 +1307,7 @@ module advance_helper_module
     ! Input Variables      
     real ( kind = core_rknd ), intent(in) :: &
       input, &    ! Units vary
-      smth_range  ! Outside of [-smth_range, smth_range], smooth Heaviside = Heaviside
+      smth_range  ! Smooth Heaviside function on [-smth_range, smth_range]
     
     ! Local Variables
     real ( kind = core_rknd ) :: &
@@ -1327,5 +1333,98 @@ module advance_helper_module
     
     return
   end function smooth_heaviside_peskin
+  
+  !===============================================================================
+  subroutine calc_xpwp_1D( gr, Km_zm, xm, &
+                           xpwp )
+
+    ! Description:
+    ! Compute x'w' from x<k>, x<k+1>, Kh and invrs_dzm
+
+    ! References:
+    ! None
+    !-----------------------------------------------------------------------
+
+    use clubb_precision, only: &
+        core_rknd ! Variable(s)
+        
+    use grid_class, only: &
+      grid
+
+    implicit none
+
+    ! ----------------------- Input variables -----------------------
+    type (grid), target, intent(in) :: gr
+      
+    real( kind = core_rknd ), dimension(gr%nz), intent(in) :: &
+      Km_zm,     & ! Eddy diff. (k momentum level)                 [m^2/s]
+      xm           ! x (k thermo level)                            [units vary]
+      
+    ! ----------------------- Output variable -----------------------
+    real( kind = core_rknd ), dimension(gr%nz), intent(out) :: &
+      xpwp ! x'w'   [(units vary)(m/s)]
+      
+    integer :: k
+
+    ! ----------------------- Begin Code -----------------------
+
+    ! Solve for x'w' at all intermediate model levels.
+    do k = 1, gr%nz-1
+      xpwp(k) = Km_zm(k) * gr%invrs_dzm(k) * ( xm(k+1) - xm(k) )
+    end do
+
+    return
+  end subroutine calc_xpwp_1D
+  
+  !===============================================================================
+  subroutine calc_xpwp_2D( nz, ngrdcol, gr, &
+                        Km_zm, xm, &
+                        xpwp )
+
+    ! Description:
+    ! Compute x'w' from x<k>, x<k+1>, Kh and invrs_dzm
+
+    ! References:
+    ! None
+    !-----------------------------------------------------------------------
+
+    use clubb_precision, only: &
+        core_rknd ! Variable(s)
+        
+    use grid_class, only: &
+      grid
+
+    implicit none
+
+    ! ----------------------- Input variables -----------------------
+    integer, intent(in) :: &
+      nz, &
+      ngrdcol
+      
+    type (grid), target, dimension(ngrdcol), intent(in) :: gr
+      
+    real( kind = core_rknd ), dimension(ngrdcol,nz), intent(in) :: &
+      Km_zm,     & ! Eddy diff. (k momentum level)                 [m^2/s]
+      xm           ! x (k thermo level)                            [units vary]
+      
+    ! ----------------------- Output variable -----------------------
+    real( kind = core_rknd ), dimension(ngrdcol,nz), intent(out) :: &
+      xpwp ! x'w'   [(units vary)(m/s)]
+      
+    integer :: i, k
+
+    ! ----------------------- Begin Code -----------------------
+
+    ! Solve for x'w' at all intermediate model levels.
+    do k = 1, nz-1
+      do i = 1, ngrdcol
+        xpwp(i,k) = Km_zm(i,k) * gr(i)%invrs_dzm(k) * ( xm(i,k+1) - xm(i,k) )
+      end do
+    end do
+
+    return
+  end subroutine calc_xpwp_2D
+
+  !===============================================================================
 
 end module advance_helper_module
