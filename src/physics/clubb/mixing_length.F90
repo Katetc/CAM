@@ -1159,7 +1159,8 @@ module mixing_length
 
     use advance_helper_module, only: &
         calc_brunt_vaisala_freq_sqd, &
-        smooth_heaviside_peskin
+        smooth_heaviside_peskin, &
+        smooth_min, smooth_max
 
     use constants_clubb, only: &
         one_fourth,     &
@@ -1271,7 +1272,10 @@ module mixing_length
     real( kind = core_rknd ), dimension(ngrdcol,nz) :: &
       brunt_freq_pos,               &
       brunt_vaisala_freq_sqd_smth,  & ! smoothed Buoyancy frequency squared, N^2     [s^-2]
-      brunt_freq_out_cloud
+      brunt_freq_out_cloud,         &
+      smooth_thlm,                  & 
+      bvf_thresh,                   & ! temporatory array  
+      H_invrs_tau_wpxp_N2             ! Heaviside function for clippings of invrs_tau_wpxp_N2
 
     real( kind = core_rknd ), dimension(ngrdcol) :: &
       ustar
@@ -1287,13 +1291,16 @@ module mixing_length
       C_invrs_tau_wpxp_N2_thresh, &
       C_invrs_tau_N2_clear_wp3,   &
       C_invrs_tau_wpxp_Ri,        &
-      altitude_threshold,         &
-      heaviside_smth_range
+      altitude_threshold
 
-    real( kind = core_rknd ), dimension(ngrdcol,nz) :: &
-      smooth_thlm,           & 
-      bvf_thresh,           & ! temporatory array  
-      H_invrs_tau_wpxp_N2     ! Heaviside function for clippings of invrs_tau_wpxp_N2
+    real( kind = core_rknd ), parameter :: &
+      min_max_smth_mag = 1.0e-9_core_rknd, &  ! "base" smoothing magnitude before scaling 
+                                              ! for the respective data structure. See
+                                              ! https://github.com/larson-group/clubb/issues/965#issuecomment-1119816722
+                                              ! for a plot on how output behaves with varying min_max_smth_mag
+      heaviside_smth_range = 1.0e-0_core_rknd ! range where Heaviside function is smoothed
+   
+    logical, parameter :: l_smooth_min_max = .false.  ! whether to apply smooth min and max functions
 
     integer :: i, k
 
@@ -1326,7 +1333,13 @@ module mixing_length
     C_invrs_tau_wpxp_Ri = clubb_params(iC_invrs_tau_wpxp_Ri)
     altitude_threshold = clubb_params(ialtitude_threshold)
 
-    ustar(:) = max( ( upwp_sfc(:)**2 + vpwp_sfc(:)**2 )**(one_fourth), ufmin )
+    if ( l_smooth_min_max ) then
+      do i = 1, ngrdcol
+        ustar(i) = smooth_max( ( upwp_sfc(i)**2 + vpwp_sfc(i)**2 )**(one_fourth), ufmin, one * min_max_smth_mag)
+      end do
+    else 
+      ustar(:) = max( ( upwp_sfc(:)**2 + vpwp_sfc(:)**2 )**(one_fourth), ufmin )
+    end if
 
     invrs_tau_bkgnd(:,:) = C_invrs_tau_bkgnd / tau_const
 
@@ -1348,18 +1361,61 @@ module mixing_length
     !The min function below smooths the slope discontinuity in brunt freq
     !  and thereby allows tau to remain large in Sc layers in which thlm may
     !  be slightly stably stratified.
-    brunt_vaisala_freq_sqd_smth = zt2zm( nz, ngrdcol, gr, zm2zt( nz, ngrdcol, gr, &
-        min( brunt_vaisala_freq_sqd, 1.e8_core_rknd * abs(brunt_vaisala_freq_sqd) ** 3 ) ) )
-    
-    sqrt_Ri_zm = &
-      sqrt( max( 1.0e-7_core_rknd, brunt_vaisala_freq_sqd_smth ) &
-            / max( ( ddzt( nz, ngrdcol, gr, um)**2 + ddzt(nz, ngrdcol, gr, vm)**2 ), 1.0e-7_core_rknd ) )
+    if ( l_smooth_min_max ) then
+          brunt_vaisala_freq_sqd_smth &
+            = zt2zm(nz, ngrdcol, gr, zm2zt(nz, ngrdcol, gr, &
+                                           smooth_min(nz, ngrdcol, &
+                                           brunt_vaisala_freq_sqd, &
+                                           1.e8_core_rknd * abs(brunt_vaisala_freq_sqd) ** 3, &
+                                           1.0e-4_core_rknd * min_max_smth_mag)))
+        else
+          brunt_vaisala_freq_sqd_smth &
+            = zt2zm(nz, ngrdcol, gr, &
+                    zm2zt(nz, ngrdcol, gr, &
+                          min(brunt_vaisala_freq_sqd, &
+                              1.e8_core_rknd * abs(brunt_vaisala_freq_sqd) ** 3)))
+        end if
+        
+        if ( l_smooth_min_max ) then
+          sqrt_Ri_zm &
+            = sqrt(smooth_max(nz, ngrdcol, 1.0e-7_core_rknd, &
+                              brunt_vaisala_freq_sqd_smth, 1.0e-4_core_rknd * min_max_smth_mag ) &
+                    / smooth_max(nz, ngrdcol, &
+                                 ddzt(nz, ngrdcol, gr, um)**2 &
+                                  + ddzt(nz, ngrdcol, gr, vm)**2, &
+                                 1.0e-7_core_rknd, 1.0e-6_core_rknd * min_max_smth_mag ) )
+        else
+          sqrt_Ri_zm &
+            = sqrt( max( 1.0e-7_core_rknd, brunt_vaisala_freq_sqd_smth ) &
+                      / max(ddzt(nz, ngrdcol, gr, um)**2 &
+                              + ddzt(nz, ngrdcol, gr, vm)**2, &
+                            1.0e-7_core_rknd) )
+        end if
+        
+        if ( l_smooth_min_max ) then
+          brunt_freq_pos = sqrt( smooth_max( nz, ngrdcol, zero_threshold, &
+                                             brunt_vaisala_freq_sqd_smth, &
+                                             1.0e-4_core_rknd * min_max_smth_mag ) )
+        else
+          brunt_freq_pos = sqrt( max( zero_threshold, brunt_vaisala_freq_sqd_smth ) )
+        end if 
 
-    brunt_freq_pos = sqrt( max( zero_threshold, brunt_vaisala_freq_sqd_smth ) )
-
-    brunt_freq_out_cloud =  brunt_freq_pos &
-          * min(one, max(zero_threshold,&
-          one - ( (zt2zm(nz, ngrdcol, gr, ice_supersat_frac) / 0.007_core_rknd) )))
+        if ( l_smooth_min_max ) then
+          brunt_freq_out_cloud &
+            =  brunt_freq_pos &
+                * smooth_min( nz, ngrdcol, one, &
+                              smooth_max(nz, ngrdcol, zero_threshold, &
+                              ! roll this back as well once checks have passed
+                                         one - zt2zm(nz, ngrdcol, gr, ice_supersat_frac) / 0.007_core_rknd, &
+                                         one * min_max_smth_mag), &
+                              one * min_max_smth_mag )
+        else
+          brunt_freq_out_cloud &
+            = brunt_freq_pos &
+                * min(one, max(zero_threshold, &
+                               one - ( (zt2zm(nz, ngrdcol, gr, ice_supersat_frac) &
+                                          / 0.007_core_rknd) )))
+        end if
 
     do k = 1, nz
       do i = 1, ngrdcol
@@ -1392,9 +1448,22 @@ module mixing_length
         end do
       end do
 
-      invrs_tau_xp2_zm = min( max( sqrt( ( ddzt( nz, ngrdcol, gr, um)**2 + ddzt(nz, ngrdcol, gr, vm)**2 ) &
-                        / max( 1.0e-7_core_rknd, brunt_vaisala_freq_sqd_smth ) ), &
-                        0.3_core_rknd ), one ) * invrs_tau_xp2_zm
+      if ( l_smooth_min_max ) then
+        invrs_tau_xp2_zm &
+          = smooth_min( nz, ngrdcol, smooth_max( nz, ngrdcol, &
+                                                 sqrt( ( ddzt( nz, ngrdcol, gr, um)**2 &
+                                                         + ddzt(nz, ngrdcol, gr, vm)**2 ) &
+                          / smooth_max( nz, ngrdcol, 1.0e-7_core_rknd, brunt_vaisala_freq_sqd_smth, &
+                                        1.0e-4_core_rknd * min_max_smth_mag ) ), &
+                      0.3_core_rknd, 0.3_core_rknd * min_max_smth_mag ), one, one * min_max_smth_mag ) &
+                 * invrs_tau_xp2_zm
+      else
+        invrs_tau_xp2_zm &
+          = min( max( sqrt( ( ddzt( nz, ngrdcol, gr, um)**2 + ddzt(nz, ngrdcol, gr, vm)**2 ) &
+                          / max( 1.0e-7_core_rknd, brunt_vaisala_freq_sqd_smth ) ), &
+                      0.3_core_rknd ), one ) &
+                 * invrs_tau_xp2_zm
+      end if
 
       invrs_tau_wpxp_zm = two * invrs_tau_zm &
                          + C_invrs_tau_N2_wpxp * brunt_freq_out_cloud
@@ -1416,8 +1485,6 @@ module mixing_length
 
       bvf_thresh = brunt_vaisala_freq_sqd_smth/C_invrs_tau_wpxp_N2_thresh
       bvf_thresh = bvf_thresh - one
-
-      heaviside_smth_range = 0.1_core_rknd
       
       do i = 1, ngrdcol
         H_invrs_tau_wpxp_N2(i,:) = smooth_heaviside_peskin(bvf_thresh(i,:), heaviside_smth_range)
@@ -1440,10 +1507,18 @@ module mixing_length
     do k = 1, nz
       do i = 1, ngrdcol
         if ( gr(i)%zt(k) > altitude_threshold ) then
-         invrs_tau_wpxp_zm(i,k) = invrs_tau_wpxp_zm(i,k) &
-                                  * ( one  + H_invrs_tau_wpxp_N2(i,k) & 
-                                             * C_invrs_tau_wpxp_Ri &
-                                             * min( max( sqrt_Ri_zm(i,k), zero), 12.0_core_rknd ) )
+          if ( l_smooth_min_max ) then
+             invrs_tau_wpxp_zm(i,k) = invrs_tau_wpxp_zm(i,k) &
+             * ( one  + H_invrs_tau_wpxp_N2(i,k) & 
+             * C_invrs_tau_wpxp_Ri &
+             * smooth_min( smooth_max( sqrt_Ri_zm(i,k), zero, 12.0_core_rknd * min_max_smth_mag ), &
+                           12.0_core_rknd, 12.0_core_rknd * min_max_smth_mag ) )
+           else
+             invrs_tau_wpxp_zm(i,k) = invrs_tau_wpxp_zm(i,k) &
+             * ( one  + H_invrs_tau_wpxp_N2(i,k) & 
+             * C_invrs_tau_wpxp_Ri &
+             * min( max( sqrt_Ri_zm(i,k), zero), 12.0_core_rknd ) )
+           end if
         end if
       end do 
     end do
@@ -1461,12 +1536,23 @@ module mixing_length
     do k = 1, nz
       do i = 1, ngrdcol
         tau_max_zt(i,k) = Lscale_max(i) / sqrt_em_zt(i,k)
-        tau_max_zm(i,k) = Lscale_max(i) / sqrt( max( em(i,k), em_min ) )
+        if ( l_smooth_min_max ) then
+          tau_max_zm(i,k) &
+            = Lscale_max(i) &
+              / sqrt( smooth_max( em(i,k), em_min, one * min_max_smth_mag ) )
+        else 
+          tau_max_zm(i,k) = Lscale_max(i) / sqrt( max( em(i,k), em_min ) )
+        end if
       end do
     end do
 
-    tau_zm           = min( one / invrs_tau_zm, tau_max_zm )
-    tau_zt           = min( zm2zt( nz, ngrdcol, gr, tau_zm ), tau_max_zt )
+    if ( l_smooth_min_max ) then
+      tau_zm           = smooth_min( nz, ngrdcol, one / invrs_tau_zm, tau_max_zm, 1.0e3_core_rknd * min_max_smth_mag )
+      tau_zt           = smooth_min( nz, ngrdcol, zm2zt( nz, ngrdcol, gr, tau_zm ), tau_max_zt, 1.0e3_core_rknd * min_max_smth_mag )
+    else
+      tau_zm           = min( one / invrs_tau_zm, tau_max_zm )
+      tau_zt           = min( zm2zt( nz, ngrdcol, gr, tau_zm ), tau_max_zt )
+    end if
     invrs_tau_zt     = zm2zt( nz, ngrdcol, gr, invrs_tau_zm )
     invrs_tau_wp3_zt = zm2zt( nz, ngrdcol, gr, invrs_tau_wp3_zm )
 

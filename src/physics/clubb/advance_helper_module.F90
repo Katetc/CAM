@@ -30,34 +30,42 @@ module advance_helper_module
 !===============================================================================
   interface smooth_min
 
-    ! These functions wrap the intrinsic Fortran 'min' function in 
-    ! zt2zm(zm2zt()), thus smoothing the result for a variable defined on the
-    ! momentum grid ("zm").  These functions can accept two 1d arrays,
-    ! or a scalar and a 1d array in either order. In the case of an 
-    ! array being compared with a scalar (eg zero), an additional
-    ! 'min' is applied to guarantee that the smoothing did not violate
-    ! the original min requirement.
+    ! These functions smooth the output of the min function 
+    ! by introducing a varyingly steep path between the two input variables.
+    ! The degree to which smoothing is applied depends on the value of 'smth_coef'.
+    ! If 'smth_coef' goes toward 0, the output of the min function will be 
+    !        0.5 * ((a+b) - abs(a-b))
+    ! If a > b, then this comes out to be b. Likewise, if a < b, abs(a-b)=b-a so we get a.
+    ! Increasing the smoothing coefficient will lead to a greater degree of smoothing
+    ! in the smooth min and max functions. Generally, the coefficient should roughly scale
+    ! with the magnitude of data in the data structure that is to be smoothed, in order to
+    ! obtain a sensible degree of smoothing (not too much, not too little).
 
     module procedure smooth_min_scalar_array
     module procedure smooth_min_array_scalar
     module procedure smooth_min_arrays
+    module procedure smooth_min_scalars
 
   end interface
 
 !===============================================================================
   interface smooth_max
 
-    ! These functions wrap the intrinsic Fortran 'max' function in 
-    ! zt2zm(zm2zt()), thus smoothing the result for a variable defined on the
-    ! momentum grid ("zm").  These functions can accept two 1d arrays,
-    ! or a scalar and a 1d array in either order. In the case of an  
-    ! array being compared with a scalar (eg zero), an additional
-    ! 'max' is applied to guarantee that the smoothing did not violate
-    ! the original max requirement.
+    ! These functions smooth the output of the max functions 
+    ! by introducing a varyingly steep path between the two input variables.
+    ! The degree to which smoothing is applied depends on the value of 'smth_coef'.
+    ! If 'smth_coef' goes toward 0, the output of the max function will be 
+    !        0.5 * ((a+b) + abs(a-b))
+    ! If a > b, then this comes out to be a. Likewise, if a < b, abs(a-b)=b-a so we get b.
+    ! Increasing the smoothing coefficient will lead to a greater degree of smoothing
+    ! in the smooth min and max functions. Generally, the coefficient should roughly scale
+    ! with the magnitude of data in the data structure that is to be smoothed, in order to
+    ! obtain a sensible degree of smoothing (not too much, not too little).
 
     module procedure smooth_max_scalar_array
     module procedure smooth_max_array_scalar
     module procedure smooth_max_arrays
+    module procedure smooth_max_scalars
 
   end interface
 
@@ -1025,8 +1033,8 @@ module advance_helper_module
   result( output_var )
 
   ! Description:
-  !   Computes a smoothed version of the min function using zt2zm/zm2zt, using
-  !   one scalar and one 1d array as inputs.
+  !   Computes a smoothed version of the min function, using one scalar and
+  !   one 1d array as inputs. For more details, see the interface in this file.
 
   ! References:
   !   See clubb:ticket:894, updated version: 965
@@ -1047,14 +1055,15 @@ module advance_helper_module
   ! Input Variables
     real ( kind = core_rknd ), intent(in) :: &
       input_var1, &       ! Units vary
-      smth_coef          
+      smth_coef           ! "intensity" of the smoothing. Should be of a similar magnitude to
+                          ! that of the data structures input_var1 and input_var2
 
     real ( kind = core_rknd ), dimension(ngrdcol, nz), intent(in) :: &
       input_var2          ! Units vary
 
   ! Output Variables
     real( kind = core_rknd ), dimension(ngrdcol, nz) :: &
-      output_var          ! Units vary
+      output_var          ! Same unit as input_var1 and input_var2
 
   !----------------------------------------------------------------------
 
@@ -1069,8 +1078,8 @@ module advance_helper_module
   result( output_var )
 
   ! Description:
-  !   Computes a smoothed version of the min function using zt2zm/zm2zt, using
-  !   one scalar and one 1d array as inputs.
+  !   Computes a smoothed version of the min function, using one scalar and 
+  !   one 1d array as inputs. For more details, see the interface in this file.
 
   ! References:
   !   See clubb:ticket:894, updated version: 965
@@ -1094,11 +1103,12 @@ module advance_helper_module
 
     real ( kind = core_rknd ), intent(in) :: &
       input_var2, &       ! Units vary
-      smth_coef          
+      smth_coef           ! "intensity" of the smoothing. Should be of a similar magnitude to
+                          ! that of the data structures input_var1 and input_var2
 
   ! Output Variables
     real( kind = core_rknd ), dimension(ngrdcol, nz) :: &
-      output_var          ! Units vary
+      output_var          ! Same unit as input_var1 and input_var2
 
   !----------------------------------------------------------------------
 
@@ -1113,8 +1123,8 @@ module advance_helper_module
   result( output_var )
 
   ! Description:
-  !   Computes a smoothed version of the min function using zt2zm/zm2zt, using
-  !   two 1d arrays as inputs.
+  !   Computes a smoothed version of the min function, using two 1d arrays as inputs.
+  !   For more details, see the interface in this file.
 
   ! References:
   !   See clubb:ticket:894, updated version: 965
@@ -1138,11 +1148,12 @@ module advance_helper_module
       input_var2          ! Units vary
       
     real ( kind = core_rknd ), intent(in) :: &
-      smth_coef          
+      smth_coef           ! "intensity" of the smoothing. Should be of a similar magnitude to
+                          ! that of the data structures input_var1 and input_var2
 
   ! Output Variables
     real( kind = core_rknd ), dimension(ngrdcol, nz) :: &
-      output_var          ! Units vary
+      output_var          ! Same unit as input_var1 and input_var2
 
   !----------------------------------------------------------------------
 
@@ -1151,14 +1162,53 @@ module advance_helper_module
 
     return
   end function smooth_min_arrays
+  
+!===============================================================================
+  function smooth_min_scalars( input_var1, input_var2, smth_coef ) &
+  result( output_var )
+
+  ! Description:
+  !   Computes a smoothed version of the min function, using two scalars as inputs.
+  !   For more details, see the interface in this file.
+
+  ! References:
+  !   See clubb:ticket: 965
+  !----------------------------------------------------------------------
+
+    use clubb_precision, only: &
+        core_rknd                     ! Constant(s)
+        
+    use constants_clubb, only: &
+        one_half
+
+    implicit none
+
+  ! Input Variables
+    real ( kind = core_rknd ), intent(in) :: &
+      input_var1, &       ! Units vary
+      input_var2, &       ! Units vary
+      smth_coef           ! "intensity" of the smoothing. Should be of a similar magnitude to
+                          ! that of the data structures input_var1 and input_var2
+
+  ! Output Variables
+    real( kind = core_rknd ) :: &
+      output_var          ! Same unit as input_var1 and input_var2
+
+  !----------------------------------------------------------------------
+
+    output_var = one_half * ( (input_var1+input_var2) - &
+                              sqrt((input_var1-input_var2)**2 + smth_coef**2) )
+
+    return
+  end function smooth_min_scalars
 
 !===============================================================================
   function smooth_max_scalar_array( nz, ngrdcol, input_var1, input_var2, smth_coef ) &
   result( output_var )
 
   ! Description:
-  !   Computes a smoothed version of the max function using zt2zm/zm2zt, 
-  !   using one scalar and one 1d array as inputs.
+  !   Computes a smoothed version of the max function, using one scalar and 
+  !   one 1d array as inputs. For more details, see the interface in this file.
 
   ! References:
   !   See clubb:ticket:894, updated version: 965
@@ -1179,14 +1229,15 @@ module advance_helper_module
   ! Input Variables
     real ( kind = core_rknd ), intent(in) :: &
       input_var1, &       ! Units vary
-      smth_coef
+      smth_coef           ! "intensity" of the smoothing. Should be of a similar magnitude to
+                          ! that of the data structures input_var1 and input_var2
 
     real ( kind = core_rknd ), dimension(ngrdcol, nz), intent(in) :: &
       input_var2          ! Units vary
 
   ! Output Variables
     real( kind = core_rknd ), dimension(ngrdcol, nz) :: &
-      output_var          ! Units vary
+      output_var          ! Same unit as input_var1 and input_var2
 
   !----------------------------------------------------------------------
   
@@ -1201,8 +1252,8 @@ module advance_helper_module
   result( output_var )
 
   ! Description:
-  !   Computes a smoothed version of the max function using zt2zm/zm2zt, 
-  !   using one scalar and one 1d array as inputs.
+  !   Computes a smoothed version of the max function, using one scalar and 
+  !   one 1d array as inputs. For more details, see the interface in this file.
 
   ! References:
   !   See clubb:ticket:894, updated version: 965
@@ -1226,11 +1277,12 @@ module advance_helper_module
 
     real ( kind = core_rknd ), intent(in) :: &
       input_var2, &       ! Units vary
-      smth_coef          
+      smth_coef           ! "intensity" of the smoothing. Should be of a similar magnitude to
+                          ! that of the data structures input_var1 and input_var2
 
   ! Output Variables
     real( kind = core_rknd ), dimension(ngrdcol, nz) :: &
-      output_var          ! Units vary
+      output_var          ! Same unit as input_var1 and input_var2
 
   !----------------------------------------------------------------------
 
@@ -1245,8 +1297,8 @@ module advance_helper_module
   result( output_var )
 
   ! Description:
-  !   Computes a smoothed version of the max function using zt2zm/zm2zt, using
-  !   two 1d arrays as inputs.
+  !   Computes a smoothed version of the max function, using two 1d arrays as inputs.
+  !   For more details, see the interface in this file.
 
   ! References:
   !   See clubb:ticket:894, updated version: 965
@@ -1270,11 +1322,12 @@ module advance_helper_module
       input_var2          ! Units vary
       
     real( kind = core_rknd ), intent(in) :: &
-      smth_coef          
+      smth_coef           ! "intensity" of the smoothing. Should be of a similar magnitude to
+                          ! that of the data structures input_var1 and input_var2
 
   ! Output Variables
     real( kind = core_rknd ), dimension(ngrdcol, nz) :: &
-      output_var          ! Units vary
+      output_var          ! Same unit as input_var1 and input_var2
 
   !----------------------------------------------------------------------
 
@@ -1284,13 +1337,52 @@ module advance_helper_module
     return
   end function smooth_max_arrays
   
+!===============================================================================
+  function smooth_max_scalars( input_var1, input_var2, smth_coef ) &
+  result( output_var )
+
+  ! Description:
+  !   Computes a smoothed version of the max function, using two scalars as inputs.
+  !   For more details, see the interface in this file.
+
+  ! References:
+  !   See clubb:ticket: 965
+  !----------------------------------------------------------------------
+
+    use clubb_precision, only: &
+        core_rknd                     ! Constant(s)
+        
+    use constants_clubb, only: &
+        one_half
+
+    implicit none
+
+  ! Input Variables
+    real ( kind = core_rknd ), intent(in) :: &
+      input_var1, &       ! Units vary
+      input_var2, &       ! Units vary
+      smth_coef           ! "intensity" of the smoothing. Should be of a similar magnitude to
+                          ! that of the data structures input_var1 and input_var2
+
+  ! Output Variables
+    real( kind = core_rknd ) :: &
+      output_var          ! Same unit as input_var1 and input_var2
+
+  !----------------------------------------------------------------------
+
+    output_var = one_half * ( (input_var1+input_var2) + &
+                              sqrt((input_var1-input_var2)**2 + smth_coef**2) )
+
+    return
+  end function smooth_max_scalars
+  
   elemental function smooth_heaviside_peskin( input, smth_range ) &
     result( smth_output )
     
   ! Description:
   !   Computes a smoothed heaviside function as in 
-  !   [Lin, Lee et al., 2005, A level set characteristic Galerkin finite element 
-  !   method for free surface flows], equation (2)
+  !       [Lin, Lee et al., 2005, A level set characteristic Galerkin 
+  !       finite element method for free surface flows], equation (2)
   
   ! References:
   !   See clubb:ticket:965
@@ -1315,7 +1407,7 @@ module advance_helper_module
 
     ! Output Variables
     real( kind = core_rknd ) :: &
-      smth_output    ! Units vary
+      smth_output    ! Same units as input
       
   !----------------------------------------------------------------------
     if (input < -smth_range ) then 
