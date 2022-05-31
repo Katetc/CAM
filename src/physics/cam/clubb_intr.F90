@@ -429,7 +429,7 @@ module clubb_intr
                                               
   type(pdf_parameter), target, allocatable :: pdf_params_zm_chnk(:) ! PDF parameters on momentum levs. [units vary]
   
-  type(implicit_coefs_terms), target, allocatable :: pdf_implicit_coefs_terms_chnk(:,:) ! PDF impl. coefs. & expl. terms      [units vary]
+  type(implicit_coefs_terms), target, allocatable :: pdf_implicit_coefs_terms_chnk(:) ! PDF impl. coefs. & expl. terms      [units vary]
 #endif
 
   contains
@@ -1154,7 +1154,6 @@ end subroutine clubb_init_cnst
          print_clubb_config_flags_api, &
          setup_clubb_core_api, &
          init_pdf_params_api, &
-         init_pdf_implicit_coefs_terms_api, &
          time_precision, &
          core_rknd, &
          set_clubb_debug_level_api, &
@@ -1252,14 +1251,7 @@ end subroutine clubb_init_cnst
     allocate( &
        pdf_params_chnk(begchunk:endchunk),   &
        pdf_params_zm_chnk(begchunk:endchunk), &
-       pdf_implicit_coefs_terms_chnk(pcols,begchunk:endchunk) )
-    
-    do j = 1, pcols, 1
-       do l = begchunk, endchunk, 1
-          call init_pdf_implicit_coefs_terms_api( pverp+1-top_lev, sclr_dim, &
-                                                  pdf_implicit_coefs_terms_chnk(j,l) )
-       enddo ! l = begchunk, endchunk, 1
-    enddo ! j = 1, pcols, 1
+       pdf_implicit_coefs_terms_chnk(begchunk:endchunk) )
 
     ! ----------------------------------------------------------------- !
     ! Determine how many constituents CLUBB will transport.  Note that  
@@ -1901,6 +1893,7 @@ end subroutine clubb_init_cnst
         copy_multi_pdf_params_to_single, &
         pdf_parameter, &
         init_pdf_params_api, &
+        init_pdf_implicit_coefs_terms_api, &
         setup_grid_api
 
    use clubb_api_module, only: &
@@ -2464,6 +2457,11 @@ end subroutine clubb_init_cnst
      call init_pdf_params_api( pverp+1-top_lev, ncol, pdf_params_chnk(lchnk) )
      call init_pdf_params_api( pverp+1-top_lev, ncol, pdf_params_zm_chnk(lchnk) )
    end if
+   
+    if ( .not. allocated(pdf_implicit_coefs_terms_chnk(lchnk)%coef_wp4_implicit) ) then
+      call init_pdf_implicit_coefs_terms_api( pverp+1-top_lev, ncol, sclr_dim, &
+                                              pdf_implicit_coefs_terms_chnk(lchnk) )
+    end if
 
    ! Initialize the apply_const variable (note special logic is due to eularian backstepping)
    if (clubb_do_adv .and. (is_first_step() .or. all(wpthlp(1:ncol,1:pver)  ==  0._r8))) then
@@ -3213,7 +3211,7 @@ end subroutine clubb_init_cnst
             wp2up2_inout, wp2vp2_inout, ice_supersat_frac_inout, &
             um_pert_inout, vm_pert_inout, upwp_pert_inout, vpwp_pert_inout, &
             pdf_params_chnk(lchnk), pdf_params_zm_chnk(lchnk), &
-            pdf_implicit_coefs_terms_chnk(:,lchnk), &
+            pdf_implicit_coefs_terms_chnk(lchnk), &
             khzm_out, khzt_out, &
             qclvar_out, thlprcp_out, &
             wprcp_out, w_up_in_cloud_out, &
@@ -3256,7 +3254,7 @@ end subroutine clubb_init_cnst
             wp2up2_inout(:ncol,:), wp2vp2_inout(:ncol,:), ice_supersat_frac_inout(:ncol,:), &
             um_pert_inout(:ncol,:), vm_pert_inout(:ncol,:), upwp_pert_inout(:ncol,:), vpwp_pert_inout(:ncol,:), &
             pdf_params_chnk(lchnk), pdf_params_zm_chnk(lchnk), &
-            pdf_implicit_coefs_terms_chnk(:ncol,lchnk), &
+            pdf_implicit_coefs_terms_chnk(lchnk), &
             khzm_out(:ncol,:), khzt_out(:ncol,:), &
             qclvar_out(:ncol,:), thlprcp_out(:ncol,:), &
             wprcp_out(:ncol,:), w_up_in_cloud_out(:ncol,:),  &
