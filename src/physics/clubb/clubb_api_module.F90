@@ -993,9 +993,6 @@ contains
       upwp_pert_col, & ! perturbed <u'w'>    [m^2/s^2]
       vpwp_pert_col    ! perturbed <v'w'>    [m^2/s^2]
 
-    type(implicit_coefs_terms), dimension(1) :: &
-      pdf_implicit_coefs_terms_col    ! Implicit coefs / explicit terms [units vary]
-
 #ifdef GFDL
     real( kind = core_rknd ), dimension(1,gr%nz,sclr_dim) :: &  ! h1g, 2010-06-16
       sclrm_trsport_only_col  ! Passive scalar concentration due to pure transport [{units vary}/s]
@@ -1157,7 +1154,6 @@ contains
     vm_pert_col(1,:) = vm_pert
     upwp_pert_col(1,:) = upwp_pert
     vpwp_pert_col(1,:) = vpwp_pert
-    pdf_implicit_coefs_terms_col(1) = pdf_implicit_coefs_terms
 #ifdef GFDL
     RH_crit_col(1,:,:,:) = RH_crit
 #endif
@@ -1211,7 +1207,7 @@ contains
       wpup2_col, wpvp2_col, wp2up2_col, wp2vp2_col, ice_supersat_frac_col, & ! intent(inout)
       um_pert_col, vm_pert_col, upwp_pert_col, vpwp_pert_col, &            ! intent(inout)
       pdf_params, pdf_params_zm, &                            ! intent(inout)
-      pdf_implicit_coefs_terms_col, &                             ! intent(inout)
+      pdf_implicit_coefs_terms, &                             ! intent(inout)
 #ifdef GFDL
                RH_crit_col, & !h1g, 2010-06-16                    ! intent(inout)
                do_liquid_only_in_clubb, &                     ! intent(in)
@@ -1288,7 +1284,6 @@ contains
     wp2vp2 = wp2vp2_col(1,:)
     wp2up2 = wp2up2_col(1,:)
     ice_supersat_frac = ice_supersat_frac_col(1,:)
-    pdf_implicit_coefs_terms = pdf_implicit_coefs_terms_col(1)
 #ifdef GFDL
     sclrm_trsport_only = sclrm_trsport_only_col(1,:,:)
 #endif
@@ -1562,7 +1557,7 @@ contains
       pdf_params,    & ! PDF parameters (thermodynamic levels)    [units vary]
       pdf_params_zm    ! PDF parameters on momentum levels        [units vary]
 
-    type(implicit_coefs_terms), intent(inout), dimension(ngrdcol) :: &
+    type(implicit_coefs_terms), intent(inout) :: &
       pdf_implicit_coefs_terms    ! Implicit coefs / explicit terms [units vary]
 
 #ifdef GFDL
@@ -2081,7 +2076,7 @@ contains
   ! fill_holes_vertical - clips values of 'field' that are below 'threshold' as much as possible.
   !================================================================================================
 
-  subroutine fill_holes_vertical_api( gr, &
+  subroutine fill_holes_vertical_api( nz, dzm, dzt, &
     num_pts, threshold, field_grid, &
     rho_ds, rho_ds_zm, &
     field )
@@ -2091,8 +2086,15 @@ contains
      ! Type
 
     implicit none
-
-    type(grid), target, intent(in) :: gr
+    
+    integer, intent(in) :: &
+      nz
+    
+    real( kind = core_rknd ), dimension(nz) :: &
+      dzm, &  ! Spacing between thermodynamic grid levels; centered over
+              ! momentum grid levels
+      dzt     ! Spcaing between momentum grid levels; centered over
+              ! thermodynamic grid levels
 
     ! Input variables
     integer, intent(in) :: &
@@ -2106,15 +2108,15 @@ contains
     character(len=2), intent(in) :: &
       field_grid ! The grid of the field, either stats_zt or stats_zm
 
-    real( kind = core_rknd ), dimension(gr%nz), intent(in) ::  &
+    real( kind = core_rknd ), dimension(nz), intent(in) ::  &
       rho_ds,    & ! Dry, static density on thermodynamic levels    [kg/m^3]
       rho_ds_zm    ! Dry, static density on momentum levels         [kg/m^3]
 
     ! Input/Output variable
-    real( kind = core_rknd ), dimension(gr%nz), intent(inout) :: &
+    real( kind = core_rknd ), dimension(nz), intent(inout) :: &
       field  ! The field (e.g. wp2) that contains holes [Units same as threshold]
 
-    call fill_holes_vertical( gr, & ! intent(in)
+    call fill_holes_vertical( nz, dzm, dzt, & ! intent(in)
       num_pts, threshold, field_grid, & ! intent(in)
       rho_ds, rho_ds_zm, & ! intent(in)
       field ) ! intent(inout)
@@ -2875,7 +2877,7 @@ contains
   ! init_pdf_implicit_coefs_terms - allocates arrays for the PDF implicit
   ! coefficient and explicit terms.
   !================================================================================================
-  subroutine init_pdf_implicit_coefs_terms_api( nz, sclr_dim, &
+  subroutine init_pdf_implicit_coefs_terms_api( nz, ngrdcol, sclr_dim, &
                                                 pdf_implicit_coefs_terms )
 
     use pdf_parameter_module, only: &
@@ -2886,13 +2888,14 @@ contains
     ! Input Variables
     integer, intent(in) :: &
       nz,       & ! Number of vertical grid levels    [-]
+      ngrdcol,  & ! Number of grid columns            [-]
       sclr_dim    ! Number of scalar variables        [-]
 
     ! Output Variable
     type(implicit_coefs_terms), intent(out) :: &
       pdf_implicit_coefs_terms    ! Implicit coefs / explicit terms [units vary]
 
-    call init_pdf_implicit_coefs_terms( nz, sclr_dim, & ! intent(in)
+    call init_pdf_implicit_coefs_terms( nz, ngrdcol, sclr_dim, & ! intent(in)
                                         pdf_implicit_coefs_terms ) ! intent(out)
 
   end subroutine init_pdf_implicit_coefs_terms_api
