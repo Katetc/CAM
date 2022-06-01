@@ -6,7 +6,7 @@
 #
 #  To run with SILHS sampling enabled, add -s or --silhs before the case name
 #  e.g "./run_scam.bash -s atex"
-#
+# 
 ##########################################################
 # Variables
 CASE="scam_${@: -1}"
