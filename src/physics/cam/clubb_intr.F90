@@ -47,12 +47,6 @@ module clubb_intr
                                 
 !$omp threadprivate(stats_zt, stats_zm, stats_rad_zt, stats_rad_zm, stats_sfc)
 
-  type(grid), target :: dummy_gr
-  type(nu_vertical_res_dep), private, save :: dummy_nu_vert_res_dep   ! Vertical resolution dependent nu values
-  real(r8), private, save :: dummy_lmin
-
-!$omp threadprivate(dummy_gr)
-
 #endif
 
   private
@@ -1208,12 +1202,6 @@ end subroutine clubb_init_cnst
     logical, parameter :: l_input_fields = .false. ! Always false for CAM-CLUBB.
     logical, parameter :: l_update_pressure = .false. ! Always false for CAM-CLUBB.
 
-    real(r8)  :: zt_g(pverp+1-top_lev)          ! Height dummy array
-    real(r8)  :: zi_g(pverp+1-top_lev)          ! Height dummy array
-
-    ! CAM defines zi at the surface to be zero.
-    real(r8), parameter :: sfc_elevation = 0._r8
-
     integer :: nlev
 
     real(r8) :: &
@@ -1421,13 +1409,6 @@ end subroutine clubb_init_cnst
                               Richardson_num_max, a3_coef_min, &
                               clubb_params )
 
-    !  Fill in dummy arrays for height.  Note that these are overwrote
-    !  at every CLUBB step to physical values.    
-    do k=1,nlev+1
-       zt_g(k) = ((k-1)*1000._r8)-500._r8  !  this is dummy garbage
-       zi_g(k) = (k-1)*1000._r8            !  this is dummy garbage
-    enddo
-
     clubb_params(iC2rtthl) = clubb_C2rtthl
     clubb_params(iC8) = clubb_C8
     clubb_params(iC11) = clubb_c11
@@ -1482,8 +1463,6 @@ end subroutine clubb_init_cnst
            l_host_applies_sfc_fluxes, &                               ! In
            saturation_equation, &                                     ! In
            l_input_fields, &                                          ! In
-           l_implemented, grid_type, zi_g(2), zi_g(1), zi_g(nlev+1),& ! In
-           zi_g(1:nlev+1), zt_g(1:nlev+1), sfc_elevation, &           ! In
            clubb_config_flags%iiPDF_type, &                           ! In
            clubb_config_flags%ipdf_call_placement, &                  ! In
            clubb_config_flags%l_predict_upwp_vpwp, &                  ! In
@@ -1493,7 +1472,7 @@ end subroutine clubb_init_cnst
            clubb_config_flags%l_stability_correct_tau_zm, &           ! In
            clubb_config_flags%l_enable_relaxed_clipping, &            ! In
            clubb_config_flags%l_diag_Lscale_from_tau, &               ! In
-           dummy_gr, dummy_lmin, dummy_nu_vert_res_dep, err_code )    ! Out
+           err_code )    ! Out
 
     if ( err_code == clubb_fatal_error ) then
        call endrun('clubb_ini_cam:  FATAL ERROR CALLING SETUP_CLUBB_CORE')
