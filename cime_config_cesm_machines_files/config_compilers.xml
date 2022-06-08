@@ -1005,12 +1005,15 @@ using a fortran linker.
 </compiler>
 
 <compiler MACH="nelson">
+  <FFLAGS>
+    <append>-g -fbacktrace -fbounds-check -ffpe-trap=invalid,zero,overflow</append>
+  </FFLAGS>
   <SCC> $ENV{GFORTRAN_MPICH}/bin/mpicc </SCC>
   <SFC> $ENV{GFORTRAN_MPICH}/bin/mpif90 </SFC>
   <MPICC> $ENV{GFORTRAN_MPICH}/bin/mpicc  </MPICC>
   <MPIFC> $ENV{GFORTRAN_MPICH}/bin/mpif90 </MPIFC>
   <SLIBS>
-   <base> -L$ENV{GFORTRAN_NETCDF_FORTRAN}/lib -lnetcdff -L$ENV{GFORTRAN_NETCDF_C}/lib -lnetcdf -L/usr/local/lapack-3.8.0 -llapack -lrefblas </base>
+   <base> -L$ENV{GFORTRAN_NETCDF_FORTRAN}/lib -lnetcdff -L$ENV{GFORTRAN_NETCDF_C}/lib -lnetcdf -llapack -lblas </base>
   </SLIBS>
 </compiler>
 
