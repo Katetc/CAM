@@ -15,7 +15,7 @@ pipeline {
     stage('Make cprnc') {
       steps {
         dir(path: 'cime/tools/cprnc') {
-           sh 'bash -c "export LIB_NETCDF=/usr/local/NETCDF-Fortran-4.4.5-gfortran/lib; export INC_NETCDF=/usr/local/NETCDF-Fortran-4.4.5-gfortran/include; ../configure --macros-format=Makefile --mpilib=mpi-serial; source ./.env_mach_specific.sh; make"'
+           sh 'bash -c "export LIB_NETCDF=/usr/local/NETCDF-Fortran-4.5.3-gfortran/lib; export INC_NETCDF=/usr/local/NETCDF-Fortran-4.5.3-gfortran/include; ../configure --macros-format=Makefile --mpilib=mpi-serial; source ./.env_mach_specific.sh; make"'
         }
 
       }
