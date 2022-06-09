@@ -675,7 +675,7 @@ contains
       real(r8), parameter :: qsmall = 1.0e-18_r8  ! Microphysics cut-off for cloud
 
       integer :: i, j, k, ngrdcol, ncol, lchnk, stncol
-      integer :: begin_height(state%ngrdcol), end_height(state%ngrdcol) ! Output from setup_grid call
+      integer :: begin_height, end_height ! Output from setup_grid call
       real(r8) :: sfc_elevation(state%ngrdcol)  ! Surface elevation
       
       real(r8), dimension(state%ngrdcol,pverp-top_lev+1) :: zt_g, zi_g ! Thermo & Momentum grids for clubb
@@ -854,7 +854,7 @@ contains
       logical, parameter :: l_est_kessler_microphys = .false.
       logical, parameter :: l_outfld_subcol         = .false.
       
-      type(grid) :: gr(state%ngrdcol)
+      type(grid) :: gr
       
       type(precipitation_fractions) :: precip_fracs      
       
@@ -973,7 +973,7 @@ contains
       call setup_grid_api( pverp+1-top_lev, ncol, sfc_elevation(1:ncol), l_implemented,  & ! intent(in)
                            grid_type, zi_g(1:ncol,2), zi_g(1:ncol,1), zi_g(1:ncol,pverp+1-top_lev),   & ! intent(in)
                            zi_g(1:ncol,:), zt_g(1:ncol,:),                              & ! intent(in)
-                           gr(1:ncol), begin_height(1:ncol), end_height(1:ncol) )        
+                           gr, begin_height, end_height )        
          
       ! Calculate the distance between grid levels on the host model grid,
       ! using host model grid indices.
