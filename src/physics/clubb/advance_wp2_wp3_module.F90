@@ -789,19 +789,15 @@ module advance_wp2_wp3_module
                    rhs )                                                              ! intent(out)
     
     ! Calculated mean advection term for w'2
-    do i = 1, ngrdcol
-      call term_ma_zm_lhs( nz, wm_zm(i,:), & ! intent(in)
-                           gr%invrs_dzm(i,:), gr%weights_zm2zt(i,:,:),& ! In
-                           lhs_ma_zm(:,i,:) )                       ! intent(out)
-    end do
+    call term_ma_zm_lhs( nz, ngrdcol, wm_zm,              & ! intent(in)
+                         gr%invrs_dzm, gr%weights_zm2zt,  & ! In
+                         lhs_ma_zm )                        ! intent(out)
 
     ! Calculated mean advection term for w'3
-    do i = 1, ngrdcol
-      call term_ma_zt_lhs( nz, wm_zt(i,:), gr%weights_zt2zm(i,:,:), & ! intent(in)
-                           gr%invrs_dzt(i,:), gr%invrs_dzm(i,:),    & ! intent(in)
-                           l_upwind_xm_ma,                            & ! intent(in)
-                           lhs_ma_zt(:,i,:) )                           ! intent(out)
-    end do
+    call term_ma_zt_lhs( nz, ngrdcol, wm_zt, gr%weights_zt2zm, & ! intent(in)
+                         gr%invrs_dzt, gr%invrs_dzm,    & ! intent(in)
+                         l_upwind_xm_ma,                            & ! intent(in)
+                         lhs_ma_zt )                           ! intent(out)
 
     lhs_diff_zt(:,:,:) = lhs_diff_zt(:,:,:) * C12
 
@@ -3780,7 +3776,7 @@ module advance_wp2_wp3_module
             = + invrs_rho_ds_zt(i,k) &
                 * gr%invrs_dzt(i,k) &
                   * rho_ds_zm(i,k) * a1(i,k) * wp3_on_wp2(i,k) &
-                  * gr%weights_zt2zm(i,t_above,k)
+                  * gr%weights_zt2zm(i,k,t_above)
 
            ! Momentum superdiagonal: [ x wp2(k,<t+1>) ]
            lhs_ta_wp3(k_mdiag,i,k) &
@@ -3792,9 +3788,9 @@ module advance_wp2_wp3_module
            = + invrs_rho_ds_zt(i,k) &
                * gr%invrs_dzt(i,k) &
                  * ( rho_ds_zm(i,k) * a1(i,k) * wp3_on_wp2(i,k) &
-                     * gr%weights_zt2zm(i,t_below,k) &
+                     * gr%weights_zt2zm(i,k,t_below) &
                      - rho_ds_zm(i,k-1) * a1(i,k-1) * wp3_on_wp2(i,k-1) &
-                       * gr%weights_zt2zm(i,t_above,k-1) )
+                       * gr%weights_zt2zm(i,k-1,t_above) )
 
            ! Momentum subdiagonal: [ x wp2(k-1,<t+1>) ]
            lhs_ta_wp3(km1_mdiag,i,k) &
@@ -3806,7 +3802,7 @@ module advance_wp2_wp3_module
            = - invrs_rho_ds_zt(i,k) &
                * gr%invrs_dzt(i,k) &
                  * rho_ds_zm(i,k-1) * a1(i,k-1) * wp3_on_wp2(i,k-1) &
-                 * gr%weights_zt2zm(i,t_below,k-1)
+                 * gr%weights_zt2zm(i,k-1,t_below)
 
           end do
         end do
@@ -3882,7 +3878,7 @@ module advance_wp2_wp3_module
           = + invrs_rho_ds_zt(i,k) &
               * a1_zt(i,k) * gr%invrs_dzt(i,k) &
               * rho_ds_zm(i,k) * wp3_on_wp2(i,k) &
-              * gr%weights_zt2zm(i,t_above,k)
+              * gr%weights_zt2zm(i,k,t_above)
 
           ! Momentum superdiagonal: [ x wp2(k,<t+1>) ]
           lhs_ta_wp3(k_mdiag,i,k) &
@@ -3894,9 +3890,9 @@ module advance_wp2_wp3_module
           = + invrs_rho_ds_zt(i,k) &
               * a1_zt(i,k) * gr%invrs_dzt(i,k) &
                 * ( rho_ds_zm(i,k) * wp3_on_wp2(i,k) &
-                    * gr%weights_zt2zm(i,t_below,k) &
+                    * gr%weights_zt2zm(i,k,t_below) &
                     - rho_ds_zm(i,k-1) * wp3_on_wp2(i,k-1) &
-                      * gr%weights_zt2zm(i,t_above,k-1) )
+                      * gr%weights_zt2zm(i,k-1,t_above) )
 
           ! Momentum subdiagonal: [ x wp2(k-1,<t+1>) ]
           lhs_ta_wp3(km1_mdiag,i,k) &
@@ -3908,7 +3904,7 @@ module advance_wp2_wp3_module
           = - invrs_rho_ds_zt(i,k) &
               * a1_zt(i,k) * gr%invrs_dzt(i,k) &
               * rho_ds_zm(i,k-1) * wp3_on_wp2(i,k-1) &
-              * gr%weights_zt2zm(i,t_below,k-1)
+              * gr%weights_zt2zm(i,k-1,t_below)
 
         end do
       end do
