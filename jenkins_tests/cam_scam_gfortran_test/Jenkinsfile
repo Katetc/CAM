@@ -34,6 +34,8 @@ pipeline {
        steps {
           // The source step is done to bring in all the needed intel path variables to run the rest of the commands
           sh '''source /opt/intel/oneapi/setvars.sh --force
+                # ulimit line is here so that we can override the default stack limit so that the program can write larger files properly
+                ulimit -s 8388608
                 run_scripts/run_scam.bash -s arm97'''
        }
     }
