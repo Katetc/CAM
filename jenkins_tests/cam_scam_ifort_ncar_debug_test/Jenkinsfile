@@ -8,10 +8,13 @@ pipeline {
     }
     stage('Copy Config Files') {
       steps {
-         sh '''cp -rf cime_config_cesm_machines_files/config_machines.xml cime/config/cesm/machines/config_machines.xml
+         sh """#!/bin/bash
+               cp -rf cime_config_cesm_machines_files/config_machines.xml cime/config/cesm/machines/config_machines.xml
                cp -rf cime_config_cesm_machines_files/config_compilers.xml cime/config/cesm/machines/config_compilers.xml
-               //This sed command modifies the test script to use the intel machine configuration, and turn on debugging for the test. 
-               sed -i -e '14s/nelson/nelson_intel/' -e '89s/#//' -e '89s/FALSE/TRUE/' run_scripts/run_scam.bash'''
+               # This sed command modifies the test script to use the intel machine configuration, and turn on debugging for the test. 
+               sed -i '14s|nelson|nelson_intel|' run_scripts/run_scam.bash
+               sed -i '89s|#||' run_scripts/run_scam.bash
+               sed -i '89s|FALSE|TRUE|' run_scripts/run_scam.bash"""
        }
     }
     stage('Remove Old Output') {
