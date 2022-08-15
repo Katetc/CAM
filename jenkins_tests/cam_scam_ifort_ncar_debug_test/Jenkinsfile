@@ -49,7 +49,7 @@ pipeline {
         // This checks if the current test matches the name of the official test
         // We do this to prevent the branch tests and the clubb copy tests from removing its output
         // so they can be referenced later for debugging
-        if ( "${env.JOB_NAME}" == "cam_scam_gfortran_test" )
+        if ( "${env.JOB_NAME}" == "cam_scam_ifort_ncar_debug_test" )
           cleanWs(cleanWhenSuccess: true, cleanWhenFailure: true)
         
         sh 'chmod -R 755 /home/jenkins/cam_output/'
@@ -89,7 +89,7 @@ pipeline {
     }
     failure {
       script {
-        if ( "${env.JOB_NAME}" ==	"cam_scam_gfortran_test" )
+        if ( "${env.JOB_NAME}" ==	"cam_scam_ifort_ncar_debug_test" )
            // This command handles the email on failure feature of the jenkins test. This line is the same on every jenkins test.
 	   emailext(to: 'messnermet@uwm.edu', subject: "${env.JOB_NAME} build ${env.BUILD_NUMBER} has Failed", attachLog: true, body: "${env.JOB_NAME} build ${env.BUILD_NUMBER} has failed. See the attached build log and the build results (${env.BUILD_URL}) for help troubleshooting.")
       }
