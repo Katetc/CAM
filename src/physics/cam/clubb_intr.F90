@@ -2073,6 +2073,8 @@ end subroutine clubb_init_cnst
       wprcp_out,                & ! CLUBB output of flux of liquid water		[kg/kg m/s]
       w_up_in_cloud_out,        &
       w_down_in_cloud_out,      &
+      cloudy_updraft_frac_out,  &
+      cloudy_downdraft_frac_out,&
       rcm_in_layer_out,         & ! CLUBB output of in-cloud liq. wat. mix. ratio [kg/kg]
       cloud_cover_out,          & ! CLUBB output of in-cloud cloud fraction	[fraction]
       invrs_tau_zm_out,         & ! CLUBB output of 1 divided by time-scale	[1/s]
@@ -3213,6 +3215,7 @@ end subroutine clubb_init_cnst
           khzm_out, khzt_out, &
           qclvar_out, thlprcp_out, &
           wprcp_out, w_up_in_cloud_out, w_down_in_cloud_out,  &
+          cloudy_updraft_frac_out, cloudy_downdraft_frac_out, &
           rcm_in_layer_out, cloud_cover_out, invrs_tau_zm_out )
       
       ! Clubb does not accept err_code as as array yet. Whether or not it will in the future
