@@ -3524,6 +3524,12 @@ Include effects of precip evaporation on turbulent moments
 Default: .false.
 </entry>
 
+<entry id="clubb_updatetau" type="logical"  category="pblrad"
+       group="clubbpbl_diff_nl" valid_values="" >
+Update surface stress from near-surface winds and friction velocity within CLUBB loop
+Default: .false.
+</entry>
+
 
 <!-- Clubb timestep -->
 <entry id="clubb_timestep" type="real" category="pblrad"

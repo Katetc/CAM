@@ -314,6 +314,7 @@ module clubb_intr
   logical            :: lq(pcnst)
   logical            :: prog_modal_aero
   logical            :: do_rainturb
+  logical            :: do_updatetau
   logical            :: clubb_do_adv
   logical            :: clubb_do_liqsupersat = .false.
   logical            :: clubb_do_energyfix   = .true.
@@ -699,11 +700,12 @@ end subroutine clubb_init_cnst
 
     logical :: clubb_history = .false., clubb_rad_history = .false.  ! Stats enabled (T/F) 
     logical :: clubb_cloudtop_cooling = .false., clubb_rainevap_turb = .false.
+    logical :: clubb_updatetau = .false.
 
     integer :: iunit, read_status, ierr
     namelist /clubb_his_nl/ clubb_history, clubb_rad_history
     namelist /clubbpbl_diff_nl/ clubb_cloudtop_cooling, clubb_rainevap_turb, clubb_do_adv, clubb_timestep, &
-                                clubb_rnevap_effic, clubb_do_icesuper
+                                clubb_rnevap_effic, clubb_do_icesuper, clubb_updatetau
     namelist /clubb_params_nl/ clubb_c1, clubb_c1b, clubb_c11, clubb_c11b, clubb_c14, &
                                clubb_C_wp3_pr_turb, clubb_mult_coef, clubb_gamma_coef, &
                                clubb_c_K10, clubb_c_K10h, clubb_beta, clubb_C2rt, clubb_C2thl, &
@@ -746,7 +748,8 @@ end subroutine clubb_init_cnst
     l_output_rad_files = .false.   ! Initialize to false
     do_cldcool         = .false.   ! Initialize to false
     do_rainturb        = .false.   ! Initialize to false
-    
+    do_updatetau       = .false.   ! Initialize to false
+
     ! Initialize namelist variables to clubb defaults
     call set_default_clubb_config_flags_api( clubb_iiPDF_type, & ! Out
                                              clubb_ipdf_call_placement, & ! Out
@@ -852,6 +855,8 @@ end subroutine clubb_init_cnst
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_cloudtop_cooling")
     call mpi_bcast(clubb_rainevap_turb,          1, mpi_logical, mstrid, mpicom, ierr)
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_rainevap_turb")
+    call mpi_bcast(clubb_updatetau,              1, mpi_logical, mstrid, mpicom, ierr)
+    if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_updatetau")
     call mpi_bcast(clubb_do_adv,                 1, mpi_logical, mstrid, mpicom, ierr)
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_do_adv")
     call mpi_bcast(clubb_timestep,               1, mpi_real8,   mstrid, mpicom, ierr)
@@ -1042,7 +1047,8 @@ end subroutine clubb_init_cnst
     if (clubb_rad_history) l_output_rad_files = .true. 
     if (clubb_cloudtop_cooling) do_cldcool = .true.
     if (clubb_rainevap_turb) do_rainturb = .true.
-    
+    if (clubb_updatetau) do_updatetau = .true.
+
     ! Check that all namelists have been set
     if(clubb_timestep == unset_r8) call endrun(sub//": FATAL: clubb_timestep is not set")
     if(clubb_rnevap_effic == unset_r8) call endrun(sub//": FATAL:clubb_rnevap_effic  is not set")
@@ -2936,8 +2942,20 @@ end subroutine clubb_init_cnst
       wpthlp_sfc(i) = cam_in%shf(i)/(cpairv(i,pver,lchnk)*rho_zt(i,2))! Sensible heat flux
       wpthlp_sfc(i) = wpthlp_sfc(i)*inv_exner_clubb_surf(i)   ! Potential temperature flux
       wprtp_sfc(i)  = cam_in%cflx(i,1)/rho_zt(i,2)            ! Moisture flux  (check rho)
-      upwp_sfc(i)   = cam_in%wsx(i)/rho_zt(i,2)               ! Surface meridional momentum flux
-      vpwp_sfc(i)   = cam_in%wsy(i)/rho_zt(i,2)               ! Surface zonal momentum flux  
+
+      ! If true, calculate ustar and update taux and tauy based on most recent u/v available.
+      ! If false, use stress calculations from coupler via cam_in
+      if (do_updatetau) then
+        ubar = sqrt(state1%u(i,pver)**2+state1%v(i,pver)**2)
+        if (ubar <  0.25_r8) ubar = 0.25_r8                     ! Limit weak mean winds
+        call calc_ustar( state1%t(i,pver), state1%pmid(i,pver), cam_in%wsx(i), &
+                     cam_in%wsy(i), rrho(i), ustar )
+        upwp_sfc(i) = -state1%u(i,pver)*ustar**2/ubar           ! Surface zonal momentum flux
+        vpwp_sfc(i) = -state1%v(i,pver)*ustar**2/ubar           ! Surface meridional momentum flux
+      else
+        upwp_sfc(i)   = cam_in%wsx(i)/rho_zt(i,2)               ! Surface zonal momentum flux
+        vpwp_sfc(i)   = cam_in%wsy(i)/rho_zt(i,2)               ! Surface meridional momentum flux
+      end if
     end do
 
     ! Perturbed winds are not used in CAM
