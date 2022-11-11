@@ -3096,6 +3096,7 @@ if ($clubb_sgs  =~ /$TRUE/io) {
    add_default($nl, 'clubb_do_energyfix');
    add_default($nl, 'clubb_cloudtop_cooling');
    add_default($nl, 'clubb_rainevap_turb');
+   add_default($nl, 'clubb_updatetau');
    add_default($nl, 'clubb_rnevap_effic');
 
    add_default($nl, 'clubb_timestep');
