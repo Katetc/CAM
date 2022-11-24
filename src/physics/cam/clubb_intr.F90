@@ -174,8 +174,10 @@ module clubb_intr
                                  ! (double Gaussian) PDF type to use for the w, rt,
                                  ! and theta-l (or w, chi, and eta) portion of
                                  ! CLUBB's multivariate, two-component PDF.
-    clubb_ipdf_call_placement    ! Selected option for the placement of the call to
+    clubb_ipdf_call_placement, & ! Selected option for the placement of the call to
                                  ! CLUBB's PDF.
+    clubb_penta_solve_method,  & ! Specifier for method to solve then penta-diagonal system
+    clubb_tridiag_solve_method   ! Specifier for method to solve tri-diagonal systems
 
    
   logical :: &
@@ -710,6 +712,7 @@ end subroutine clubb_init_cnst
                                clubb_gamma_coefb, clubb_up2_sfc_coef, clubb_detliq_rad, clubb_detice_rad, &
                                clubb_detphase_lowtemp, &
                                clubb_iiPDF_type, clubb_ipdf_call_placement, &
+                               clubb_penta_solve_method, clubb_tridiag_solve_method, &
                                clubb_l_use_precip_frac, clubb_l_predict_upwp_vpwp, &
                                clubb_l_min_wp2_from_corr_wx, clubb_l_min_xp2_from_corr_wx, &
                                clubb_l_C2_cloud_frac, clubb_l_diffuse_rtm_and_thlm, &
@@ -749,6 +752,8 @@ end subroutine clubb_init_cnst
     ! Initialize namelist variables to clubb defaults
     call set_default_clubb_config_flags_api( clubb_iiPDF_type, & ! Out
                                              clubb_ipdf_call_placement, & ! Out
+                                             clubb_penta_solve_method, & ! Out
+                                             clubb_tridiag_solve_method, & ! Out
                                              clubb_l_use_precip_frac, & ! Out
                                              clubb_l_predict_upwp_vpwp, & ! Out
                                              clubb_l_min_wp2_from_corr_wx, & ! Out
@@ -1079,6 +1084,8 @@ end subroutine clubb_init_cnst
 
     call initialize_clubb_config_flags_type_api( clubb_iiPDF_type, & ! In
                                                  clubb_ipdf_call_placement, & ! In
+                                                 clubb_penta_solve_method, & ! In
+                                                 clubb_tridiag_solve_method, & ! In
                                                  clubb_l_use_precip_frac, & ! In
                                                  clubb_l_predict_upwp_vpwp, & ! In
                                                  clubb_l_min_wp2_from_corr_wx, & ! In
