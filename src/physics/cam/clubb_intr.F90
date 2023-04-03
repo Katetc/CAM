@@ -280,7 +280,9 @@ module clubb_intr
                                           ! Looking at issue #905 on the clubb repo
     clubb_l_use_tke_in_wp3_pr_turb_term,& ! Use TKE formulation for wp3 pr_turb term
     clubb_l_use_tke_in_wp2_wp3_K_dfsn,  & ! Use TKE in eddy diffusion for wp2 and wp3
+    clubb_l_use_wp3_lim_with_smth_Heaviside, & ! Flag to activate mods on wp3 limiters for conv test
     clubb_l_smooth_Heaviside_tau_wpxp,  & ! Use smooth Heaviside 'Peskin' in computation of invrs_tau
+    clubb_l_modify_limiters_for_cnvg_test, & ! Flag to activate mods on limiters for conv test
     clubb_l_enable_relaxed_clipping,    & ! Flag to relax clipping on wpxp in xm_wpxp_clipping_and_stats
     clubb_l_linearize_pbl_winds,        & ! Code to linearize PBL winds
     clubb_l_single_C2_Skw,              & ! Use a single Skewness dependent C2 for rtp2, thlp2, and
@@ -735,7 +737,8 @@ end subroutine clubb_init_cnst
                                clubb_l_prescribed_avg_deltaz, clubb_l_lmm_stepping, & 
                                clubb_l_e3sm_config, clubb_l_vary_convect_depth, & 
                                clubb_l_use_tke_in_wp3_pr_turb_term, clubb_l_use_tke_in_wp2_wp3_K_dfsn, &
-                               clubb_l_smooth_Heaviside_tau_wpxp, clubb_l_mono_flux_lim_thlm, &
+                               clubb_l_use_wp3_lim_with_smth_Heaviside, clubb_l_smooth_Heaviside_tau_wpxp, &
+                               clubb_l_modify_limiters_for_cnvg_test, clubb_l_mono_flux_lim_thlm, &
                                clubb_l_mono_flux_lim_rtm, clubb_l_mono_flux_lim_um, &
                                clubb_l_mono_flux_lim_vm, clubb_l_mono_flux_lim_spikefix
 
@@ -798,7 +801,9 @@ end subroutine clubb_init_cnst
                                              clubb_l_vary_convect_depth, & ! Out
                                              clubb_l_use_tke_in_wp3_pr_turb_term, & ! Out
                                              clubb_l_use_tke_in_wp2_wp3_K_dfsn, & ! Out
+                                             clubb_l_use_wp3_lim_with_smth_Heaviside, & ! Out
                                              clubb_l_smooth_Heaviside_tau_wpxp, & ! Out
+                                             clubb_l_modify_limiters_for_cnvg_test, & ! Out
                                              clubb_l_enable_relaxed_clipping, & ! Out
                                              clubb_l_linearize_pbl_winds, & ! Out
                                              clubb_l_mono_flux_lim_thlm, & ! Out
@@ -1011,8 +1016,12 @@ end subroutine clubb_init_cnst
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_l_use_tke_in_wp3_pr_turb_term")
     call mpi_bcast(clubb_l_use_tke_in_wp2_wp3_K_dfsn,   1, mpi_logical, mstrid, mpicom, ierr)
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_l_use_tke_in_wp2_wp3_K_dfsn")
+    call mpi_bcast(clubb_l_use_wp3_lim_with_smth_Heaviside, 1, mpi_logical, mstrid, mpicom, ierr)
+    if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_l_use_wp3_lim_with_smth_Heaviside")
     call mpi_bcast(clubb_l_smooth_Heaviside_tau_wpxp,   1, mpi_logical, mstrid, mpicom, ierr)
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_l_smooth_Heaviside_tau_wpxp")
+    call mpi_bcast(clubb_l_modify_limiters_for_cnvg_test, 1, mpi_logical, mstrid, mpicom, ierr)
+    if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_l_modify_limiters_for_cnvg_test")
     call mpi_bcast(clubb_l_mono_flux_lim_thlm,   1, mpi_logical, mstrid, mpicom, ierr)
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_l_mono_flux_lim_thlm")
     call mpi_bcast(clubb_l_mono_flux_lim_rtm,   1, mpi_logical, mstrid, mpicom, ierr)
@@ -1130,7 +1139,9 @@ end subroutine clubb_init_cnst
                                                  clubb_l_vary_convect_depth, & ! In
                                                  clubb_l_use_tke_in_wp3_pr_turb_term, & ! In
                                                  clubb_l_use_tke_in_wp2_wp3_K_dfsn, & ! In 
+                                                 clubb_l_use_wp3_lim_with_smth_Heaviside, & ! In
                                                  clubb_l_smooth_Heaviside_tau_wpxp, & ! In
+                                                 clubb_l_modify_limiters_for_cnvg_test, & ! In
                                                  clubb_l_enable_relaxed_clipping, & ! In
                                                  clubb_l_linearize_pbl_winds, & ! In
                                                  clubb_l_mono_flux_lim_thlm, & ! In
