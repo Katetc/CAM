@@ -33,7 +33,7 @@ module subcol_SILHS
         silhs_config_flags_type
 #endif
 #endif
-   use physconst,     only: cpair, gravit, latvap, latice, rair
+   use physconst,     only: cpair, gravit, latvap, latice, rair, rga, cappa
 
    implicit none
    private
@@ -55,8 +55,8 @@ module subcol_SILHS
    private :: meansc
    private :: stdsc
    
-   type (stats), target, save :: stats_lh_zt,   &
-                                 stats_lh_sfc
+   type (stats), target :: stats_lh_zt,   &
+                           stats_lh_sfc
    !$omp threadprivate(stats_lh_zt, stats_lh_sfc)
 #endif
 
@@ -140,7 +140,6 @@ contains
 #ifdef CLUBB_SGS
 #ifdef SILHS
       use namelist_utils,   only: find_group_name
-      use units,            only: getunit, freeunit
       use spmd_utils,       only: masterproc, masterprocid, mpicom
       use spmd_utils,       only: mpi_integer, mpi_logical, mpi_character, mpir8, iam
       use clubb_api_module, only: core_rknd
@@ -155,6 +154,23 @@ contains
       integer :: unitn, ierr
 #ifdef CLUBB_SGS
 #ifdef SILHS
+
+      integer :: &
+          cluster_allocation_strategy
+
+      logical :: &
+          subcol_silhs_l_lh_importance_sampling, &
+          subcol_silhs_l_Lscale_vert_avg, &
+          subcol_silhs_l_lh_straight_mc, &
+          subcol_silhs_l_lh_clustered_sampling, &
+          subcol_silhs_l_rcm_in_cloud_k_lh_start, &
+          subcol_silhs_l_random_k_lh_start, &
+          subcol_silhs_l_max_overlap_in_cloud, &
+          subcol_silhs_l_lh_instant_var_covar_src, &
+          subcol_silhs_l_lh_limit_weights, &
+          subcol_silhs_l_lh_var_frac, &
+          subcol_silhs_l_lh_normalize_weights
+
       namelist /subcol_SILHS_nl/ subcol_SILHS_weight, &
                                  subcol_SILHS_numsubcol, &
                                  subcol_SILHS_corr_file_path, &
@@ -172,33 +188,17 @@ contains
 !                                 subcol_SILHS_c8, subcol_SILHS_c11, subcol_SILHS_c11b, &
 !                                 subcol_SILHS_gamma_coef, subcol_SILHS_mult_coef, subcol_SILHS_mu
 
-     namelist /silhs_config_flags_nl/ l_lh_importance_sampling, &
-                                      l_Lscale_vert_avg, &
-                                      l_lh_straight_mc, &
-                                      l_lh_clustered_sampling, &
-                                      l_rcm_in_cloud_k_lh_start, &
-                                      l_random_k_lh_start, &
-                                      l_max_overlap_in_cloud, &
-                                      l_lh_instant_var_covar_src, &
-                                      l_lh_limit_weights, &
-                                      l_lh_var_frac, &
-                                      l_lh_normalize_weights
-
-      integer :: &
-          cluster_allocation_strategy
-
-      logical :: &
-          l_lh_importance_sampling, &
-          l_Lscale_vert_avg, &
-          l_lh_straight_mc, &
-          l_lh_clustered_sampling, &
-          l_rcm_in_cloud_k_lh_start, &
-          l_random_k_lh_start, &
-          l_max_overlap_in_cloud, &
-          l_lh_instant_var_covar_src, &
-          l_lh_limit_weights, &
-          l_lh_var_frac, &
-          l_lh_normalize_weights
+     namelist /silhs_config_flags_nl/ subcol_silhs_l_lh_importance_sampling, &
+                                      subcol_silhs_l_Lscale_vert_avg, &
+                                      subcol_silhs_l_lh_straight_mc, &
+                                      subcol_silhs_l_lh_clustered_sampling, &
+                                      subcol_silhs_l_rcm_in_cloud_k_lh_start, &
+                                      subcol_silhs_l_random_k_lh_start, &
+                                      subcol_silhs_l_max_overlap_in_cloud, &
+                                      subcol_silhs_l_lh_instant_var_covar_src, &
+                                      subcol_silhs_l_lh_limit_weights, &
+                                      subcol_silhs_l_lh_var_frac, &
+                                      subcol_silhs_l_lh_normalize_weights
 
       !-----------------------------------------------------------------------------
       ! Set defaults
@@ -208,8 +208,7 @@ contains
       subcol_SILHS_hmp2_ip_on_hmm2_ip_intrcpt%Ni = 0.5_core_rknd
 
       if (masterproc) then
-         unitn = getunit()
-         open( unitn, file=trim(nlfile), status='old' )
+         open( newunit=unitn, file=trim(nlfile), status='old' )
          call find_group_name(unitn, 'subcol_SILHS_nl', status=ierr)
          if (ierr == 0) then
             read(unitn, subcol_SILHS_nl, iostat=ierr)
@@ -218,27 +217,25 @@ contains
             end if
          end if
          close(unitn)
-         call freeunit(unitn)
       end if
 
       ! Set default silhs_config_flags entires
       call set_default_silhs_config_flags_api( cluster_allocation_strategy, &
-                                               l_lh_importance_sampling, &
-                                               l_Lscale_vert_avg, &
-                                               l_lh_straight_mc, &
-                                               l_lh_clustered_sampling, &
-                                               l_rcm_in_cloud_k_lh_start, &
-                                               l_random_k_lh_start, &
-                                               l_max_overlap_in_cloud, &
-                                               l_lh_instant_var_covar_src, &
-                                               l_lh_limit_weights, &
-                                               l_lh_var_frac, &
-                                               l_lh_normalize_weights )
+                                               subcol_silhs_l_lh_importance_sampling, &
+                                               subcol_silhs_l_Lscale_vert_avg, &
+                                               subcol_silhs_l_lh_straight_mc, &
+                                               subcol_silhs_l_lh_clustered_sampling, &
+                                               subcol_silhs_l_rcm_in_cloud_k_lh_start, &
+                                               subcol_silhs_l_random_k_lh_start, &
+                                               subcol_silhs_l_max_overlap_in_cloud, &
+                                               subcol_silhs_l_lh_instant_var_covar_src, &
+                                               subcol_silhs_l_lh_limit_weights, &
+                                               subcol_silhs_l_lh_var_frac, &
+                                               subcol_silhs_l_lh_normalize_weights )
 
       ! Get silhs_config_flags entries from namelist
       if (masterproc) then
-        unitn = getunit()
-        open( unitn, file=trim(nlfile), status='old' )
+        open( newunit=unitn, file=trim(nlfile), status='old' )
         call find_group_name(unitn, 'silhs_config_flags_nl', status=ierr)
         if (ierr == 0) then
           read(unitn, silhs_config_flags_nl, iostat=ierr)
@@ -247,26 +244,24 @@ contains
           end if
         end if
         close(unitn)
-        call freeunit(unitn)
       end if
 
       ! Save silhs_config_flags entries into module variable silhs_config_flags
       call initialize_silhs_config_flags_type_api( cluster_allocation_strategy, &
-                                                   l_lh_importance_sampling, &
-                                                   l_Lscale_vert_avg, &
-                                                   l_lh_straight_mc, &
-                                                   l_lh_clustered_sampling, &
-                                                   l_rcm_in_cloud_k_lh_start, &
-                                                   l_random_k_lh_start, &
-                                                   l_max_overlap_in_cloud, &
-                                                   l_lh_instant_var_covar_src, &
-                                                   l_lh_limit_weights, &
-                                                   l_lh_var_frac, &
-                                                   l_lh_normalize_weights, &
+                                                   subcol_silhs_l_lh_importance_sampling, &
+                                                   subcol_silhs_l_Lscale_vert_avg, &
+                                                   subcol_silhs_l_lh_straight_mc, &
+                                                   subcol_silhs_l_lh_clustered_sampling, &
+                                                   subcol_silhs_l_rcm_in_cloud_k_lh_start, &
+                                                   subcol_silhs_l_random_k_lh_start, &
+                                                   subcol_silhs_l_max_overlap_in_cloud, &
+                                                   subcol_silhs_l_lh_instant_var_covar_src, &
+                                                   subcol_silhs_l_lh_limit_weights, &
+                                                   subcol_silhs_l_lh_var_frac, &
+                                                   subcol_silhs_l_lh_normalize_weights, &
                                                    silhs_config_flags )
 
       ! Print the SILHS configurable flags
-      !write(iulog,'(a,i0,a)') " SILHS configurable flags set in thread ", iam, ":"
       call print_silhs_config_flags_api( iulog, silhs_config_flags ) ! Intent(in)
 
 #ifdef SPMD
@@ -335,7 +330,6 @@ contains
 
       use physics_buffer,          only: physics_buffer_desc, pbuf_get_field, &
                                          dtype_r8, pbuf_get_index
-      use units,                   only: getunit, freeunit 
 #ifdef CLUBB_SGS
 #ifdef SILHS
       use clubb_api_module,        only: core_rknd, &
@@ -478,17 +472,12 @@ contains
       corr_file_path_cloud = trim( subcol_SILHS_corr_file_path )//trim( subcol_SILHS_corr_file_name )//cloud_file_ext
       corr_file_path_below = trim( subcol_SILHS_corr_file_path )//trim( subcol_SILHS_corr_file_name )//below_file_ext
 
-      iunit = getunit()
-
-
       call setup_corr_varnce_array_api( corr_file_path_cloud, corr_file_path_below, &
-                                        iunit, &
+                                        getnewunit(iunit), &
                                         clubb_config_flags%l_fix_w_chi_eta_correlations )
-      call freeunit(iunit) 
 
       !-------------------------------
       ! Register output fields from SILHS
-      ! #KTCtodo: Remove these from the default output list
       !-------------------------------
       call addfld('SILHS_NCLD_SCOL', (/'psubcols', 'ilev    '/), 'I', 'm^-3', &
            'Subcolumn Cloud Number Concentration', flag_xyfill=.true., fill_value=1.e30_r8)
@@ -515,9 +504,9 @@ contains
 
       call addfld('NR_IN_LH', (/ 'lev' /), 'I', 'm^-3', &
                   'Num Rain Conc as input to SILHS')
-     call addfld('RTM_CLUBB', (/ 'ilev' /), 'I', 'kg/kg', &
+     call addfld('SILHS_RTM', (/ 'ilev' /), 'I', 'kg/kg', &
                   'Input total water mixing ratio')
-     call addfld('THLM_CLUBB', (/ 'ilev' /), 'I', 'K', &
+     call addfld('SILHS_THLM', (/ 'ilev' /), 'I', 'K', &
                   'Input liquid water potential temperature')
      call addfld('SILHS_QC_IN', (/ 'lev' /), 'I', 'kg/kg', &
                   'Input cloud water mixing ratio')
@@ -862,7 +851,7 @@ contains
       !                     Begin Code
       !------------------------------------------------
       
-#ifdef _OPENACC
+#ifdef SILHS_OPENACC
       if ( l_est_kessler_microphys ) then
         call endrun('subcol_gen error: compilation with OpenACC requires l_est_kessler_microphys = .false.')
       end if
@@ -931,13 +920,8 @@ contains
       ! for SILHS here and then set again for CLUBB in subroutine clubb_tend_cam.
       gr%nz = pverp - top_lev + 1
       
-      ! Calculate radiation only once in a while
-      ! l_rad_itime = (mod( itime, floor(dt_rad/dt_main) ) == 0 .or. itime == 1)  
-
       ! Calculate sample weights separately at all grid levels when
       ! radiation is not called  
-      ! l_calc_weights_all_levs_itime = l_calc_weights_all_levs .and. .not.
-      ! l_rad_itime  
       l_calc_weights_all_levs_itime = .false. ! subcol_utils cannot compute weighted avgs
                                               !   when the weights vary with height.   
                                               !   Don't set to true until this is fixed!!
@@ -996,7 +980,7 @@ contains
       ! Compute dry static density on CLUBB vertical grid
       do k = 1, pver-top_lev+1
         do i = 1, ngrdcol
-          rho_ds_zt(i,k+1) = (1._r8/gravit)*state%pdel(i,pver-k+1)/dz_g(i,pver-k+1)
+          rho_ds_zt(i,k+1) = (rga)*state%pdel(i,pverp-k)/dz_g(i,pverp-k)
           
           ! CLUBB ghost point under the surface
           rho_ds_zt(i,1) = rho_ds_zt(i,2)
@@ -1120,7 +1104,7 @@ contains
       !  the subcolumn state)
       do k = 1, pver-top_lev+1
         do i = 1, ngrdcol
-          invs_exner(i,k) = ((state%pmid(i,k)/p0_clubb)**(rair/cpair))
+          invs_exner(i,k) = ((state%pmid(i,k)/p0_clubb)**(cappa))
         end do
       end do
      
@@ -1225,6 +1209,7 @@ contains
       !$acc&             NRAIN_lh_out, SNOW_lh_out, NSNOW_lh_out, WM_lh_out, &
       !$acc&             OMEGA_lh_out ) &
       !$acc&     copyin( state, state%zm, state%phis, rho_ds_zt, invs_exner ) &
+      !$acc&     copyout( state%t, state%s, state%omega, state_sc%q )
       !$acc& async(1)
       
       ! Set the seed to the random number generator based on a quantity that
@@ -1264,15 +1249,6 @@ contains
        
       if ( l_est_kessler_microphys ) then
         call endrun('subcol_SILHS: l_est_kessler_microphys = T is not currently supported')
-        !do i = 1, ngrdcol
-          ! Test subcolumns by comparing to an estimate of kessler autoconversion
-        !  call est_kessler_microphys_api &
-        !        ( pverp-top_lev+1, num_subcols, pdf_dim, X_nl_all_levs(i,:,:,:), &
-        !          pdf_params_chnk(i,lchnk), &
-        !          rcm_in(i,:), cld_frac_in(i,:), X_mixt_comp_all_levs(i,:,:), lh_sample_point_weights(i,:,:), &
-        !          silhs_config_flags%l_lh_importance_sampling, &
-        !          lh_AKm(i,:), AKm(i,:), AKstd(i,:), AKstd_cld(i,:), AKm_rcm(i,:), AKm_rcc(i,:), lh_rcm_avg(i,:))
-        !end do
       end if
 
       !-------------------------------------------------------------------------
@@ -1502,10 +1478,12 @@ contains
             do i = 1, ngrdcol
               state_sc%q(num_subcols*(i-1)+j,k,ixcldliq) = state%q(i,k,ixcldliq)
               state_sc%q(num_subcols*(i-1)+j,k,ixcldice) = state%q(i,k,ixcldice)
-              if (ixrain > 0) &
-                state_sc%q(num_subcols*(i-1)+j,k,ixrain) = state%q(i,k,ixrain)
-              if (ixsnow > 0) &
-                state_sc%q(num_subcols*(i-1)+j,k,ixsnow) = state%q(i,k,ixsnow)
+              if (ixrain > 0) then
+                 state_sc%q(num_subcols*(i-1)+j,k,ixrain) = state%q(i,k,ixrain)
+              end if
+              if (ixsnow > 0) then
+                 state_sc%q(num_subcols*(i-1)+j,k,ixsnow) = state%q(i,k,ixsnow)
+              end if
             end do
           end do
         end do
@@ -1559,10 +1537,12 @@ contains
             do i = 1, ngrdcol
               state_sc%q(num_subcols*(i-1)+j,k,ixnumliq) = state%q(i,k,ixnumliq)
               state_sc%q(num_subcols*(i-1)+j,k,ixnumice) = state%q(i,k,ixnumice)
-              if (ixnumrain > 0) &
-                state_sc%q(num_subcols*(i-1)+j,k,ixnumrain) = state%q(i,k,ixnumrain)
-              if (ixnumsnow > 0) &
-                state_sc%q(num_subcols*(i-1)+j,k,ixnumsnow) = state%q(i,k,ixnumsnow)
+              if (ixnumrain > 0) then
+                 state_sc%q(num_subcols*(i-1)+j,k,ixnumrain) = state%q(i,k,ixnumrain)
+              end if
+              if (ixnumsnow > 0) then
+                 state_sc%q(num_subcols*(i-1)+j,k,ixnumsnow) = state%q(i,k,ixnumsnow)
+              end if
             end do
           end do
         end do
@@ -1594,8 +1574,8 @@ contains
         do k = 1, pver-top_lev+1
           do j = 1, num_subcols   
             do i = 1, ngrdcol   
-              if(state_sc%q(num_subcols*(i-1)+j,k,ixnumrain) .lt. min_num_conc) then
-                 state_sc%q(num_subcols*(i-1)+j,k,ixnumrain) = min_num_conc
+               if(state_sc%q(num_subcols*(i-1)+j,k,ixnumrain) .lt. min_num_conc) then
+                  state_sc%q(num_subcols*(i-1)+j,k,ixnumrain) = min_num_conc
                end if
             end do
           end do
@@ -1657,8 +1637,8 @@ contains
         call outfld( 'SILHS_NRAIN_SCOL', NRAIN_lh_out, pcols*psubcols, lchnk )
         call outfld( 'SILHS_WEIGHT_SCOL', weights, pcols*psubcols, lchnk )
         call outfld( 'NR_IN_LH', nrain, pcols, lchnk )
-        call outfld( 'RTM_CLUBB', rtm, pcols, lchnk )
-        call outfld( 'THLM_CLUBB', thlm, pcols, lchnk )
+        call outfld( 'SILHS_RTM', rtm, pcols, lchnk )
+        call outfld( 'SILHS_THLM', thlm, pcols, lchnk )
         call outfld( 'SILHS_QC_IN', state%q(:,:,ixcldliq), pcols, lchnk )
         call outfld( 'SILHS_QI_IN', state%q(:,:,ixcldice), pcols, lchnk )
         call outfld( 'SILHS_NC_IN', state%q(:,:,ixnumliq), pcols, lchnk )
@@ -1784,7 +1764,7 @@ contains
        wpthlp_mc_zt_idx,  &
        rtpthlp_mc_zt_idx
        
-     type(pdf_parameter):: pdf_params_single_col
+     type(pdf_parameter) :: pdf_params_single_col
 
      !----- Begin Code -----
      
@@ -1846,7 +1826,7 @@ contains
            ! Compute dry static density on CLUBB vertical grid
            do k = top_lev, pver
               dz_g(igrdcol,isubcol,k) = zi_all(igrdcol,isubcol,k) - zi_all(igrdcol,isubcol,k+1) ! thickness
-              rho(igrdcol,isubcol,k) = (1._r8/gravit)*pdel_all(igrdcol,isubcol,k)/dz_g(igrdcol,isubcol,k)
+              rho(igrdcol,isubcol,k) = (rga)*pdel_all(igrdcol,isubcol,k)/dz_g(igrdcol,isubcol,k)
            end do
 
            ! Compute w from omega
@@ -2416,18 +2396,18 @@ contains
                     + ptend%q(icol,k,ixcldliq) * dt &
                     + state%q(icol,k,ixcldice) &
                     + ptend%q(icol,k,ixcldice) * dt ) &
-                  * state%pdel(icol,k) / gravit
+                  * state%pdel(icol,k) * rga
               if ( ixrain > 0 ) then
                  grand_total_water_column_start(icol) &
                  = grand_total_water_column_start(icol) &
                    + ( state%q(icol,k,ixrain) + ptend%q(icol,k,ixrain) * dt ) &
-                     * state%pdel(icol,k) / gravit
+                     * state%pdel(icol,k) * rga
               endif
               if ( ixsnow > 0 ) then
                  grand_total_water_column_start(icol) &
                  = grand_total_water_column_start(icol) &
                    + ( state%q(icol,k,ixsnow) + ptend%q(icol,k,ixsnow) * dt ) &
-                     * state%pdel(icol,k) / gravit
+                     * state%pdel(icol,k) * rga
               endif
            end do ! k = top_lev, pver
            grand_total_water_column_start(icol) &
@@ -2451,13 +2431,13 @@ contains
                       * ( state%q(icol,k,1) + ptend%q(icol,k,1) * dt ) &
                     + latice * ( state%q(icol,k,ixcldliq) &
                                  + ptend%q(icol,k,ixcldliq) * dt ) ) &
-                  * state%pdel(icol,k) / gravit
+                  * state%pdel(icol,k) * rga
               if ( ixrain > 0 ) then
                  total_energy_column_start(icol) &
                  = total_energy_column_start(icol) &
                    + latice * ( state%q(icol,k,ixrain) &
                                 + ptend%q(icol,k,ixrain) * dt ) &
-                     * state%pdel(icol,k) / gravit
+                     * state%pdel(icol,k) * rga
               endif
            end do ! k = top_lev, pver
            total_energy_column_start(icol) &
@@ -3253,18 +3233,18 @@ contains
                     + ptend%q(icol,k,ixcldliq) * dt &
                     + state%q(icol,k,ixcldice) &
                     + ptend%q(icol,k,ixcldice) * dt ) &
-                  * state%pdel(icol,k) / gravit
+                  * state%pdel(icol,k) * rga
               if ( ixrain > 0 ) then
                  grand_total_water_column_finish(icol) &
                  = grand_total_water_column_finish(icol) &
                    + ( state%q(icol,k,ixrain) + ptend%q(icol,k,ixrain) * dt ) &
-                     * state%pdel(icol,k) / gravit
+                     * state%pdel(icol,k) * rga
               endif
               if ( ixsnow > 0 ) then
                  grand_total_water_column_finish(icol) &
                  = grand_total_water_column_finish(icol) &
                    + ( state%q(icol,k,ixsnow) + ptend%q(icol,k,ixsnow) * dt ) &
-                     * state%pdel(icol,k) / gravit
+                     * state%pdel(icol,k) * rga
               endif
            end do ! k = top_lev, pver
            grand_total_water_column_finish(icol) &
@@ -3289,13 +3269,13 @@ contains
                       * ( state%q(icol,k,1) + ptend%q(icol,k,1) * dt ) &
                     + latice * ( state%q(icol,k,ixcldliq) &
                                  + ptend%q(icol,k,ixcldliq) * dt ) ) &
-                  * state%pdel(icol,k) / gravit
+                  * state%pdel(icol,k) * rga
               if ( ixrain > 0 ) then
                  total_energy_column_finish(icol) &
                  = total_energy_column_finish(icol) &
                    + latice * ( state%q(icol,k,ixrain) &
                                 + ptend%q(icol,k,ixrain) * dt ) &
-                     * state%pdel(icol,k) / gravit
+                     * state%pdel(icol,k) * rga
               endif
            end do ! k = top_lev, pver
            total_energy_column_finish(icol) &
@@ -3499,7 +3479,7 @@ contains
                  ! to be filled.
                  ! The value of the hydrometeor mixing ratio is negative, but
                  ! the value of total_hole is positive.
-                 total_hole = ( qmin_hm - hm_curr(k) ) * pdel(icol,k) / gravit
+                 total_hole = ( qmin_hm - hm_curr(k) ) * pdel(icol,k) * rga
 
                  ! Calculate the total hydrometeor mass available from below
                  ! to fill the hole.
@@ -3581,7 +3561,7 @@ contains
                              total_fill_mass &
                              = total_fill_mass &
                                + ( hm_curr(idx) - qmin_hm ) &
-                                 * pdel(icol,idx) / gravit
+                                 * pdel(icol,idx) * rga
                           endif ! l_pos_hm(idx)
                        end do ! idx = k+1, pver, 1
                        ! Contribution to total fill mass from the surface.
@@ -3595,7 +3575,7 @@ contains
                              total_fill_mass &
                              = total_fill_mass &
                                + ( hm_curr(idx) - qmin_hm ) &
-                                 * pdel(icol,idx) / gravit
+                                 * pdel(icol,idx) * rga
                           endif ! l_pos_hm(idx)
                           if ( idx >= lowest_level_idx ) then
                              ! Check if enough mass has been gathered in
@@ -3649,7 +3629,7 @@ contains
                           total_fill_mass &
                           = total_fill_mass &
                             + ( hm_curr(idx) - qmin_hm ) &
-                              * pdel(icol,idx) / gravit
+                              * pdel(icol,idx) * rga
                        endif ! l_pos_hm(idx)
                     end do ! idx = top_lev, k-1, 1
                  endif ! total_fill_mass >= total_hole
@@ -3892,7 +3872,7 @@ contains
                  ! to be filled.
                  ! The value of the hydrometeor mixing ratio is negative, but
                  ! the value of total_hole is positive.
-                 total_hole = ( qmin_hm - hm_curr(k) ) * pdel(icol,k) / gravit
+                 total_hole = ( qmin_hm - hm_curr(k) ) * pdel(icol,k) * rga
 
                  ! Calculate the total hydrometeor mass available from the
                  ! filler hydrometeor to fill the hole.
@@ -3902,7 +3882,7 @@ contains
                         total_fill_mass &
                         = total_fill_mass &
                           + ( hm_curr_filler(idx) - qmin_hm_filler ) &
-                            * pdel(icol,idx) / gravit
+                            * pdel(icol,idx) * rga
                      endif ! l_pos_hm_filler(idx)
                  end do ! idx = top_lev, pver, 1
 
@@ -4140,5 +4120,27 @@ contains
    end subroutine subcol_SILHS_hydromet_conc_tend_lim
 
    !============================================================================
+
+   ! Getunit and Freeunit are depreciated in Fortran going forward, so this is a 
+   ! small function to get an unused stream identifier to send to setup_corr_varnce_array_api
+   ! or any other silhs/clubb functions that require a unit number argument
+   ! This comes directly from the Fortran wiki
+   integer function getnewunit(unit)
+     integer, intent(out), optional :: unit
+    
+     integer, parameter :: LUN_MIN=10, LUN_MAX=1000
+     logical :: opened
+     integer :: lun, newunit
+   
+     newunit=-1
+     do lun=LUN_MIN,LUN_MAX
+        inquire(unit=lun,opened=opened)
+        if (.not. opened) then
+           newunit=lun
+           exit
+        end if
+     end do
+     if (present(unit)) unit=newunit
+   end function getnewunit
    
 end module subcol_SILHS 

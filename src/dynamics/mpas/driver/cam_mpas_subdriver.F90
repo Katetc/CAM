@@ -32,7 +32,9 @@ module cam_mpas_subdriver
               cam_mpas_cell_to_edge_winds, &
               cam_mpas_run, &
               cam_mpas_finalize, &
-              cam_mpas_debug_stream
+              cam_mpas_debug_stream, &
+              cam_mpas_global_sum_real
+
     public :: corelist, domain_ptr
 
     private
@@ -2208,6 +2210,14 @@ contains
                                       mpas_pool_get_subpool, mpas_pool_shift_time_levels
        use mpas_timekeeping, only : mpas_advance_clock, mpas_get_clock_time, mpas_get_time, MPAS_NOW, &
                                     operator(.lt.), operator(+)
+#ifdef __NVCOMPILER
+       !
+       ! Some versions of the nvfortran compiler complain about the illegal use
+       ! of an operator on a derived type if the following specific
+       ! implementations of the < and + operators are not explicitly imported
+       !
+       use mpas_timekeeping, only : lt_t_t, add_t_ti
+#endif
        use mpas_timer, only : mpas_timer_start, mpas_timer_stop
        use mpas_constants, only : Rv_over_Rd => rvord
 
@@ -2545,6 +2555,35 @@ contains
        end if
 
     end subroutine cam_mpas_debug_stream
+
+
+    !-----------------------------------------------------------------------
+    !  routine cam_mpas_global_sum_real
+    !
+    !> \brief  Compute the global sum of real array
+    !> \author Miles Curry
+    !> \date   25 February 2021
+    !> \details
+    !>  This routine computes a global sum of a real array across all tasks
+    !> in a communicator and returns that sum to all tasks.
+    !>
+    !
+    !-----------------------------------------------------------------------
+    function cam_mpas_global_sum_real(rarray) result(global_sum)
+
+       use mpas_kind_types, only: RKIND
+       use mpas_dmpar, only: mpas_dmpar_sum_real
+
+       ! Input variables
+       real (RKIND), dimension(:), intent(in) :: rarray
+       real (RKIND) :: global_sum
+
+       real (RKIND) :: local_sum
+
+       local_sum = sum(rarray)
+       call mpas_dmpar_sum_real(domain_ptr % dminfo, local_sum, global_sum)
+
+    end function cam_mpas_global_sum_real
 
 
 end module cam_mpas_subdriver

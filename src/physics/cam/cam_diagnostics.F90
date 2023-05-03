@@ -184,6 +184,37 @@ contains
 
     integer :: k, m
     integer :: ierr
+    !
+    ! variables for energy diagnostics
+    !
+    integer                                    :: istage, ivars
+    character (len=108)                        :: str1, str2, str3
+    integer, parameter                         :: num_stages = 8, num_vars = 8
+    character (len = 4), dimension(num_stages) :: stage = (/"phBF","phBP","phAP","phAM","dyBF","dyBP","dyAP","dyAM"/)
+    character (len = 45),dimension(num_stages) :: stage_txt = (/&
+         " before energy fixer                     ",& !phBF - physics energy
+         " before parameterizations                ",& !phBF - physics energy
+         " after parameterizations                 ",& !phAP - physics energy
+         " after dry mass correction               ",& !phAM - physics energy
+         " before energy fixer (dycore)            ",& !dyBF - dynamics energy
+         " before parameterizations (dycore)       ",& !dyBF - dynamics energy
+         " after parameterizations (dycore)        ",& !dyAP - dynamics energy
+         " after dry mass correction (dycore)      " & !dyAM - dynamics energy
+         /)
+    character (len = 2)  , dimension(num_vars) :: vars  = (/"WV"  ,"WL"  ,"WI"  ,"SE"   ,"KE"   ,"MR"   ,"MO"   ,"TT"   /)
+    character (len = 45) , dimension(num_vars) :: vars_descriptor = (/&
+         "Total column water vapor                ",&
+         "Total column liquid water               ",&
+         "Total column frozen water               ",&
+         "Total column dry static energy          ",&
+         "Total column kinetic energy             ",&
+         "Total column wind axial angular momentum",&
+         "Total column mass axial angular momentum",&
+         "Total column test tracer                "/)
+    character (len = 14), dimension(num_vars)  :: &
+         vars_unit = (/&
+         "kg/m2        ","kg/m2        ","kg/m2        ","J/m2         ",&
+         "J/m2         ","kg*m2/s*rad2 ","kg*m2/s*rad2 ","kg/m2        "/)
 
     ! outfld calls in diag_phys_writeout
     call addfld (cnst_name(1), (/ 'lev' /), 'A', 'kg/kg',    cnst_longname(1))
@@ -384,55 +415,15 @@ contains
     !
     ! energy diagnostics
     !
-    call addfld ('SE_pBF',   horiz_only, 'A', 'J/m2','Dry Static Energy before energy fixer')
-    call addfld ('SE_pBP',   horiz_only, 'A', 'J/m2','Dry Static Energy before parameterizations')
-    call addfld ('SE_pAP',   horiz_only, 'A', 'J/m2','Dry Static Energy after parameterizations')
-    call addfld ('SE_pAM',   horiz_only, 'A', 'J/m2','Dry Static Energy after dry mass correction')
-
-    call addfld ('KE_pBF',   horiz_only, 'A', 'J/m2','Kinetic Energy before energy fixer')
-    call addfld ('KE_pBP',   horiz_only, 'A', 'J/m2','Kinetic Energy before parameterizations')
-    call addfld ('KE_pAP',   horiz_only, 'A', 'J/m2','Kinetic Energy after parameterizations')
-    call addfld ('KE_pAM',   horiz_only, 'A', 'J/m2','Kinetic Energy after dry mass correction')
-
-    call addfld ('TT_pBF',   horiz_only, 'A', 'kg/m2','Total column test tracer before energy fixer')
-    call addfld ('TT_pBP',   horiz_only, 'A', 'kg/m2','Total column test tracer before parameterizations')
-    call addfld ('TT_pAP',   horiz_only, 'A', 'kg/m2','Total column test tracer after parameterizations')
-    call addfld ('TT_pAM',   horiz_only, 'A', 'kg/m2','Total column test tracer after dry mass correction')
-
-    call addfld ('WV_pBF',   horiz_only, 'A', 'kg/m2','Total column water vapor before energy fixer')
-    call addfld ('WV_pBP',   horiz_only, 'A', 'kg/m2','Total column water vapor before parameterizations')
-    call addfld ('WV_pAP',   horiz_only, 'A', 'kg/m2','Total column water vapor after parameterizations')
-    call addfld ('WV_pAM',   horiz_only, 'A', 'kg/m2','Total column water vapor after dry mass correction')
-
-    call addfld ('WL_pBF',   horiz_only, 'A', 'kg/m2','Total column cloud water before energy fixer')
-    call addfld ('WL_pBP',   horiz_only, 'A', 'kg/m2','Total column cloud water before parameterizations')
-    call addfld ('WL_pAP',   horiz_only, 'A', 'kg/m2','Total column cloud water after parameterizations')
-    call addfld ('WL_pAM',   horiz_only, 'A', 'kg/m2','Total column cloud water after dry mass correction')
-
-    call addfld ('WI_pBF',   horiz_only, 'A', 'kg/m2','Total column cloud ice before energy fixer')
-    call addfld ('WI_pBP',   horiz_only, 'A', 'kg/m2','Total column cloud ice before parameterizations')
-    call addfld ('WI_pAP',   horiz_only, 'A', 'kg/m2','Total column cloud ice after parameterizations')
-    call addfld ('WI_pAM',   horiz_only, 'A', 'kg/m2','Total column cloud ice after dry mass correction')
-    !
-    ! Axial Angular Momentum diagnostics
-    !
-    call addfld ('MR_pBF',   horiz_only, 'A', 'kg*m2/s*rad2',&
-    'Total column wind axial angular momentum before energy fixer')
-    call addfld ('MR_pBP',   horiz_only, 'A', 'kg*m2/s*rad2',&
-    'Total column wind axial angular momentum before parameterizations')
-    call addfld ('MR_pAP',   horiz_only, 'A', 'kg*m2/s*rad2',&
-         'Total column wind axial angular momentum after parameterizations')
-    call addfld ('MR_pAM',   horiz_only, 'A', 'kg*m2/s*rad2',&
-         'Total column wind axial angular momentum after dry mass correction')
-
-    call addfld ('MO_pBF',   horiz_only, 'A', 'kg*m2/s*rad2',&
-    'Total column mass axial angular momentum before energy fixer')
-    call addfld ('MO_pBP',   horiz_only, 'A', 'kg*m2/s*rad2',&
-    'Total column mass axial angular momentum before parameterizations')
-    call addfld ('MO_pAP',   horiz_only, 'A', 'kg*m2/s*rad2',&
-         'Total column mass axial angular momentum after parameterizations')
-    call addfld ('MO_pAM',   horiz_only, 'A', 'kg*m2/s*rad2',&
-         'Total column mass axial angular momentum after dry mass correction')
+    do istage = 1, num_stages
+      do ivars=1, num_vars
+        write(str1,*) TRIM(ADJUSTL(vars(ivars))),"_",TRIM(ADJUSTL(stage(istage)))
+        write(str2,*) TRIM(ADJUSTL(vars_descriptor(ivars)))," ", &
+                           TRIM(ADJUSTL(stage_txt(istage)))
+        write(str3,*) TRIM(ADJUSTL(vars_unit(ivars)))
+        call addfld (TRIM(ADJUSTL(str1)),   horiz_only, 'A', TRIM(ADJUSTL(str3)),TRIM(ADJUSTL(str2)))
+      end do
+    end do
 
     call addfld( 'CPAIRV', (/ 'lev' /), 'I', 'J/K/kg', 'Variable specific heat cap air' )
     call addfld( 'RAIRV', (/ 'lev' /), 'I', 'J/K/kg', 'Variable dry air gas constant' )
@@ -470,13 +461,17 @@ contains
     call addfld ('RHI',        (/ 'lev' /), 'A', 'percent','Relative humidity with respect to ice')
     call addfld ('RHCFMIP',    (/ 'lev' /), 'A', 'percent','Relative humidity with respect to water above 273 K, ice below 273 K')
 
+    call addfld ('IVT',        horiz_only,  'A', 'kg/m/s','Total (vertically integrated) vapor transport')
+    call addfld ('uIVT',       horiz_only,  'A', 'kg/m/s','u-component (vertically integrated) vapor transport')
+    call addfld ('vIVT',       horiz_only,  'A', 'kg/m/s','v-component (vertically integrated) vapor transport')
+
     call addfld ('THE8501000', horiz_only,  'A', 'K','ThetaE difference 850 mb - 1000 mb')
     call addfld ('THE9251000', horiz_only,  'A', 'K','ThetaE difference 925 mb - 1000 mb')
 
     call addfld ('Q1000',      horiz_only,  'A', 'kg/kg','Specific Humidity at 1000 mbar pressure surface')
     call addfld ('Q925',       horiz_only,  'A', 'kg/kg','Specific Humidity at 925 mbar pressure surface')
     call addfld ('Q850',       horiz_only,  'A', 'kg/kg','Specific Humidity at 850 mbar pressure surface')
-    call addfld ('Q200',       horiz_only,  'A', 'kg/kg','Specific Humidity at 700 mbar pressure surface')
+    call addfld ('Q200',       horiz_only,  'A', 'kg/kg','Specific Humidity at 200 mbar pressure surface')
     call addfld ('QBOT',       horiz_only,  'A', 'kg/kg','Lowest model level water vapor mixing ratio')
 
     call addfld ('PSDRY',      horiz_only,  'A', 'Pa', 'Dry surface pressure')
@@ -946,7 +941,7 @@ contains
     use co2_cycle,          only: c_i, co2_transport
 
     use tidal_diag,         only: tidal_diag_write
-    use physconst,          only: cpairv,rairv
+    use air_composition,    only: cpairv, rairv
 
     !-----------------------------------------------------------------------
     !
@@ -1310,11 +1305,14 @@ contains
     real(r8), pointer :: ftem_ptr(:,:)
 
     integer :: i, k, m, lchnk, ncol
+    integer :: ixq, ierr
     !
     !-----------------------------------------------------------------------
     !
     lchnk = state%lchnk
     ncol  = state%ncol
+
+    call cnst_get_ind('Q', ixq)
 
     if (co2_transport()) then
       do m = 1,4
@@ -1334,27 +1332,49 @@ contains
     !
     ! Meridional advection fields
     !
-    ftem(:ncol,:) = state%v(:ncol,:)*state%q(:ncol,:,1)
+    ftem(:ncol,:) = state%v(:ncol,:)*state%q(:ncol,:,ixq)
     call outfld ('VQ      ',ftem    ,pcols   ,lchnk     )
 
-    ftem(:ncol,:) = state%q(:ncol,:,1)*state%q(:ncol,:,1)
+    ftem(:ncol,:) = state%q(:ncol,:,1)*state%q(:ncol,:,ixq)
     call outfld ('QQ      ',ftem    ,pcols   ,lchnk     )
 
     ! Vertical velocity and advection
-    ftem(:ncol,:) = state%omega(:ncol,:)*state%q(:ncol,:,1)
+    ftem(:ncol,:) = state%omega(:ncol,:)*state%q(:ncol,:,ixq)
     call outfld('OMEGAQ  ',ftem,    pcols,   lchnk     )
     !
     ! Mass of q, by layer and vertically integrated
     !
-    ftem(:ncol,:) = state%q(:ncol,:,1) * state%pdel(:ncol,:) * rga
+    ftem(:ncol,:) = state%q(:ncol,:,ixq) * state%pdel(:ncol,:) * rga
     call outfld ('MQ      ',ftem    ,pcols   ,lchnk     )
 
     do k=2,pver
       ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
     end do
     call outfld ('TMQ     ',ftem, pcols   ,lchnk     )
+    !
+    ! Integrated vapor transport calculation
+    !
+    !compute uq*dp/g and vq*dp/g
+    ftem1(:ncol,:) = state%q(:ncol,:,ixq) * state%u(:ncol,:) *state%pdel(:ncol,:) * rga
+    ftem2(:ncol,:) = state%q(:ncol,:,ixq) * state%v(:ncol,:) *state%pdel(:ncol,:) * rga
 
+    do k=2,pver
+       ftem1(:ncol,1) = ftem1(:ncol,1) + ftem1(:ncol,k)
+       ftem2(:ncol,1) = ftem2(:ncol,1) + ftem2(:ncol,k)
+    end do
+    ! compute ivt
+    ftem(:ncol,1) = sqrt( ftem1(:ncol,1)**2 + ftem2(:ncol,1)**2)
+
+    call outfld ('IVT     ',ftem, pcols   ,lchnk     )
+
+    ! output uq*dp/g
+    call outfld ('uIVT     ',ftem1, pcols   ,lchnk     )
+
+    ! output vq*dp/g
+    call outfld ('vIVT     ',ftem2, pcols   ,lchnk     )
+    !
     ! Relative humidity
+    !
     if (hist_fld_active('RELHUM')) then
        if (relhum_idx > 0) then
           call pbuf_get_field(pbuf, relhum_idx, ftem_ptr)
@@ -1363,7 +1383,7 @@ contains
           do k = 1, pver
              call qsat(state%t(1:ncol,k), state%pmid(1:ncol,k), tem2(1:ncol,k), ftem(1:ncol,k), ncol)
           end do
-          ftem(:ncol,:) = state%q(:ncol,:,1)/ftem(:ncol,:)*100._r8
+          ftem(:ncol,:) = state%q(:ncol,:,ixq)/ftem(:ncol,:)*100._r8
        end if
        call outfld ('RELHUM  ',ftem    ,pcols   ,lchnk     )
     end if
@@ -1374,7 +1394,7 @@ contains
       do k = 1, pver
          call qsat_water (state%t(1:ncol,k), state%pmid(1:ncol,k), esl(1:ncol,k), ftem(1:ncol,k), ncol)
       end do
-      ftem(:ncol,:) = state%q(:ncol,:,1)/ftem(:ncol,:)*100._r8
+      ftem(:ncol,:) = state%q(:ncol,:,ixq)/ftem(:ncol,:)*100._r8
       call outfld ('RHW  ',ftem    ,pcols   ,lchnk     )
 
       ! Convert to RHI (ice)
@@ -1407,17 +1427,17 @@ contains
     ! Output q field on pressure surfaces
     !
     if (hist_fld_active('Q850')) then
-      call vertinterp(ncol, pcols, pver, state%pmid, 85000._r8, state%q(1,1,1), p_surf)
+      call vertinterp(ncol, pcols, pver, state%pmid, 85000._r8, state%q(1,1,ixq), p_surf)
       call outfld('Q850    ', p_surf, pcols, lchnk )
     end if
     if (hist_fld_active('Q200')) then
-      call vertinterp(ncol, pcols, pver, state%pmid, 20000._r8, state%q(1,1,1), p_surf)
+      call vertinterp(ncol, pcols, pver, state%pmid, 20000._r8, state%q(1,1,ixq), p_surf)
       call outfld('Q200    ', p_surf, pcols, lchnk )
     end if
     !
     ! Output Q at bottom level
     !
-    call outfld ('QBOT    ', state%q(1,pver,1),  pcols, lchnk)
+    call outfld ('QBOT    ', state%q(1,pver,ixq),  pcols, lchnk)
 
     ! Total energy of the atmospheric column for atmospheric heat storage calculations
 
@@ -1428,7 +1448,7 @@ contains
 
     !! calculate sum of sensible, kinetic, latent, and surface geopotential energy
     !! E=CpT+PHIS+Lv*q+(0.5)*(u^2+v^2)
-    ftem(:ncol,:) = (cpair*state%t(:ncol,:) +  ftem1(:ncol,:) + latvap*state%q(:ncol,:,1) + &
+    ftem(:ncol,:) = (cpair*state%t(:ncol,:) +  ftem1(:ncol,:) + latvap*state%q(:ncol,:,ixq) + &
          0.5_r8*(state%u(:ncol,:)**2+state%v(:ncol,:)**2))*(state%pdel(:ncol,:)/gravit)
     !! vertically integrate
     do k=2,pver
@@ -1457,12 +1477,12 @@ contains
          hist_fld_active('THE9251000') .or. &
          hist_fld_active('THE8501000') .or. &
          hist_fld_active('THE7001000')) then
-      call vertinterp(ncol, pcols, pver, state%pmid, 100000._r8, state%q(1,1,1), p_surf_q1)
+      call vertinterp(ncol, pcols, pver, state%pmid, 100000._r8, state%q(1,1,ixq), p_surf_q1)
     end if
 
     if (hist_fld_active('THE9251000') .or. &
         hist_fld_active('Q925')) then
-      call vertinterp(ncol, pcols, pver, state%pmid, 92500._r8, state%q(1,1,1), p_surf_q2)
+      call vertinterp(ncol, pcols, pver, state%pmid, 92500._r8, state%q(1,1,ixq), p_surf_q2)
     end if
 
 !!! at 1000 mb and 925 mb
@@ -1489,7 +1509,7 @@ contains
 
 !!! at 1000 mb and 850 mb
     if (hist_fld_active('THE8501000')) then
-      call vertinterp(ncol, pcols, pver, state%pmid, 85000._r8, state%q(1,1,1), p_surf_q2)
+      call vertinterp(ncol, pcols, pver, state%pmid, 85000._r8, state%q(1,1,ixq), p_surf_q2)
       p_surf = ((p_surf_t(:, surf_085000)*(1000.0_r8/850.0_r8)**cappa) *              &
                 exp((2500000.0_r8*p_surf_q2)/(1004.0_r8*p_surf_t(:, surf_085000)))) - &
                 (p_surf_t(:,surf_100000)*(1.0_r8)**cappa)*exp((2500000.0_r8*p_surf_q1)/(1004.0_r8*p_surf_t(:,surf_100000)))
@@ -1504,7 +1524,7 @@ contains
 
 !!! at 1000 mb and 700 mb
     if (hist_fld_active('THE7001000')) then
-      call vertinterp(ncol, pcols, pver, state%pmid, 70000._r8, state%q(1,1,1), p_surf_q2)
+      call vertinterp(ncol, pcols, pver, state%pmid, 70000._r8, state%q(1,1,ixq), p_surf_q2)
       p_surf = ((p_surf_t(:, surf_070000)*(1000.0_r8/700.0_r8)**cappa) *              &
                 exp((2500000.0_r8*p_surf_q2)/(1004.0_r8*p_surf_t(:, surf_070000)))) - &
                 (p_surf_t(:,surf_100000)*(1.0_r8)**cappa)*exp((2500000.0_r8*p_surf_q1)/(1004.0_r8*p_surf_t(:,surf_100000)))
