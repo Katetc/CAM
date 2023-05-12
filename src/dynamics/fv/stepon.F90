@@ -14,7 +14,7 @@ module stepon
 use shr_kind_mod,       only: r8 => shr_kind_r8
 
 use spmd_utils,         only: mpicom, iam, masterproc
-use cam_control_mod,    only: initial_run, moist_physics, simple_phys
+use cam_control_mod,    only: initial_run, moist_physics
 use ppgrid,             only: begchunk, endchunk
 use physconst,          only: zvir, cappa
 

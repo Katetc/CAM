@@ -56,4 +56,3 @@ class TMC(SystemTestsCommon):
             comments = "CAM mass conservation test FAILED."
             append_testlog(comments, self._orig_caseroot)
 
-
