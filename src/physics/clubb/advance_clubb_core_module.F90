@@ -1971,6 +1971,18 @@ module advance_clubb_core_module
 
       ! We found that if we call advance_xp2_xpyp first, we can use a longer timestep.
 
+      !$acc data copyin( gr, gr%zm, gr%zt, gr%invrs_dzt, gr%invrs_dzm, gr%dzm, &
+      !$acc              gr%weights_zt2zm, gr%weights_zm2zt, gr%dzt, &
+      !$acc              nu_vert_res_dep, nu_vert_res_dep%nu2, nu_vert_res_dep%nu9, &
+      !$acc              invrs_tau_xp2_zm, invrs_tau_C4_zm, invrs_tau_C14_zm, &
+      !$acc              wm_zm, rtm, wprtp, thlm, wpthlp, wpthvp, um, vm, wp2, &
+      !$acc              wp2_zt, wp3, upwp, vpwp, sigma_sqd_w, wprtp2, wpthlp2, &
+      !$acc              wprtpthlp, Kh_zt, rtp2_forcing, thlp2_forcing, &
+      !$acc              rtpthlp_forcing, rho_ds_zm, rho_ds_zt, invrs_rho_ds_zm, &
+      !$acc              thv_ds_zm, cloud_frac, wp3_on_wp2, wp3_on_wp2_zt, sclrm, &
+      !$acc              wpsclrp, wpsclrp2, wpsclrprtp, wpsclrpthlp, lhs_splat_wp2 ) &
+      !$acc        copy( rtp2, thlp2, rtpthlp, up2, vp2, sclrp2, sclrprtp, sclrpthlp )
+
       ! Advance the prognostic equations
       !   for scalar variances and covariances,
       !   plus the horizontal wind variances by one time step, by one time step.
@@ -2003,6 +2015,7 @@ module advance_clubb_core_module
                              rtp2, thlp2, rtpthlp, up2, vp2,              & ! intent(inout)
                              sclrp2, sclrprtp, sclrpthlp)                   ! intent(inout)
 
+      !$acc end data
       
       if ( clubb_at_least_debug_level( 0 ) ) then
          if ( err_code == clubb_fatal_error ) then
@@ -2213,6 +2226,14 @@ module advance_clubb_core_module
           end do
         end do
       end if
+
+      !$acc data copyin( gr, gr%weights_zt2zm, gr%invrs_dzt, gr%invrs_dzm, &
+      !$acc              nu_vert_res_dep, nu_vert_res_dep%nu10, &
+      !$acc              wm_zt, Km_zm, Kmh_zm, ug, vg, um_ref, vm_ref, wp2, &
+      !$acc              up2, vp2, um_forcing, vm_forcing, rho_ds_zm, &
+      !$acc              invrs_rho_ds_zt, edsclrm_forcing, fcor ) &
+      !$acc        copy( um, vm, upwp, vpwp, edsclrm, wpedsclrp, &
+      !$acc              um_pert, vm_pert, upwp_pert, vpwp_pert )
       
       call advance_windm_edsclrm( nz, ngrdcol, gr, dt,                        & ! intent(in)
                                   wm_zt, Km_zm, Kmh_zm,                       & ! intent(in)
@@ -2234,6 +2255,7 @@ module advance_clubb_core_module
                                   um, vm, edsclrm,                            & ! intent(inout)
                                   upwp, vpwp, wpedsclrp,                      & ! intent(inout)
                                   um_pert, vm_pert, upwp_pert, vpwp_pert )      ! intent(inout)
+      !$acc end data
 
       if ( edsclr_dim > 1 .and. clubb_config_flags%l_do_expldiff_rtm_thlm ) then
 
