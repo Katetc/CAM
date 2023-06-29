@@ -3764,6 +3764,11 @@ Coefficient for gustiness near ground.
 Coefficient for gustiness near ground.
 </entry>
 
+<entry id="clubb_bv_efold"  type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+E-folding parameter for mixed Brunt Vaisala Frequency
+</entry>
+
 <entry id="clubb_detliq_rad" type="real" category="pblrad"
        group="clubb_params_nl" valid_values="" >
 Radius of detrained liquid drops as they are used in the CLUBB parameterization in units of (m).
