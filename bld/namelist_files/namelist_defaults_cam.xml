@@ -1834,6 +1834,7 @@
 <clubb_skw_max_mag                                > 4.5     </clubb_skw_max_mag>
 <clubb_up2_sfc_coef                             > 2.0     </clubb_up2_sfc_coef>
 <clubb_C_wp2_splat                                > 0.0     </clubb_C_wp2_splat>
+<clubb_bv_efold                                   > 5.0     </clubb_bv_efold>
 <clubb_detliq_rad                                 > 8.0D-6  </clubb_detliq_rad>
 <clubb_detice_rad                                 > 25.0D-6 </clubb_detice_rad>
 <clubb_detphase_lowtemp                           > 238.15D0 </clubb_detphase_lowtemp>
@@ -1885,6 +1886,7 @@
 <clubb_skw_max_mag                      silhs="1" > 10.0    </clubb_skw_max_mag>
 <clubb_up2_sfc_coef                   silhs="1" > 4.0     </clubb_up2_sfc_coef>
 <clubb_C_wp2_splat                      silhs="1" > 0.0     </clubb_C_wp2_splat>
+<clubb_bv_efold                         silhs="1" > 5.0     </clubb_bv_efold>
 
 <clubb_l_brunt_vaisala_freq_moist       silhs="1" > .true.  </clubb_l_brunt_vaisala_freq_moist>
 <clubb_l_call_pdf_closure_twice         silhs="1" > .false. </clubb_l_call_pdf_closure_twice>
