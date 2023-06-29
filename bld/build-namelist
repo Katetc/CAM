@@ -3051,6 +3051,7 @@ if ($clubb_sgs  =~ /$TRUE/io) {
    add_default($nl, 'clubb_up2_sfc_coef');
    add_default($nl, 'clubb_C_wp2_splat');
    add_default($nl, 'clubb_wpxp_L_thresh');
+   add_default($nl, 'clubb_bv_efold');
    add_default($nl, 'clubb_detliq_rad');
    add_default($nl, 'clubb_detice_rad');
    add_default($nl, 'clubb_detphase_lowtemp');
