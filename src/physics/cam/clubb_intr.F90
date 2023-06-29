@@ -168,6 +168,7 @@ module clubb_intr
   real(r8) :: clubb_detliq_rad = unset_r8
   real(r8) :: clubb_detice_rad = unset_r8
   real(r8) :: clubb_detphase_lowtemp = unset_r8
+  real(r8) :: clubb_bv_efold = unset_r8
   
   integer :: &
     clubb_iiPDF_type,          & ! Selected option for the two-component normal
@@ -707,7 +708,7 @@ end subroutine clubb_init_cnst
                                clubb_c6rt, clubb_c6rtb, clubb_c6rtc, clubb_c6thl, clubb_c6thlb, clubb_c6thlc, &
                                clubb_C4, clubb_C_uu_shr, clubb_C_uu_buoy, &
                                clubb_c_K1, clubb_c_K2, clubb_nu2, clubb_c_K8, &
-                               clubb_c_K9, clubb_nu9, clubb_C_wp2_splat, clubb_wpxp_L_thresh, &
+                               clubb_c_K9, clubb_nu9, clubb_C_wp2_splat, clubb_wpxp_L_thresh, clubb_bv_efold, &
                                clubb_lambda0_stability_coef, clubb_l_lscale_plume_centered, &
                                clubb_do_liqsupersat, clubb_do_energyfix,&
                                clubb_lmin_coef,clubb_skw_max_mag, clubb_l_stability_correct_tau_zm, &
@@ -942,6 +943,8 @@ end subroutine clubb_init_cnst
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_nu9")
     call mpi_bcast(clubb_C_wp2_splat,         1, mpi_real8,   mstrid, mpicom, ierr)
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_C_wp2_splat")
+    call mpi_bcast(clubb_bv_efold,         1, mpi_real8,   mstrid, mpicom, ierr)
+    if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_bv_efold")
     call mpi_bcast(clubb_lambda0_stability_coef, 1, mpi_real8,   mstrid, mpicom, ierr)
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_lambda0_stability_coef")
     call mpi_bcast(clubb_l_lscale_plume_centered,1, mpi_logical, mstrid, mpicom, ierr)
@@ -1084,7 +1087,8 @@ end subroutine clubb_init_cnst
     if(clubb_Skw_denom_coef == unset_r8) call endrun(sub//": FATAL: clubb_Skw_denom_coef is not set")
     if(clubb_skw_max_mag == unset_r8) call endrun(sub//": FATAL: clubb_skw_max_mag is not set")
     if(clubb_up2_sfc_coef == unset_r8) call endrun(sub//": FATAL: clubb_up2_sfc_coef is not set")
-    if(clubb_C_wp2_splat == unset_r8) call endrun(sub//": FATAL: clubb_C_wp2_splatis not set")
+    if(clubb_C_wp2_splat == unset_r8) call endrun(sub//": FATAL: clubb_C_wp2_splat is not set")
+    if(clubb_bv_efold == unset_r8) call endrun(sub//": FATAL: clubb_bv_efold is not set")
     if(clubb_detliq_rad == unset_r8) call endrun(sub//": FATAL: clubb_detliq_rad not set")
     if(clubb_detice_rad == unset_r8) call endrun(sub//": FATAL: clubb_detice_rad not set")
     if(clubb_detphase_lowtemp == unset_r8) call endrun(sub//": FATAL: clubb_detphase_lowtemp not set")
@@ -1188,7 +1192,7 @@ end subroutine clubb_init_cnst
          iC1, iC1b, iC6rt, iC6rtb, iC6rtc, iC6thl, iC6thlb, iC6thlc, iup2_sfc_coef, iwpxp_L_thresh, &
          iC14, iC_wp3_pr_turb, igamma_coef, igamma_coefb, imult_coef, ilmin_coef, &
          iSkw_denom_coef, ibeta, iskw_max_mag, &
-         iC2rt, iC2thl, iC2rtthl, ic_K1, ic_K2, inu2, ic_K8, ic_K9, inu9, iC_wp2_splat, params_list
+         iC2rt, iC2thl, iC2rtthl, ic_K1, ic_K2, inu2, ic_K8, ic_K9, inu9, iC_wp2_splat, ibv_efold, params_list
 
     use clubb_api_module, only: &
          print_clubb_config_flags_api, &
@@ -1496,6 +1500,7 @@ end subroutine clubb_init_cnst
     clubb_params(ic_K9) = clubb_c_K9
     clubb_params(inu9)  = clubb_nu9
     clubb_params(iC_wp2_splat) = clubb_C_wp2_splat
+    clubb_params(ibv_efold) = clubb_bv_efold
    
     !  Set up CLUBB core.  Note that some of these inputs are overwritten
     !  when clubb_tend_cam is called.  The reason is that heights can change
