@@ -291,7 +291,9 @@ module clubb_intr
                                           ! Looking at issue #905 on the clubb repo
     clubb_l_use_tke_in_wp3_pr_turb_term,& ! Use TKE formulation for wp3 pr_turb term
     clubb_l_use_tke_in_wp2_wp3_K_dfsn,  & ! Use TKE in eddy diffusion for wp2 and wp3
+    clubb_l_use_wp3_lim_with_smth_Heaviside, & ! Flag to activate mods on wp3 limiters for conv test
     clubb_l_smooth_Heaviside_tau_wpxp,  & ! Use smooth Heaviside 'Peskin' in computation of invrs_tau
+    clubb_l_modify_limiters_for_cnvg_test, & ! Flag to activate mods on limiters for conv test
     clubb_l_enable_relaxed_clipping,    & ! Flag to relax clipping on wpxp in xm_wpxp_clipping_and_stats
     clubb_l_linearize_pbl_winds,        & ! Flag to turn on code to linearize PBL winds
     clubb_l_single_C2_Skw,              & ! Use a single Skewness dependent C2 for rtp2, thlp2, and
@@ -755,17 +757,25 @@ end subroutine clubb_init_cnst
          clubb_do_liqsupersat, &
          clubb_gamma_coef, &
          clubb_gamma_coefb, &
+         clubb_iiPDF_type, &
          clubb_ipdf_call_placement, &
          clubb_lambda0_stability_coef, &
          clubb_lmin_coef, &
          clubb_l_brunt_vaisala_freq_moist, &
+         clubb_l_C2_cloud_frac, &
+         clubb_l_calc_thlp2_rad, &
+         clubb_l_calc_w_corr, &
          clubb_l_call_pdf_closure_twice, &
+         clubb_l_const_Nc_in_cloud, &
          clubb_l_damp_wp2_using_em, &
          clubb_l_damp_wp3_Skw_squared, &
          clubb_l_diag_Lscale_from_tau, &
+         clubb_l_diagnose_correlations, &
+         clubb_l_diffuse_rtm_and_thlm, &
          clubb_l_do_expldiff_rtm_thlm, &
          clubb_l_e3sm_config, &
          clubb_l_enable_relaxed_clipping, &
+         clubb_l_fix_w_chi_eta_correlations, &
          clubb_l_godunov_upwind_wpxp_ta, &
          clubb_l_godunov_upwind_xpyp_ta, &
          clubb_l_intr_sfc_flux_smooth, &
@@ -773,6 +783,7 @@ end subroutine clubb_init_cnst
          clubb_l_lscale_plume_centered, &
          clubb_l_min_wp2_from_corr_wx, &
          clubb_l_min_xp2_from_corr_wx, &
+         clubb_l_modify_limiters_for_cnvg_test, &
          clubb_l_mono_flux_lim_rtm, &
          clubb_l_mono_flux_lim_spikefix, &
          clubb_l_mono_flux_lim_thlm, &
@@ -780,20 +791,28 @@ end subroutine clubb_init_cnst
          clubb_l_mono_flux_lim_vm, &
          clubb_l_partial_upwind_wp3, &
          clubb_l_predict_upwp_vpwp, &
+         clubb_l_prescribed_avg_deltaz, &
          clubb_l_rcm_supersat_adj, &
+         clubb_l_rtm_nudge, &
          clubb_l_smooth_Heaviside_tau_wpxp, &
+         clubb_l_stability_correct_Kh_N2_zm, &
          clubb_l_stability_correct_tau_zm, &
          clubb_l_standard_term_ta, &
+         clubb_l_tke_aniso, &
          clubb_l_trapezoidal_rule_zm, &
          clubb_l_trapezoidal_rule_zt, &
+         clubb_l_upwind_xm_ma, &
          clubb_l_upwind_xpyp_ta, &
          clubb_l_use_C11_Richardson, &
          clubb_l_use_C7_Richardson, &
          clubb_l_use_cloud_cover, &
+         clubb_l_use_precip_frac, &
          clubb_l_use_shear_Richardson, &
          clubb_l_use_thvm_in_bv_freq, &
          clubb_l_use_tke_in_wp2_wp3_K_dfsn, &
          clubb_l_use_tke_in_wp3_pr_turb_term, &
+         clubb_l_use_wp3_lim_with_smth_Heaviside, &
+         clubb_l_uv_nudge, &
          clubb_l_vary_convect_depth, &
          clubb_l_vert_avg_closure, &
          clubb_mult_coef, &
@@ -1094,8 +1113,12 @@ end subroutine clubb_init_cnst
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_l_use_tke_in_wp3_pr_turb_term")
     call mpi_bcast(clubb_l_use_tke_in_wp2_wp3_K_dfsn,   1, mpi_logical, mstrid, mpicom, ierr)
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_l_use_tke_in_wp2_wp3_K_dfsn")
+    call mpi_bcast(clubb_l_use_wp3_lim_with_smth_Heaviside, 1, mpi_logical, mstrid, mpicom, ierr)
+    if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_l_use_wp3_lim_with_smth_Heaviside")
     call mpi_bcast(clubb_l_smooth_Heaviside_tau_wpxp,   1, mpi_logical, mstrid, mpicom, ierr)
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_l_smooth_Heaviside_tau_wpxp")
+    call mpi_bcast(clubb_l_modify_limiters_for_cnvg_test, 1, mpi_logical, mstrid, mpicom, ierr)
+    if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_l_modify_limiters_for_cnvg_test")
     call mpi_bcast(clubb_ipdf_call_placement,    1, mpi_integer, mstrid, mpicom, ierr)
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_ipdf_call_placement")
     call mpi_bcast(clubb_l_mono_flux_lim_thlm,   1, mpi_logical, mstrid, mpicom, ierr)
@@ -1237,7 +1260,9 @@ end subroutine clubb_init_cnst
                                                  clubb_l_vary_convect_depth, & ! In
                                                  clubb_l_use_tke_in_wp3_pr_turb_term, & ! In
                                                  clubb_l_use_tke_in_wp2_wp3_K_dfsn, & ! In 
+                                                 clubb_l_use_wp3_lim_with_smth_Heaviside, & ! In
                                                  clubb_l_smooth_Heaviside_tau_wpxp, & ! In
+                                                 clubb_l_modify_limiters_for_cnvg_test, & ! In
                                                  clubb_l_enable_relaxed_clipping, & ! In
                                                  clubb_l_linearize_pbl_winds, & ! In
                                                  clubb_l_mono_flux_lim_thlm, & ! In
@@ -1369,7 +1394,7 @@ end subroutine clubb_init_cnst
       C_invrs_tau_shear, C_invrs_tau_N2, C_invrs_tau_N2_wp2, &
       C_invrs_tau_N2_xp2, C_invrs_tau_N2_wpxp, C_invrs_tau_N2_clear_wp3, &
       C_invrs_tau_wpxp_Ri, C_invrs_tau_wpxp_N2_thresh, &
-      Cx_min, Cx_max, Richardson_num_min, Richardson_num_max, a3_coef_min
+      Cx_min, Cx_max, Richardson_num_min, Richardson_num_max, a3_coef_min, a_const
 
     !----- Begin Code -----
 
@@ -1524,7 +1549,7 @@ end subroutine clubb_init_cnst
                C_invrs_tau_N2_wpxp, C_invrs_tau_N2_clear_wp3, &
                C_invrs_tau_wpxp_Ri, C_invrs_tau_wpxp_N2_thresh, &
                Cx_min, Cx_max, Richardson_num_min, &
-               Richardson_num_max, a3_coef_min )
+               Richardson_num_max, a3_coef_min, a_const )
 
     call read_parameters_api( -99, "", &
                               C1, C1b, C1c, C2rt, C2thl, C2rtthl, &
@@ -1550,7 +1575,7 @@ end subroutine clubb_init_cnst
                               C_invrs_tau_N2_wpxp, C_invrs_tau_N2_clear_wp3, &
                               C_invrs_tau_wpxp_Ri, C_invrs_tau_wpxp_N2_thresh, &
                               Cx_min, Cx_max, Richardson_num_min, &
-                              Richardson_num_max, a3_coef_min, &
+                              Richardson_num_max, a3_coef_min, a_const, &
                               clubb_params )
 
     clubb_params(iC2rtthl) = clubb_C2rtthl
@@ -2074,6 +2099,8 @@ end subroutine clubb_init_cnst
     real(r8) :: zo(pcols)                               ! roughness height                              [m]
     real(r8) :: dz_g(pcols,pver)                       ! thickness of layer                            [m]
     real(r8) :: relvarmax
+    real(r8) :: se_upper_a(pcols), se_upper_b(pcols), se_upper_diss(pcols)
+    real(r8) :: tw_upper_a(pcols), tw_upper_b(pcols), tw_upper_diss(pcols)
 
     ! Local CLUBB variables dimensioned as NCOL (only useful columns) to be sent into the clubb run api
     ! NOTE: THESE VARIABLS SHOULD NOT BE USED IN PBUF OR OUTFLD (HISTORY) SUBROUTINES
@@ -2274,6 +2301,10 @@ end subroutine clubb_init_cnst
     real(kind=time_precision)                 :: time_elapsed                ! time keep track of stats          [s]
     integer :: stats_nsamp, stats_nout           ! Stats sampling and output intervals for CLUBB [timestep]
 
+    real(r8) :: rtm_integral_vtend(pcols), &
+                rtm_integral_ltend(pcols)
+
+
     real(r8) :: rtm_integral_1, rtm_integral_update, rtm_integral_forcing
 
     ! ---------------------------------------------------- !
@@ -2434,7 +2465,7 @@ end subroutine clubb_init_cnst
 #ifdef CLUBB_SGS
 
     !-----------------------------------------------------------------------------------!
-    !                           MAIN COMPUTATION BEGINS HERE                            !                                              !
+    !                           MAIN COMPUTATION BEGINS HERE                            !
     !-----------------------------------------------------------------------------------!
 
     call t_startf("clubb_tend_cam")
@@ -3707,6 +3738,9 @@ end subroutine clubb_init_cnst
       
     !  Now compute the tendencies of CLUBB to CAM, note that pverp is the ghost point
     !  for all variables and therefore is never called in this loop
+    rtm_integral_vtend(:) = 0._r8
+    rtm_integral_ltend(:) = 0._r8
+
     do k=1, pver
       do i=1, ncol
 
@@ -3715,6 +3749,9 @@ end subroutine clubb_init_cnst
         ptend_loc%q(i,k,ixq)      = (rtm(i,k) - rcm(i,k)-state1%q(i,k,ixq)) / hdtime ! water vapor
         ptend_loc%q(i,k,ixcldliq) = (rcm(i,k) - state1%q(i,k,ixcldliq))     / hdtime ! Tendency of liquid water
         ptend_loc%s(i,k)          = (clubb_s(i,k) - state1%s(i,k))          / hdtime ! Tendency of static energy
+
+        rtm_integral_ltend(i) = rtm_integral_ltend(i) + ptend_loc%q(i,k,ixcldliq)*state1%pdel(i,k)/gravit
+        rtm_integral_vtend(i) = rtm_integral_vtend(i) + ptend_loc%q(i,k,ixq)*state1%pdel(i,k)/gravit
 
       end do
     end do
