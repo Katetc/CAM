@@ -883,7 +883,9 @@ end subroutine clubb_init_cnst
                                              clubb_l_vary_convect_depth, & ! Out
                                              clubb_l_use_tke_in_wp3_pr_turb_term, & ! Out
                                              clubb_l_use_tke_in_wp2_wp3_K_dfsn, & ! Out
+                                             clubb_l_use_wp3_lim_with_smth_Heaviside, & ! Out
                                              clubb_l_smooth_Heaviside_tau_wpxp, & ! Out
+                                             clubb_l_modify_limiters_for_cnvg_test, & ! Out
                                              clubb_l_enable_relaxed_clipping, & ! Out
                                              clubb_l_linearize_pbl_winds, & ! Out
                                              clubb_l_mono_flux_lim_thlm, & ! Out
