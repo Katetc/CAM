@@ -151,6 +151,9 @@ module clip_explicit
 
     ! --------------------- Begin Code ---------------------
 
+    !$acc enter data create( wprtp_chnge, wpthlp_chnge, upwp_chnge, vpwp_chnge )
+    !$acc enter data if( sclr_dim > 0 ) create( wpsclrp_chnge )
+
     !!! Clipping for w'r_t'
     !
     ! Clipping w'r_t' at each vertical level, based on the
@@ -395,6 +398,8 @@ module clip_explicit
       endif ! l_linearize_pbl_winds
     end if
 
+    !$acc exit data delete( wprtp_chnge, wpthlp_chnge, upwp_chnge, vpwp_chnge )
+    !$acc exit data if( sclr_dim > 0 ) delete( wpsclrp_chnge )
 
     return
   end subroutine clip_covars_denom
@@ -525,10 +530,6 @@ module clip_explicit
 
     ! -------------------------- Begin Code --------------------------
 
-    !$acc data copyin( xp2, yp2 ) &
-    !$acc        copy( xpyp ) &
-    !$acc     copyout( xpyp_chnge )
-
     select case ( solve_type )
     case ( clip_wprtp )   ! wprtp clipping budget term
       ixpyp_cl = iwprtp_cl
@@ -618,7 +619,7 @@ module clip_explicit
 
     ! Since there is no covariance clipping at the upper or lower boundaries,
     ! the change in x'y' due to covariance clipping at those levels is 0.
-    !$acc parallel loop default(present)
+    !$acc parallel loop gang vector default(present)
     do i = 1, ngrdcol
       xpyp_chnge(i,1)  = 0.0_core_rknd
       xpyp_chnge(i,nz) = 0.0_core_rknd
@@ -641,8 +642,6 @@ module clip_explicit
         end do
       endif
     endif
-
-    !$acc end data
 
     return
     
@@ -925,6 +924,9 @@ module clip_explicit
 
     ! -------------------- Begin Code --------------------
 
+    !$acc data copyin( threshold ) &
+    !$acc        copy( xp2 )
+
     select case ( solve_type )
     case ( clip_wp2 )   ! wp2 clipping budget term
       ixp2_cl = iwp2_cl
@@ -942,6 +944,7 @@ module clip_explicit
 
 
     if ( l_stats_samp ) then
+      !$acc update host( xp2 )
       do i = 1, ngrdcol
         call stat_begin_update( nz, ixp2_cl, xp2(i,:) / dt, & ! intent(in)
                                 stats_zm(i) ) ! intent(inout)
@@ -959,6 +962,7 @@ module clip_explicit
     ! level is clipped. I did this because we discovered that there are slightly
     ! negative values in thlp2(1) and rtp2(1) when running quarter_ss case with
     ! WRF-CLUBB (see wrf:ticket:51#comment:33) 
+    !$acc parallel loop gang vector collapse(2) default(present)
     do k = 1, nz-1, 1
       do i = 1, ngrdcol
         if ( xp2(i,k) < threshold(i,k) ) then
@@ -966,16 +970,20 @@ module clip_explicit
         end if
       end do
     end do
+    !$acc end parallel loop
 
     if ( l_stats_samp ) then
+      !$acc update host( xp2 )
       do i = 1, ngrdcol
         call stat_end_update( nz, ixp2_cl, xp2(i,:) / dt, & ! intent(in)
                               stats_zm(i) ) ! intent(inout)
       end do
     end if
 
+    !$acc end data
 
     return
+
   end subroutine clip_variance
 
   !=============================================================================
@@ -1079,7 +1087,14 @@ module clip_explicit
 
     ! ----------------------- Begin Code -----------------------
 
+    !$acc data copyin( gr, gr%zt, &
+    !$acc              sfc_elevation, wp2_zt ) &
+    !$acc        copy( wp3 )
+
     if ( l_stats_samp ) then
+
+      !$acc update host( wp3 )
+
       do i = 1, ngrdcol
         call stat_begin_update( nz, iwp3_cl, wp3(i,:) / dt, & ! intent(in)
                                 stats_zt(i) ) ! intent(inout)
@@ -1092,13 +1107,19 @@ module clip_explicit
                              wp3 )                                ! intent(inout)
 
     if ( l_stats_samp ) then
+
+      !$acc update host( wp3 )
+
       do i = 1, ngrdcol
         call stat_end_update( nz, iwp3_cl, wp3(i,:) / dt, & ! intent(in)
                               stats_zt(i) ) ! intent(inout)
       end do
     end if
 
+    !$acc end data
+
     return
+
   end subroutine clip_skewness
 
 !=============================================================================
@@ -1106,7 +1127,7 @@ module clip_explicit
                                  Skw_max_mag, wp2_zt, &
                                  l_use_wp3_lim_with_smth_Heaviside, & 
                                  wp3 )
-!
+
     use grid_class, only: & 
         grid ! Type
 
@@ -1118,7 +1139,7 @@ module clip_explicit
 
     implicit none
 
-    ! Input Variables
+    !----------------------- Input Variables -----------------------
     integer, intent(in) :: &
       nz, &
       ngrdcol
@@ -1139,11 +1160,11 @@ module clip_explicit
     logical, intent(in):: &
       l_use_wp3_lim_with_smth_Heaviside
 
-    ! Input/Output Variables
+    !----------------------- Input/Output Variables -----------------------
     real( kind = core_rknd ), dimension(ngrdcol,nz), intent(inout) :: &
       wp3              ! w'^3 (thermodynamic levels)                [m^3/s^3]
 
-    ! Local Variables
+    !----------------------- Local Variables -----------------------
     real( kind = core_rknd ), dimension(ngrdcol,nz) :: &
       wp2_zt_cubed, & ! Variance of vertical velocity cubed (w^2_{zt}^3)   [m^6/s^6]
       wp3_lim_sqd     ! Keeps absolute value of Sk_w from becoming > limit [m^6/s^6]
@@ -1157,7 +1178,9 @@ module clip_explicit
       zagl_thresh, & ! temporatory array  
       H_zagl ! Heaviside function for clippings of wp3_lim_sqd
 
-    ! ---- Begin Code ----
+    !----------------------- Begin Code-----------------------
+
+    !$acc enter data create( wp2_zt_cubed, wp3_lim_sqd, zagl_thresh, H_zagl )
 
     ! Compute the upper and lower limits of w'^3 at every level,
     ! based on the skewness of w, Sk_w, such that:
@@ -1176,18 +1199,29 @@ module clip_explicit
 
     ! To lower compute time, we squared both sides of the equation and compute
     ! wp2^3 only once. -dschanen 9 Oct 2008
+    !$acc parallel loop gang vector collapse(2) default(present)
+    do k = 1, nz
+      do i = 1, ngrdcol
+        wp2_zt_cubed(i,k) = wp2_zt(i,k)**3
+      end do
+    end do
+    !$acc end parallel loop
 
-    wp2_zt_cubed(:,:) = wp2_zt(:,:)**3
-
-    if (l_use_wp3_lim_with_smth_Heaviside) then 
+    if ( l_use_wp3_lim_with_smth_Heaviside ) then 
 
       !implement a smoothed Heaviside function to avoid discontinuities 
-      do i = 1, ngrdcol
-        zagl_thresh(i,:) = ( gr%zt(i,:) - sfc_elevation(i) ) /  100.0_core_rknd 
-        zagl_thresh(i,:) = zagl_thresh(i,:)  - 1.0_core_rknd 
-        H_zagl(i,:) = smooth_heaviside_peskin(zagl_thresh(i,:), 0.6_core_rknd) 
+      !$acc parallel loop gang vector collapse(2) default(present)
+      do k = 1, nz
+        do i = 1, ngrdcol
+          zagl_thresh(i,k) = ( gr%zt(i,k) - sfc_elevation(i) ) /  100.0_core_rknd 
+          zagl_thresh(i,k) = zagl_thresh(i,k)  - 1.0_core_rknd 
+        end do
       end do
+      !$acc end parallel loop
 
+      H_zagl(:,:) = smooth_heaviside_peskin(nz, ngrdcol, zagl_thresh(:,:), 0.6_core_rknd) 
+
+      !$acc parallel loop gang vector collapse(2) default(present)
       do k = 1, nz
         do i = 1, ngrdcol
           wp3_lim_sqd(i,k) = wp2_zt_cubed(i,k)   &
@@ -1196,9 +1230,11 @@ module clip_explicit
                                      * 0.0021_core_rknd *Skw_max_mag**2 )
         end do
       end do
+     !$acc end parallel loop
 
     else ! default method 
 
+      !$acc parallel loop gang vector collapse(2) default(present)
       do k = 1, nz
         do i = 1, ngrdcol
           if ( gr%zt(i,k) - sfc_elevation(i) <= 100.0_core_rknd ) then ! Clip for 100 m. AGL.
@@ -1212,11 +1248,13 @@ module clip_explicit
           endif
         end do
       end do
+      !$acc end parallel loop
 
     end if
   
     ! Clipping for w'^3 at an upper and lower limit corresponding with
     ! the appropriate value of Sk_w.
+    !$acc parallel loop gang vector collapse(2) default(present)
     do k = 1, nz
       do i = 1, ngrdcol
         ! Set the magnitude to the wp3 limit and apply the sign of the current wp3
@@ -1225,16 +1263,21 @@ module clip_explicit
         end if
       end do
     end do
+    !$acc end parallel loop
 
     ! Clipping abs(wp3) to 100. This keeps wp3 from growing too large in some 
     ! deep convective cases, which helps prevent these cases from blowing up.
+    !$acc parallel loop gang vector collapse(2) default(present)
     do k = 1, nz
       do i = 1, ngrdcol
         if ( abs(wp3(i,k)) > wp3_max ) then
-          wp3(i,k) = sign( wp3_max , wp3(i,k) ) ! Known magic number
+          wp3(i,k) = sign( wp3_max, wp3(i,k) ) ! Known magic number
         end if
       end do
     end do
+    !$acc end parallel loop
+
+    !$acc exit data delete( wp2_zt_cubed, wp3_lim_sqd, zagl_thresh, H_zagl )
 
   end subroutine clip_skewness_core
 

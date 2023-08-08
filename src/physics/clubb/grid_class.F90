@@ -1,6 +1,6 @@
 !------------------------------------------------------------------------
 ! $Id$
-!===============================================================================
+!=============================================================================== 
 module grid_class
 
   ! Description:
@@ -148,7 +148,7 @@ module grid_class
 
   implicit none
 
-  public :: grid, zt2zm, zm2zt, & 
+  public :: grid, zt2zm, zm2zt, zt2zm2zt, zm2zt2zm, & 
             ddzm, ddzt, & 
             setup_grid, cleanup_grid, setup_grid_heights, &
             read_grid_heights, flip
@@ -1447,7 +1447,7 @@ module grid_class
   end function redirect_interpolated_azt_2D
   
   !=============================================================================
-  pure subroutine linear_interpolated_azm_2D( nz, ngrdcol, gr, azt, &
+  subroutine linear_interpolated_azm_2D( nz, ngrdcol, gr, azt, &
                                               linear_interpolated_azm )
 
     ! Description:
@@ -1505,7 +1505,7 @@ module grid_class
     ! Use a linear extension based on the values of azt at levels gr%nz and
     ! gr%nz-1 to find the value of azm at level gr%nz (the uppermost level
     ! in the model).
-    !$acc parallel loop default(present)
+    !$acc parallel loop gang vector default(present)
     do i = 1, ngrdcol
       linear_interpolated_azm(i,nz) &
         = ( ( azt(i,nz) - azt(i,nz-1) ) / ( gr%zt(i,nz) - gr%zt(i,nz-1) ) ) & 
@@ -1518,7 +1518,113 @@ module grid_class
     return
 
   end subroutine linear_interpolated_azm_2D
+
+  !=============================================================================
+  function zt2zm2zt( nz, ngrdcol, gr, azt )
+
+    ! Description:
+    !    Function to interpolate a variable located on the thermodynamic grid
+    !    levels (azt) to the momentum grid levels (azm), then interpolate back
+    !    to thermodynamic grid levels (azt).
+    !
+    ! Note:
+    !   This is intended for smoothing variables.
+    !-----------------------------------------------------------------------------
+
+    use clubb_precision, only: &
+        core_rknd  ! Variable(s)
+
+    implicit none
+    
+    ! ------------------------------ Input Variable ------------------------------
+    integer, intent(in) :: &
+      nz, &
+      ngrdcol
+
+    type (grid), target, intent(in) :: gr
+
+    real( kind = core_rknd ), intent(in), dimension(ngrdcol,nz) :: &
+      azt    ! Variable on thermodynamic grid levels    [units vary]
+
+    ! ------------------------------ Return Variable ------------------------------
+    real( kind = core_rknd ), dimension(ngrdcol,nz) :: &
+      zt2zm2zt    ! Variable when interp. to momentum levels
+
+    ! ------------------------------ Local Variable ------------------------------
+    real( kind = core_rknd ), dimension(ngrdcol,nz) :: &
+      azt_zm
+
+    ! ------------------------------ Begin Code ------------------------------
+
+    !$acc data copyin( azt ) &
+    !$acc     copyout( zt2zm2zt ) &
+    !$acc      create( azt_zm )
+
+    ! Interpolate azt to momentum levels 
+    azt_zm = zt2zm( nz, ngrdcol, gr, azt )
+
+    ! Interpolate back to termodynamic levels
+    zt2zm2zt = zm2zt( nz, ngrdcol, gr, azt_zm )
+
+    !$acc end data
+
+    return 
+
+  end function zt2zm2zt
   
+  !=============================================================================
+  function zm2zt2zm( nz, ngrdcol, gr, azm )
+
+    ! Description:
+    !    Function to interpolate a variable located on the momentum grid 
+    !    levels(azm) to thermodynamic grid levels (azt), then interpolate 
+    !    back to momentum grid levels (azm).
+    !
+    ! Note:
+    !   This is intended for smoothing variables.
+    !-----------------------------------------------------------------------------
+
+    use clubb_precision, only: &
+        core_rknd  ! Variable(s)
+
+    implicit none
+    
+    ! ------------------------------ Input Variable ------------------------------
+    integer, intent(in) :: &
+      nz, &
+      ngrdcol
+
+    type (grid), target, intent(in) :: gr
+
+    real( kind = core_rknd ), intent(in), dimension(ngrdcol,nz) :: &
+      azm    ! Variable on momentum grid levels    [units vary]
+
+    ! ------------------------------ Return Variable ------------------------------
+    real( kind = core_rknd ), dimension(ngrdcol,nz) :: &
+      zm2zt2zm    ! Variable when interp. to momentum levels
+
+    ! ------------------------------ Local Variable ------------------------------
+    real( kind = core_rknd ), dimension(ngrdcol,nz) :: &
+      azm_zt
+
+    ! ------------------------------ Begin Code ------------------------------
+
+    !$acc data copyin( azm ) &
+    !$acc     copyout( zm2zt2zm ) &
+    !$acc      create( azm_zt )
+
+    ! Interpolate azt to termodynamic levels 
+    azm_zt = zm2zt( nz, ngrdcol, gr, azm )
+
+    ! Interpolate back to momentum levels
+    zm2zt2zm = zt2zm( nz, ngrdcol, gr, azm_zt )
+
+    !$acc end data
+
+    return 
+
+  end function zm2zt2zm
+
   !=============================================================================
   function cubic_interpolated_azm_2D( nz, ngrdcol, gr, azt )
 
@@ -1602,7 +1708,7 @@ module grid_class
   end function cubic_interpolated_azm_2D
 
   !=============================================================================
-  pure subroutine calc_zt2zm_weights( nz, ngrdcol, &
+  subroutine calc_zt2zm_weights( nz, ngrdcol, &
                                       gr ) 
 
     ! Description:
@@ -1812,7 +1918,7 @@ module grid_class
   end subroutine calc_zt2zm_weights
   
   !=============================================================================
-  pure subroutine linear_interpolated_azt_2D( nz, ngrdcol, gr, azm, &
+  subroutine linear_interpolated_azt_2D( nz, ngrdcol, gr, azm, &
                                               linear_interpolated_azt )
 
     ! Description:
@@ -1858,7 +1964,7 @@ module grid_class
     ! thermodynamic levels is azt.
     ! Use a linear extension based on the values of azm at levels 1 and 2 to
     ! find the value of azt at level 1 (the lowermost level in the model).
-    !$acc parallel loop default(present)
+    !$acc parallel loop gang vector default(present)
     do i = 1, ngrdcol
       linear_interpolated_azt(i,1) &
         = ( ( azm(i,2) - azm(i,1) ) / ( gr%zm(i,2) - gr%zm(i,1) ) ) & 
@@ -1967,7 +2073,7 @@ module grid_class
   end function cubic_interpolated_azt_2D
 
   !=============================================================================
-  pure subroutine calc_zm2zt_weights( nz, ngrdcol, &
+  subroutine calc_zm2zt_weights( nz, ngrdcol, &
                                       gr )
 
     ! Description:
@@ -2180,7 +2286,7 @@ module grid_class
   
   !=============================================================================
   ! Wrapped in interface ddzm
-  pure function gradzm_2D( nz, ngrdcol, gr, azm )
+  function gradzm_2D( nz, ngrdcol, gr, azm )
 
     ! Description:
     !  2D version of gradzm
@@ -2211,7 +2317,7 @@ module grid_class
     !$acc data copyin( gr, gr%invrs_dzt, azm ) &
     !$acc     copyout( gradzm_2D )
 
-    !$acc parallel loop default(present)
+    !$acc parallel loop gang vector default(present)
     do i = 1, ngrdcol
       gradzm_2D(i,1) = ( azm(i,2) - azm(i,1) ) * gr%invrs_dzt(i,2)
     end do
@@ -2233,7 +2339,7 @@ module grid_class
   
   !=============================================================================
   ! Wrapped in interface ddzm
-  pure function gradzm_1D( gr, azm )
+  function gradzm_1D( gr, azm )
 
     ! Description:
     !  2D version of gradzm
@@ -2274,7 +2380,7 @@ module grid_class
   
   !=============================================================================
   ! Wrapped in interface ddzt
-  pure function gradzt_2D( nz, ngrdcol, gr, azt )
+  function gradzt_2D( nz, ngrdcol, gr, azt )
 
     ! Description:
     !  2D version of gradzt
@@ -2305,7 +2411,7 @@ module grid_class
     !$acc data copyin( gr, gr%invrs_dzm, azt ) &
     !$acc     copyout( gradzt_2D )
 
-    !$acc parallel loop default(present)
+    !$acc parallel loop gang vector default(present)
     do i = 1, ngrdcol
       gradzt_2D(i,nz) = ( azt(i,nz) - azt(i,nz-1) ) * gr%invrs_dzm(i,nz-1)
     end do
@@ -2327,7 +2433,7 @@ module grid_class
   
   !=============================================================================
   ! Wrapped in interface ddzt
-  pure function gradzt_1D( gr, azt )
+  function gradzt_1D( gr, azt )
 
     ! Description:
     !  2D version of gradzt
@@ -2368,7 +2474,7 @@ module grid_class
   end function gradzt_1D
 
   !=============================================================================
-  pure function flip( x, xdim )
+  function flip( x, xdim )
 
     ! Description:
     !   Flips a single dimension array (i.e. a vector), so the first element

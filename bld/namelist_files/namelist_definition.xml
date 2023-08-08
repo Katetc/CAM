@@ -3584,6 +3584,11 @@ air is supersaturated with respect to ice.
 Plume widths for theta_l and rt
 </entry>
 
+<entry id="clubb_bv_efold"  type="real" category="pblrad"
+       group="clubb_params_nl" valid_values="" >
+E-folding parameter for mixed Brunt Vaisala Frequency
+</entry>
+
 <entry id="clubb_c1" type="real" category="pblrad"
        group="clubb_params_nl" valid_values="" >
 Limiting value of C1 when skewness of w (vertical velocity) is small in
