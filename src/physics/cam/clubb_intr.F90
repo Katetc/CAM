@@ -1322,6 +1322,7 @@ end subroutine clubb_init_cnst
          iC2rt, iC2thl, iC2rtthl, ic_K1, ic_K2, inu2, ic_K8, ic_K9, inu9, iC_wp2_splat, ibv_efold, params_list
 
     use clubb_api_module, only: &
+         l_output_rad_files, &
          print_clubb_config_flags_api, &
          setup_clubb_core_api, &
          init_pdf_params_api, &
@@ -1796,8 +1797,10 @@ end subroutine clubb_init_cnst
        allocate(out_zm(pcols,pverp,stats_zm(1)%num_output_fields))
        allocate(out_sfc(pcols,1,stats_sfc(1)%num_output_fields))
 
-       allocate(out_radzt(pcols,pverp,stats_rad_zt(1)%num_output_fields))
-       allocate(out_radzm(pcols,pverp,stats_rad_zm(1)%num_output_fields))
+       if ( l_output_rad_files ) then
+         allocate(out_radzt(pcols,pverp,stats_rad_zt(1)%num_output_fields))
+         allocate(out_radzm(pcols,pverp,stats_rad_zm(1)%num_output_fields))
+       end if
 
     endif
   

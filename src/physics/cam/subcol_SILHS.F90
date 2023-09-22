@@ -473,7 +473,7 @@ contains
       corr_file_path_below = trim( subcol_SILHS_corr_file_path )//trim( subcol_SILHS_corr_file_name )//below_file_ext
 
       call setup_corr_varnce_array_api( corr_file_path_cloud, corr_file_path_below, &
-                                        getnewunit(iunit), &
+                                        newunit(iunit), &
                                         clubb_config_flags%l_fix_w_chi_eta_correlations )
 
       !-------------------------------
@@ -4125,12 +4125,12 @@ contains
    ! small function to get an unused stream identifier to send to setup_corr_varnce_array_api
    ! or any other silhs/clubb functions that require a unit number argument
    ! This comes directly from the Fortran wiki
-   integer function getnewunit(unit)
+   integer function newunit(unit)
      integer, intent(out), optional :: unit
     
      integer, parameter :: LUN_MIN=10, LUN_MAX=1000
      logical :: opened
-     integer :: lun, newunit
+     integer :: lun
    
      newunit=-1
      do lun=LUN_MIN,LUN_MAX
@@ -4141,6 +4141,6 @@ contains
         end if
      end do
      if (present(unit)) unit=newunit
-   end function getnewunit
+   end function newunit
    
 end module subcol_SILHS 
