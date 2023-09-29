@@ -1,16 +1,14 @@
 pipeline {
   agent any
   stages {
-    stage('Check out externals') {
+    stage('Checkout Externals and Copy Custom Files') {
        steps {
-          sh 'python manage_externals/checkout_externals -e Externals.cfg'
+          sh 'python set_up_cam_coarse_res.py ..'
        }
     }
-    stage('Copy Config Files') {
+    stage('Sed Commands') {
       steps {
          sh """#!/bin/bash
-               cp -rf cime_config_cesm_machines_files/config_machines.xml cime/config/cesm/machines/config_machines.xml
-               cp -rf cime_config_cesm_machines_files/config_compilers.xml cime/config/cesm/machines/config_compilers.xml
                # This sed command modifies the test script to use the intel machine configuration, and turn on debugging for the test. 
                sed -i '14s|nelson|nelson_intel|' run_scripts/run_scam.bash
                sed -i '89s|#||' run_scripts/run_scam.bash
