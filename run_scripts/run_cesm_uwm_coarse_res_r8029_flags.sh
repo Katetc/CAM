@@ -2,8 +2,9 @@
 
 # Variables 
 CASE="UWM_debug_r8029_flags_f10_f10_mg37"
-CASEROOT="/home/$USER/cam_output/caseroot/$CASE"
 MACH="nelson"
+COMPILER="gnu"
+CASEROOT="$HOME/cam_output/caseroot/${CASE}_${MACH}_${COMPILER}"
 COMPSET="F2000climo"
 RES="f10_f10_mg37"
 QUEUE="regular"  
@@ -27,7 +28,7 @@ CAM_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 # Set up case
 echo "----- Case Setup -----"
 cd "$CAM_DIR/cime/scripts"
-./create_newcase --handle-preexisting-dirs 'u' --case "$CASEROOT" --mach "$MACH" --compset "$COMPSET" --res "$RES" --run-unsupported || {
+./create_newcase --handle-preexisting-dirs 'u' --case "$CASEROOT" --mach "$MACH" --compiler "$COMPILER" --compset "$COMPSET" --res "$RES" --run-unsupported || {
     echo "Error creating new case" >> /dev/stderr
     exit 1
 }
@@ -38,7 +39,7 @@ cd "$CASEROOT"
 #-----------------------------------------
 for component in ATM LND ICE OCN CPL GLC ROF WAV
 do
-  ./xmlchange NTASKS_$component=2 || exit 1
+  ./xmlchange NTASKS_$component=1 || exit 1
   ./xmlchange NTHRDS_$component=1 || exit 1
 done
 
@@ -95,7 +96,6 @@ microp_uniform = .false.
 history_amwg = .true.
 history_vdiag = .true.
 clubb_do_adv = .false.
-clubb_expldiff = .false.
 clubb_rainevap_turb = .false.
 clubb_cloudtop_cooling = .false.
 fincl1 = 'U:A','PS:A','T:A','V:A','OMEGA:A','Z3:A','PRECT:A',
@@ -111,7 +111,7 @@ fincl1 = 'U:A','PS:A','T:A','V:A','OMEGA:A','Z3:A','PRECT:A',
 'QIRESO:A','QCRESO:A','PRACSO:A','MPDT:A','MPDQ:A','MPDLIQ:A',
 'MPDICE:A','INEGCLPTEND', 'LNEGCLPTEND', 'VNEGCLPTEND',
 'QCRAT:A', $clubb_vars_zt_list,$clubb_vars_zm_list,
-'SL', 'Q', 'RHW', 'QRS', 'QRL', 'HR', 'FDL'
+'Q', 'RHW', 'QRS', 'QRL', 'HR', 'FDL'
 fincl2 = 'CLDTOT', 'CLDST','CDNUMC','CLDLIQ','CLDICE','FLUT',
 'LWCF','SWCF','PRECT'
 
