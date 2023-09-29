@@ -2,8 +2,9 @@
 
 # Variables
 CASE="subcol_SILHS_UWM_debug_f10_f10_mg37"
-CASEROOT="/home/$USER/cam_output/caseroot/$CASE"
 MACH="nelson"
+COMPILER="gnu"
+CASEROOT="$HOME/cam_output/caseroot/${CASE}_${MACH}_${COMPILER}"
 COMPSET="F2000climo"
 RES="f10_f10_mg37"
 QUEUE="regular"  
@@ -28,7 +29,7 @@ CAM_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 # Set up case
 echo "----- Case Setup -----"
 cd "$CAM_DIR/cime/scripts"
-./create_newcase --case "$CASEROOT" --mach "$MACH" --compset "$COMPSET" --res "$RES" --run-unsupported --handle-preexisting-dirs 'r'|| {
+./create_newcase --case "$CASEROOT" --mach "$MACH" --compiler "$COMPILER" --compset "$COMPSET" --res "$RES" --run-unsupported --handle-preexisting-dirs 'u'|| {
     echo "Error creating new case" >> /dev/stderr
     exit 1
 }
@@ -39,7 +40,7 @@ cd "$CASEROOT"
 #-----------------------------------------
 for component in ATM LND ICE OCN CPL GLC ROF WAV
 do
-  ./xmlchange NTASKS_$component=2 || exit 1
+  ./xmlchange NTASKS_$component=1 || exit 1
   ./xmlchange NTHRDS_$component=1 || exit 1
 done
 
@@ -53,7 +54,7 @@ echo "----- Compile Configuration -----"
 # To shut off SILHS, delete -psubcols $NUMSC and -DSILHS below:
 ./xmlchange --append CAM_CONFIG_OPTS=" -silhs  -silent -microphys mg$MGVER -psubcols $NUMSC -cppdefs '-DUWM_MISC -DSILHS'"
 
-./xmlchange DEBUG="FALSE" # Set to TRUE for run-time debugging
+./xmlchange DEBUG="TRUE" # Set to TRUE for run-time debugging
 
 # Compile
 echo "----- Compile -----"
@@ -61,7 +62,7 @@ echo "----- Compile -----"
 
 # Run configuration
 echo "----- Run configuration -----"
-./xmlchange RUN_STARTDATE="0000-01-01"
+./xmlchange RUN_STARTDATE="0001-01-01"
 ./xmlchange STOP_OPTION=ndays
 ./xmlchange STOP_N=1
 ./xmlchange REST_OPTION=ndays
@@ -94,7 +95,6 @@ microp_uniform = .true.
 history_amwg = .true.
 history_vdiag = .true.
 clubb_do_adv = .false.
-clubb_expldiff = .false.
 clubb_rainevap_turb = .false.
 clubb_cloudtop_cooling = .false.
 clubb_l_use_C7_Richardson = .true.
@@ -117,7 +117,7 @@ fincl1 = 'U:A','PS:A','T:A','V:A','OMEGA:A','Z3:A','PRECT:A',
 'QIRESO:A','QCRESO:A','PRACSO:A','MPDT:A','MPDQ:A','MPDLIQ:A',
 'MPDICE:A','INEGCLPTEND', 'LNEGCLPTEND', 'VNEGCLPTEND',
 'QCRAT:A', $clubb_vars_zt_list,$clubb_vars_zm_list,
-'SL', 'Q', 'RHW', 'QRS', 'QRL', 'HR', 'FDL', 'SILHS_CLUBB_PRECIP_FRAC',
+'Q', 'RHW', 'QRS', 'QRL', 'HR', 'FDL', 'SILHS_CLUBB_PRECIP_FRAC',
 'SILHS_CLUBB_ICE_SS_FRAC'
 fincl2 = 'CLDTOT', 'CLDST','CDNUMC','CLDLIQ','CLDICE','FLUT',
 'LWCF','SWCF','PRECT'

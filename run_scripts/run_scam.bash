@@ -10,8 +10,9 @@
 ##########################################################
 # Variables
 CASE="scam_${@: -1}"
-CASEROOT="/home/$USER/projects/scratch/$CASE"
 MACH="nelson"
+COMPILER="intel"
+CASEROOT="$HOME/cam_output/caseroot/${CASE}_${MACH}_${COMPILER}"
 COMPSET="FSCAM"
 RES="T42_T42"
 QUEUE="regular"  
@@ -64,13 +65,14 @@ CAM_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 # Set up case
 echo "----- Case Setup -----"
 cd "$CAM_DIR/cime/scripts"
-./create_newcase --case "test_$CASE" --mach "$MACH" --compset "$COMPSET" --res "$RES" --user-mods-dir "$CASE" --run-unsupported || {
+./create_newcase --case "test_$CASE" --mach "$MACH" --compiler "$COMPILER" --compset "$COMPSET" --res "$RES" --user-mods-dir "$CASE" || {
     echo "Error creating new case" >> /dev/stderr
     exit 1
 }
 #cd "$CASEROOT"
 cd "test_$CASE"
 
+./xmlchange NTASKS=1
 #./xmlchange JOB_QUEUE="$QUEUE"
 #./xmlchange JOB_WALLCLOCK_TIME="$WALL_TIME"
 
@@ -81,12 +83,12 @@ echo "----- Compile Configuration -----"
 
 if [ "$SILHS_ENABLED" = true ] ; then
   # Setup includes -silhs, -psubcols $NUMSC, and -DSILHS to enable SILHS
-  ./xmlchange CAM_CONFIG_OPTS="-clubb_sgs -rad rrtmg -silhs -silent -microphys mg$MGVER -psubcols $NUMSC -cppdefs '-DUWM_MISC -DSILHS'"
+  ./xmlchange CAM_CONFIG_OPTS="-clubb_sgs -rad rrtmg -silent -microphys mg$MGVER -scam -silhs  -psubcols $NUMSC -cppdefs '-DUWM_MISC -DSILHS'"
 else
-  ./xmlchange CAM_CONFIG_OPTS="-clubb_sgs -rad rrtmg -silent -microphys mg$MGVER -cppdefs '-DUWM_MISC'"
+  ./xmlchange CAM_CONFIG_OPTS="-clubb_sgs -rad rrtmg -silent -microphys mg$MGVER -scam -cppdefs '-DUWM_MISC'"
 fi
 
-#./xmlchange DEBUG="FALSE" # Set to TRUE for run-time debugging
+./xmlchange DEBUG="TRUE" # Set to TRUE for run-time debugging
 
 # Run configuration
 echo "----- Run configuration -----"
@@ -129,7 +131,6 @@ microp_uniform = $microp_uniform_namelist_value
 history_amwg = .true.
 history_vdiag = .false.
 clubb_do_adv = .false.
-clubb_expldiff = .false.
 clubb_rainevap_turb = .false.
 clubb_cloudtop_cooling = .false.
 clubb_l_use_C7_Richardson = .true.
@@ -152,7 +153,7 @@ fincl1 = 'U:A','PS:A','T:A','V:A','OMEGA:A','Z3:A','PRECT:A',
 'QIRESO:A','QCRESO:A','PRACSO:A','MPDT:A','MPDQ:A','MPDLIQ:A',
 'MPDICE:A','INEGCLPTEND', 'LNEGCLPTEND', 'VNEGCLPTEND',
 'QCRAT:A', $clubb_vars_zt_list,$clubb_vars_zm_list,
-'SL', 'Q', 'RHW', 'QRS', 'QRL', 'HR', 'FDL'
+'Q', 'RHW', 'QRS', 'QRL', 'HR', 'FDL'
 !, 'SILHS_CLUBB_PRECIP_FRAC','SILHS_CLUBB_ICE_SS_FRAC'
 ncdata='/home/pub/cam_inputdata/atm/cam/inic/gaus/cami_0000-01-01_64x128_L32_c170510.nc' 
 fincl2 = 'CLDTOT', 'CLDST','CDNUMC','CLDLIQ','CLDICE','FLUT',
@@ -177,17 +178,6 @@ subcol_silhs_hmp2_ip_on_hmm2_ip_slope%rs = 0.0,
 subcol_silhs_hmp2_ip_on_hmm2_ip_slope%Ns = 0.0,
 subcol_silhs_hmp2_ip_on_hmm2_ip_slope%ri = 0.0,
 subcol_silhs_hmp2_ip_on_hmm2_ip_slope%Ni = 0.0
-l_lh_importance_sampling = .true.
-l_Lscale_vert_avg = .false.
-l_lh_straight_mc = .false.
-l_lh_clustered_sampling = .true.
-l_rcm_in_cloud_k_lh_start = .true.
-l_random_k_lh_start = .false.
-l_max_overlap_in_cloud = .true.
-l_lh_instant_var_covar_src = .true.
-l_lh_limit_weights = .true.
-l_lh_var_frac = .false.
-l_lh_normalize_weights = .true.
 sol_facti_cloud_borne = 1.0D0
 dust_emis_fact = 0.3D0
 nucleate_ice_subgrid = 1.0

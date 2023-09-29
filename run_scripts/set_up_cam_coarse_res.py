@@ -46,11 +46,13 @@ output, error = process.communicate()
 
 
 print("Copying cime config files")
-machineOptions = "cime_config_cesm_machines_files/config_machines.xml"
-compilerOptions = "cime_config_cesm_machines_files/config_compilers.xml"
-cimeConfigLocation = Path("cime/config/cesm/machines")
-shutil.copy(machineOptions, cimeConfigLocation)
-shutil.copy(compilerOptions, cimeConfigLocation)
+custom_machine_file = "cime_config_cesm_machines_files/config_machines.xml"
+custom_gnu_cmake = "cime_config_cesm_machines_files/gnu_nelson.cmake"
+custom_intel_cmake = "cime_config_cesm_machines_files/intel_nelson.cmake"
+machine_file_dir= Path("ccs_config/machines")
+cmake_macros_dir = Path("ccs_config/machines/cmake_macros")
+shutil.copy(custom_machine_file, machine_file_dir)
+shutil.copy(custom_gnu_cmake, cmake_macros_dir)
 
 
 # Go through run run_cesm_uwm_coarse_res.sh and replace lines of interest
