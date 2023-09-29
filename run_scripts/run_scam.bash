@@ -11,7 +11,7 @@
 # Variables
 CASE="scam_${@: -1}"
 MACH="nelson"
-COMPILER="intel"
+COMPILER="gnu"
 CASEROOT="$HOME/cam_output/caseroot/${CASE}_${MACH}_${COMPILER}"
 COMPSET="FSCAM"
 RES="T42_T42"

@@ -10,9 +10,7 @@ pipeline {
       steps {
          sh """#!/bin/bash
                # This sed command modifies the test script to use the intel machine configuration, and turn on debugging for the test. 
-               sed -i '14s|nelson|nelson_intel|' run_scripts/run_scam.bash
-               sed -i '89s|#||' run_scripts/run_scam.bash
-               sed -i '89s|FALSE|TRUE|' run_scripts/run_scam.bash"""
+               sed -i '14s|gnu|intel|' run_scripts/run_scam.bash"""
        }
     }
     stage('Remove Old Output') {
