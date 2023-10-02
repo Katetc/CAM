@@ -65,7 +65,7 @@ CAM_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 # Set up case
 echo "----- Case Setup -----"
 cd "$CAM_DIR/cime/scripts"
-./create_newcase --case "test_$CASE" --mach "$MACH" --compiler "$COMPILER" --compset "$COMPSET" --res "$RES" --user-mods-dir "$CASE" || {
+./create_newcase --case "test_$CASE" --mach "$MACH" --compiler "$COMPILER" --compset "$COMPSET" --res "$RES" --user-mods-dir "$CASE" --handle-preexisting-dirs 'r'|| {
     echo "Error creating new case" >> /dev/stderr
     exit 1
 }
