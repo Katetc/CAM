@@ -163,6 +163,7 @@ clubb_l_vary_convect_depth          = .false.,
 clubb_l_use_tke_in_wp3_pr_turb_term = .false.,
 clubb_l_use_tke_in_wp2_wp3_K_dfsn   = .false.
 clubb_l_smooth_Heaviside_tau_wpxp   = .false.
+clubb_l_enable_relaxed_clipping     = .true.
 
 ! Backwards compatible clubb params   
 clubb_c1 = 1.000000 
