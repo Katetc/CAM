@@ -53,6 +53,7 @@ machine_file_dir= Path("ccs_config/machines")
 cmake_macros_dir = Path("ccs_config/machines/cmake_macros")
 shutil.copy(custom_machine_file, machine_file_dir)
 shutil.copy(custom_gnu_cmake, cmake_macros_dir)
+shutil.copy(custom_intel_cmake, cmake_macros_dir)
 
 
 # Go through run run_cesm_uwm_coarse_res.sh and replace lines of interest
