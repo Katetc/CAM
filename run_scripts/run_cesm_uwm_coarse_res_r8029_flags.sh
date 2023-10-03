@@ -53,7 +53,7 @@ echo "----- Compile Configuration -----"
 # To shut off SILHS, delete -psubcols $NUMSC and -DSILHS below:
 ./xmlchange --append CAM_CONFIG_OPTS="  -silent -microphys mg$MGVER -cppdefs '-DUWM_MISC'"
 
-./xmlchange DEBUG="FALSE" # Set to TRUE for run-time debugging
+./xmlchange DEBUG="TRUE" # Set to TRUE for run-time debugging
 
 # Compile
 echo "----- Compile -----"
@@ -61,7 +61,7 @@ echo "----- Compile -----"
 
 # Run configuration
 echo "----- Run configuration -----"
-./xmlchange RUN_STARTDATE="0000-01-01"
+./xmlchange RUN_STARTDATE="0001-01-01"
 ./xmlchange STOP_OPTION=ndays
 ./xmlchange STOP_N=1
 ./xmlchange REST_OPTION=ndays
