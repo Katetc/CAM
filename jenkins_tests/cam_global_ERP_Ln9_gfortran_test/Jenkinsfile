@@ -6,14 +6,6 @@ pipeline {
           sh 'python run_scripts/set_up_cam_coarse_res.py .'
        }
     }
-    stage('Make cprnc') {
-      steps {
-        dir(path: 'cime/tools/cprnc') {
-           sh 'bash -c "export LIB_NETCDF=/usr/local/NETCDF-Fortran-4.5.3-gfortran/lib; export INC_NETCDF=/usr/local/NETCDF-Fortran-4.5.3-gfortran/include; ../configure --macros-format=Makefile --mpilib=mpi-serial --machine nelson; source ./.env_mach_specific.sh; make"'
-        }
-
-      }
-    }
     stage('Run CAM') {
       steps {
          // The source step is done to bring in all the needed intel path variables to run the rest of the commands
