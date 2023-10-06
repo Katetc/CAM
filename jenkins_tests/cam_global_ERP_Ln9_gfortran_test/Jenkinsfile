@@ -1,6 +1,11 @@
 pipeline {
   agent any
   stages {
+    stage('Checkout Externals and Copy Custom Files') {
+       steps {
+          sh 'python run_scripts/set_up_cam_coarse_res.py .'
+       }
+    }
     stage('Run CAM') {
       steps {
          // The source step is done to bring in all the needed intel path variables to run the rest of the commands
