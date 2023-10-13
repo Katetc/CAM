@@ -49,7 +49,7 @@ module stats_zm_module
         irtpthvp, &
         ithlpthvp, &
         itau_zm, &
-        isqrt_Ri_zm, &
+        iRi_zm, &
         iKh_zm, &
         iK_hm, &
         iwprcp, &
@@ -320,7 +320,9 @@ module stats_zm_module
         iC1_Skw_fnc, &
         ibrunt_vaisala_freq_sqd, &
         ibrunt_vaisala_freq_sqd_splat, &
-        iRichardson_num, &
+        ibrunt_vaisala_freq_sqd_mixed, &
+        ibrunt_vaisala_freq_sqd_moist, &
+        ibrunt_vaisala_freq_sqd_dry, &
         ishear_sqd, &
         ihydrometp2, &
         iwphydrometp, &
@@ -2509,17 +2511,34 @@ module stats_zm_module
              l_silhs=.false., grid_kind=stats_zm )
         k = k + 1
 
-      case ( 'sqrt_Ri_zm' )
-        isqrt_Ri_zm = k
-        call stat_assign( var_index=isqrt_Ri_zm,var_name="sqrt_Ri_zm", &
-             var_description="Richardson number [-]", var_units="-", &
+      case ( 'bv_freq_sqd_mixed' )
+        ibrunt_vaisala_freq_sqd_mixed = k
+        call stat_assign( var_index=ibrunt_vaisala_freq_sqd_mixed, var_name="bv_freq_sqd_mixed", &
+             var_description="Interpolated Brunt-Vaisala freq. squared between moist and dry air", &
+             var_units="1/s^2", &
              l_silhs=.false., grid_kind=stats_zm )
         k = k + 1
 
-      case ( 'Richardson_num' )
-        iRichardson_num = k
-        call stat_assign( var_index=iRichardson_num, var_name="Richardson_num", &
-             var_description="Richardson_num, Richardson number", var_units="-", &
+      case ( 'bv_freq_sqd_moist' )
+        ibrunt_vaisala_freq_sqd_moist = k
+        call stat_assign( var_index=ibrunt_vaisala_freq_sqd_moist, var_name="bv_freq_sqd_moist", &
+             var_description="Brunt-Vaisala freq. squared in moist air", &
+             var_units="1/s^2", &
+             l_silhs=.false., grid_kind=stats_zm )
+        k = k + 1
+
+      case ( 'bv_freq_sqd_dry' )
+        ibrunt_vaisala_freq_sqd_dry = k
+        call stat_assign( var_index=ibrunt_vaisala_freq_sqd_dry, var_name="bv_freq_sqd_dry", &
+             var_description="Brunt-Vaisala freq. squared in dry air", &
+             var_units="1/s^2", &
+             l_silhs=.false., grid_kind=stats_zm )
+        k = k + 1
+
+      case ( 'Ri_zm' )
+        iRi_zm = k
+        call stat_assign( var_index=iRi_zm,var_name="Ri_zm", &
+             var_description="Richardson number [-]", var_units="-", &
              l_silhs=.false., grid_kind=stats_zm )
         k = k + 1
 

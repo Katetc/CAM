@@ -362,7 +362,10 @@ module advance_clubb_core_module
         iinvrs_tau_shear,        &
         ibrunt_vaisala_freq_sqd, &
         ibrunt_vaisala_freq_sqd_splat, &
-        isqrt_Ri_zm
+        ibrunt_vaisala_freq_sqd_mixed, &
+        ibrunt_vaisala_freq_sqd_moist, &
+        ibrunt_vaisala_freq_sqd_dry, &
+        iRi_zm
 
     use stats_variables, only: &
         iwprtp_zt,     &
@@ -811,12 +814,12 @@ module advance_clubb_core_module
        invrs_tau_wp3_zt,             & ! Inverse tau wp3 at zt levels
        Cx_fnc_Richardson,            & ! Cx_fnc computed from Richardson_num          [-]
        brunt_vaisala_freq_sqd,       & ! Buoyancy frequency squared, N^2              [s^-2]
-       brunt_vaisala_freq_sqd_mixed, & ! A mixture of dry and moist N^2
-       brunt_vaisala_freq_sqd_dry,   & ! dry N^2
-       brunt_vaisala_freq_sqd_moist, & ! moist N^2
-       brunt_vaisala_freq_sqd_splat, &
+       brunt_vaisala_freq_sqd_mixed, & ! A mixture of dry and moist N^2               [s^-2]
+       brunt_vaisala_freq_sqd_dry,   & ! dry N^2                                      [s^-2]
+       brunt_vaisala_freq_sqd_moist, & ! moist N^2                                    [s^-2]
+       brunt_vaisala_freq_sqd_splat, & !                                              [s^-2]
        brunt_vaisala_freq_sqd_zt,    & ! Buoyancy frequency squared on t-levs.        [s^-2]
-       sqrt_Ri_zm                      ! square root of Richardson number
+       Ri_zm                           ! Richardson number                            [-]
 
 
     real( kind = core_rknd ), parameter :: &
@@ -983,8 +986,8 @@ module advance_clubb_core_module
     !$acc              invrs_tau_sfc, invrs_tau_zt, invrs_tau_wp3_zt, Cx_fnc_Richardson, &
     !$acc              brunt_vaisala_freq_sqd, brunt_vaisala_freq_sqd_mixed, &
     !$acc              brunt_vaisala_freq_sqd_dry, brunt_vaisala_freq_sqd_moist, &
-    !$acc              brunt_vaisala_freq_sqd_plus, brunt_vaisala_freq_sqd_splat, &
-    !$acc              brunt_vaisala_freq_sqd_zt, sqrt_Ri_zm, Lscale_max, &
+    !$acc              brunt_vaisala_freq_sqd_splat, &
+    !$acc              brunt_vaisala_freq_sqd_zt, Ri_zm, Lscale_max, &
     !$acc              tau_max_zm, tau_max_zt, newmu, lhs_splat_wp2, lhs_splat_wp3 )
 
     !$acc enter data if( sclr_dim > 0 ) &
@@ -1549,6 +1552,7 @@ module advance_clubb_core_module
           invrs_tau_xp2_zm(i,k)  = invrs_tau_zm(i,k)
           invrs_tau_wpxp_zm(i,k) = invrs_tau_zm(i,k)
           invrs_tau_wp3_zt(i,k)  = invrs_tau_zt(i,k)
+          invrs_tau_wp3_zm(i,k)  = invrs_tau_zm(i,k)
 
           tau_max_zm(i,k) = taumax
           tau_max_zt(i,k) = taumax
@@ -1587,7 +1591,7 @@ module advance_clubb_core_module
                         clubb_config_flags%l_modify_limiters_for_cnvg_test,       & ! In
                         brunt_vaisala_freq_sqd, brunt_vaisala_freq_sqd_mixed,     & ! Out
                         brunt_vaisala_freq_sqd_dry, brunt_vaisala_freq_sqd_moist, & ! Out
-                        sqrt_Ri_zm,                                               & ! Out
+                        Ri_zm,                                                    & ! Out
                         invrs_tau_zt, invrs_tau_zm,                               & ! Out
                         invrs_tau_sfc, invrs_tau_no_N2_zm, invrs_tau_bkgnd,       & ! Out
                         invrs_tau_shear, invrs_tau_N2_iso,                        & ! Out
@@ -1826,9 +1830,10 @@ module advance_clubb_core_module
     if ( l_stats_samp ) then
 
       !$acc update host( invrs_tau_zm, invrs_tau_xp2_zm, invrs_tau_wp2_zm, invrs_tau_wpxp_zm, &
-      !$acc              sqrt_Ri_zm, invrs_tau_wp3_zm, invrs_tau_no_N2_zm, invrs_tau_bkgnd, &
+      !$acc              Ri_zm, invrs_tau_wp3_zm, invrs_tau_no_N2_zm, invrs_tau_bkgnd, &
       !$acc              invrs_tau_sfc, invrs_tau_shear, brunt_vaisala_freq_sqd, &
-      !$acc              brunt_vaisala_freq_sqd_splat )
+      !$acc              brunt_vaisala_freq_sqd_splat, brunt_vaisala_freq_sqd_mixed, &
+      !$acc              brunt_vaisala_freq_sqd_moist, brunt_vaisala_freq_sqd_dry )
 
       do i = 1, ngrdcol
     
@@ -1840,7 +1845,7 @@ module advance_clubb_core_module
                              stats_zm(i))                              ! intent(inout)
         call stat_update_var(iinvrs_tau_wpxp_zm, invrs_tau_wpxp_zm(i,:), & ! intent(in)
                              stats_zm(i))                                ! intent(inout)
-        call stat_update_var(isqrt_Ri_zm, sqrt_Ri_zm(i,:), & ! intent(in)
+        call stat_update_var(iRi_zm, Ri_zm(i,:), & ! intent(in)
                              stats_zm(i))                  ! intent(inout)
         call stat_update_var(iinvrs_tau_wp3_zm, invrs_tau_wp3_zm(i,:), &   ! intent(in)
                              stats_zm(i))                                ! intent(inout)
@@ -1854,11 +1859,17 @@ module advance_clubb_core_module
                                stats_zm(i))                        ! intent(inout)
           call stat_update_var(iinvrs_tau_shear, invrs_tau_shear(i,:), & ! intent(in)
                                stats_zm(i))                            ! intent(inout)
-          call stat_update_var(ibrunt_vaisala_freq_sqd, brunt_vaisala_freq_sqd(i,:), & ! intent(in)
-                               stats_zm(i))                                          ! intent(inout)
         end if
+        call stat_update_var(ibrunt_vaisala_freq_sqd, brunt_vaisala_freq_sqd(i,:), & ! intent(in)
+                             stats_zm(i))
         call stat_update_var(ibrunt_vaisala_freq_sqd_splat, brunt_vaisala_freq_sqd_splat(i,:), & ! intent(in)
-                               stats_zm(i))
+                             stats_zm(i))                                       ! intent(inout)
+        call stat_update_var(ibrunt_vaisala_freq_sqd_mixed, brunt_vaisala_freq_sqd_mixed(i,:), & ! intent(in)
+                             stats_zm(i))                                          ! intent(inout)
+        call stat_update_var(ibrunt_vaisala_freq_sqd_moist, brunt_vaisala_freq_sqd_moist(i,:), & ! intent(in)
+                             stats_zm(i))                                          ! intent(inout)
+        call stat_update_var(ibrunt_vaisala_freq_sqd_dry, brunt_vaisala_freq_sqd_dry(i,:), & ! intent(in)
+                             stats_zm(i))                                          ! intent(inout)
       end do
     end if
 
@@ -2899,8 +2910,8 @@ module advance_clubb_core_module
     !$acc                   invrs_tau_sfc, invrs_tau_zt, invrs_tau_wp3_zt, Cx_fnc_Richardson, &
     !$acc                   brunt_vaisala_freq_sqd, brunt_vaisala_freq_sqd_mixed, &
     !$acc                   brunt_vaisala_freq_sqd_dry, brunt_vaisala_freq_sqd_moist, &
-    !$acc                   brunt_vaisala_freq_sqd_plus, brunt_vaisala_freq_sqd_splat, &
-    !$acc                   brunt_vaisala_freq_sqd_zt, sqrt_Ri_zm, Lscale_max, &
+    !$acc                   brunt_vaisala_freq_sqd_splat, &
+    !$acc                   brunt_vaisala_freq_sqd_zt, Ri_zm, Lscale_max, &
     !$acc                   tau_max_zm, tau_max_zt, newmu, lhs_splat_wp2, lhs_splat_wp3 )
 
     !$acc exit data if( sclr_dim > 0 ) &
