@@ -3777,12 +3777,12 @@ This allows using a different mpirun command to launch unit tests
     <environment_variables compiler="gnu">
       <env name="NETCDF_FORTRAN_PATH">$ENV{GFORTRAN_NETCDF_FORTRAN}</env>
       <env name="NETCDF_C_PATH">$ENV{GFORTRAN_NETCDF_C}</env>
-      <env name="ESMFMKFILE">/usr/local/esmf/esmf_8.5.0_gnu/lib/libO/Linux.gfortran.64.mpiuni.default/esmf.mk</env>
+      <env name="ESMFMKFILE">/usr/local/esmf/esmf_8.5.0_gnu/lib/libO/Linux.gfortran.64.mpich.default/esmf.mk</env>
     </environment_variables>
     <environment_variables compiler="intel">
       <env name="NETCDF_FORTRAN_PATH">$ENV{IFORT_NETCDF_FORTRAN}</env>
       <env name="NETCDF_C_PATH">$ENV{IFORT_NETCDF_C}</env>
-      <env name="ESMFMKFILE">/usr/local/esmf/esmf_8.5.0_intel/lib/libO/Linux.intel.64.mpiuni.default/esmf.mk</env>
+      <env name="ESMFMKFILE">/usr/local/esmf/esmf_8.5.0_intel/lib/libO/Linux.intel.64.mpich.default/esmf.mk</env>
     </environment_variables>
   </machine>
 

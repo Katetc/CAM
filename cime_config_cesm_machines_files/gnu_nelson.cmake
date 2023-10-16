@@ -41,7 +41,7 @@ set(SCXX "g++")
 set(SFC "gfortran")
 set(SUPPORTS_CXX "TRUE")
 
-set(ESMF_LIBDIR "/usr/local/esmf/esmf_8.5.0_gnu/lib/libO/Linux.gfortran.64.mpiuni.default")
+set(ESMF_LIBDIR "/usr/local/esmf/esmf_8.5.0_gnu/lib/libO/Linux.gfortran.64.mpich.default")
 
 string(APPEND SLIBS " -L$ENV{GFORTRAN_NETCDF_FORTRAN}/lib -lnetcdff -L$ENV{GFORTRAN_NETCDF_C}/lib -lnetcdf -llapack -lblas")
 

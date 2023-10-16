@@ -37,7 +37,7 @@ set(SCC "icc")
 set(SCXX "icpc")
 set(SFC "ifort")
 
-set(ESMF_LIBDIR "/usr/local/esmf/esmf_8.5.0_intel/lib/libO/Linux.intel.64.mpiuni.default")
+set(ESMF_LIBDIR "/usr/local/esmf/esmf_8.5.0_intel/lib/libO/Linux.intel.64.mpich.default")
 
 string(APPEND SLIBS " -L$ENV{IFORT_NETCDF_FORTRAN}/lib -lnetcdff -L$ENV{IFORT_NETCDF_C}/lib -lnetcdf -llapack -lblas")
 
