@@ -3310,6 +3310,7 @@ if ($clubb_sgs  =~ /$TRUE/io) {
    }
 
    add_default($nl, 'clubb_bv_efold');
+   add_default($nl, 'clubb_wpxp_Ri_exp');
    add_default($nl, 'clubb_C7');
    add_default($nl, 'clubb_C7b');
    add_default($nl, 'clubb_c_K1');
