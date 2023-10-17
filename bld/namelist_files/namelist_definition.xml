@@ -4358,6 +4358,11 @@ clubb_up2_sfc_coef increases the values of up2 and vp2 at the surface.
 CLUBB tunable parameter - Lscale threshold: damp C6 and C7 (units: m)
 </entry>
 
+<entry id="clubb_wpxp_Ri_exp"  type="real" category="pblrad"
+       group="clubb_params_nl" valid_values="" >
+Exponent for Richardson number in calculation of invrs_tau_wpxp term
+</entry>
+
 <!-- for CLUBB+MF -->
 <entry id="do_clubb_mf" type="logical" category="conv"
        group="clubb_mf_nl" valid_values="" >
