@@ -16,7 +16,7 @@ prefix='/glade/scratch/'+os.environ['USER']+'/'+case+'/run'
 plots = []
 
 # Add variables
-varnames = ['cloud_frac', 'SILHS_CLUBB_PRECIP_FRAC', 'SILHS_CLUBB_ICE_SS_FRAC', 'thlm', 'rtm', 'rcm', 'wp2', 'wp3', 'wpthlp', 'wprtp', 'thlp2', 'rtp2', 'rtpthlp', 'OMEGA', 'AQRAIN', 'ANRAIN', 'AWNC', 'CLDICE', 'CLDLIQ', 'CLOUD', 'AWNI', 'AQSNOW', 'ANSNOW', 'wpthvp', 'T', 'C7_Skw_fnc', 'um', 'vm', 'upwp', 'vpwp', 'C6rt_Skw_fnc', 'C6thl_Skw_fnc', 'Richardson_num', 'Lscale', 'C11_Skw_fnc', 'up2', 'vp2', 'Kh_zm', 'Q', 'SL', 'RHW', 'QRS', 'QRL', 'HR', 'FDL']
+varnames = ['cloud_frac', 'SILHS_CLUBB_PRECIP_FRAC', 'SILHS_CLUBB_ICE_SS_FRAC', 'thlm', 'rtm', 'rcm', 'wp2', 'wp3', 'wpthlp', 'wprtp', 'thlp2', 'rtp2', 'rtpthlp', 'OMEGA', 'AQRAIN', 'ANRAIN', 'AWNC', 'CLDICE', 'CLDLIQ', 'CLOUD', 'AWNI', 'AQSNOW', 'ANSNOW', 'wpthvp', 'T', 'C7_Skw_fnc', 'um', 'vm', 'upwp', 'vpwp', 'C6rt_Skw_fnc', 'C6thl_Skw_fnc', 'Lscale', 'C11_Skw_fnc', 'up2', 'vp2', 'Kh_zm', 'Q', 'SL', 'RHW', 'QRS', 'QRL', 'HR', 'FDL']
 
 upper_altitude_hpa = 150.0
 
