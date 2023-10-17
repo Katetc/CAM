@@ -208,6 +208,7 @@ clubb_up2_sfc_coef = 2.0
 clubb_C_wp2_splat = 0.000000
 clubb_wpxp_L_thresh = 60.0
 clubb_bv_efold = 5.0
+clubb_wpxp_Ri_exp = 0.5
 
 ! CLUBB history!!!
 clubb_history = .true.
