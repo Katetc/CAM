@@ -39,7 +39,7 @@ cd "$CASEROOT"
 #-----------------------------------------
 for component in ATM LND ICE OCN CPL GLC ROF WAV
 do
-  ./xmlchange NTASKS_$component=1 || exit 1
+  ./xmlchange NTASKS_$component=2 || exit 1
   ./xmlchange NTHRDS_$component=1 || exit 1
 done
 
