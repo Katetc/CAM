@@ -4759,6 +4759,9 @@ end function diag_ustar
        call endrun ("stats_init_clubb:  number of zt statistical variables exceeds limit")
     endif
 
+    ! Sets first_call to true if stats_zt%z is unallocated
+    first_call = (.not. allocated(stats_zt%z))
+
     stats_zt%num_output_fields = ntot
     stats_zt%kk = nnzp
 
