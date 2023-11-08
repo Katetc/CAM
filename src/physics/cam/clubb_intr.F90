@@ -3021,10 +3021,9 @@ end subroutine clubb_init_cnst
                          zi_g, zt_g,                                      & ! intent(in)
                          gr, begin_height, end_height )                     ! intent(out)
 
-    call setup_parameters_api( zi_g(:,2), clubb_params, nlev+1, ncol, grid_type,  & ! intent(in)
-                               zi_g, zt_g,                                        & ! intent(in)
-                               clubb_config_flags%l_prescribed_avg_deltaz,        & ! intent(in)
-                               lmin, nu_vert_res_dep, err_code )                    ! intent(out)
+    call setup_parameters_api( zi_g(:,2), clubb_params, gr, ncol, grid_type,  & ! intent(in)
+                               clubb_config_flags%l_prescribed_avg_deltaz,    & ! intent(in)
+                               lmin, nu_vert_res_dep, err_code )                ! intent(out)
     if ( err_code == clubb_fatal_error ) then
        call endrun(subr//':  Fatal error in CLUBB setup_parameters')
     end if
