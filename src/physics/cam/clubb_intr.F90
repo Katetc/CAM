@@ -2465,7 +2465,6 @@ end subroutine clubb_init_cnst
     character(len=*), parameter :: subr='clubb_tend_cam'
                           
     type(grid) :: gr
-    integer :: begin_height, end_height
     
     type(nu_vertical_res_dep) :: nu_vert_res_dep   ! Vertical resolution dependent nu values
     real(r8) :: lmin
@@ -3019,7 +3018,7 @@ end subroutine clubb_init_cnst
     call setup_grid_api( nlev+1, ncol, sfc_elevation, l_implemented,      & ! intent(in)
                          grid_type, zi_g(:,2), zi_g(:,1), zi_g(:,nlev+1), & ! intent(in)
                          zi_g, zt_g,                                      & ! intent(in)
-                         gr, begin_height, end_height )                     ! intent(out)
+                         gr )                                               ! intent(out)
 
     call setup_parameters_api( zi_g(:,2), clubb_params, gr, ncol, grid_type,  & ! intent(in)
                                clubb_config_flags%l_prescribed_avg_deltaz,    & ! intent(in)
