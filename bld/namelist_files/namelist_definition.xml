@@ -4363,6 +4363,11 @@ CLUBB tunable parameter - Lscale threshold: damp C6 and C7 (units: m)
 Exponent for Richardson number in calculation of invrs_tau_wpxp term
 </entry>
 
+<entry id="clubb_z_displace"  type="real" category="pblrad"
+       group="clubb_params_nl" valid_values="" >
+Displacement of log law profile above ground  (units: m)
+</entry>
+
 <!-- for CLUBB+MF -->
 <entry id="do_clubb_mf" type="logical" category="conv"
        group="clubb_mf_nl" valid_values="" >
