@@ -3375,6 +3375,7 @@ if ($clubb_sgs  =~ /$TRUE/io) {
    add_default($nl, 'clubb_up2_sfc_coef');
    add_default($nl, 'clubb_wpxp_L_thresh');
    add_default($nl, 'clubb_wpxp_Ri_exp');
+   add_default($nl, 'clubb_z_displace');
 
    #CLUBB+MF options
    add_default($nl, 'do_clubb_mf');
