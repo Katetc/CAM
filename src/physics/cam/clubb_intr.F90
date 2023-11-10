@@ -32,7 +32,7 @@ module clubb_intr
 #ifdef CLUBB_SGS
   use clubb_api_module,    only: pdf_parameter, implicit_coefs_terms
   use clubb_api_module,    only: clubb_config_flags_type, grid, stats, & 
-                                 nu_vertical_res_dep, stat_indices
+                                 nu_vertical_res_dep, stats_metadata_type
   use clubb_api_module,    only: nparams
   use clubb_mf,            only: do_clubb_mf, do_clubb_mf_diag
   use cloud_fraction,      only: dp1, dp2
@@ -50,7 +50,7 @@ module clubb_intr
                                 
 !$omp threadprivate(stats_zt, stats_zm, stats_rad_zt, stats_rad_zm, stats_sfc)
 
-  type (stat_indices) :: &
+  type (stats_metadata_type) :: &
     stats_metadata
 
 !$omp threadprivate(stats_metadata)
