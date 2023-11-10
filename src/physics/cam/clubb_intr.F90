@@ -31,7 +31,8 @@ module clubb_intr
   use zm_conv_intr,        only: zmconv_microp
 #ifdef CLUBB_SGS
   use clubb_api_module,    only: pdf_parameter, implicit_coefs_terms
-  use clubb_api_module,    only: clubb_config_flags_type, grid, stats, nu_vertical_res_dep
+  use clubb_api_module,    only: clubb_config_flags_type, grid, stats, & 
+                                 nu_vertical_res_dep, stat_indices
   use clubb_api_module,    only: nparams
   use clubb_mf,            only: do_clubb_mf, do_clubb_mf_diag
   use cloud_fraction,      only: dp1, dp2
@@ -49,6 +50,11 @@ module clubb_intr
                                 
 !$omp threadprivate(stats_zt, stats_zm, stats_rad_zt, stats_rad_zm, stats_sfc)
 
+  type (stat_indices) :: &
+    stats_metadata
+
+!$omp threadprivate(stats_metadata)
+
 #endif
 
   private
@@ -62,6 +68,7 @@ module clubb_intr
 #ifdef CLUBB_SGS
             ! This utilizes CLUBB specific variables in its interface
             stats_init_clubb, &
+            stats_metadata, &
             stats_zt, stats_zm, stats_sfc, &
             stats_rad_zt, stats_rad_zm, &
             stats_end_timestep_clubb, & 
@@ -697,8 +704,7 @@ end subroutine clubb_init_cnst
     
     use clubb_api_module, only: &
       set_default_clubb_config_flags_api, & ! Procedure(s)
-      initialize_clubb_config_flags_type_api, &
-      l_stats, l_output_rad_files
+      initialize_clubb_config_flags_type_api
 #endif
 
     character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
@@ -835,11 +841,11 @@ end subroutine clubb_init_cnst
     !----- Begin Code -----
 
     !  Determine if we want clubb_history to be output  
-    clubb_history      = .false.   ! Initialize to false
-    l_stats            = .false.   ! Initialize to false
-    l_output_rad_files = .false.   ! Initialize to false
-    do_cldcool         = .false.   ! Initialize to false
-    do_rainturb        = .false.   ! Initialize to false
+    clubb_history                     = .false.   ! Initialize to false
+    stats_metadata%l_stats            = .false.   ! Initialize to false
+    stats_metadata%l_output_rad_files = .false.   ! Initialize to false
+    do_cldcool                        = .false.   ! Initialize to false
+    do_rainturb                       = .false.   ! Initialize to false
     
     ! Initialize namelist variables to clubb defaults
     call set_default_clubb_config_flags_api( clubb_iiPDF_type, & ! Out
@@ -1160,8 +1166,8 @@ end subroutine clubb_init_cnst
     if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: clubb_l_partial_upwind_wp3")
 
     !  Overwrite defaults if they are true
-    if (clubb_history) l_stats = .true.
-    if (clubb_rad_history) l_output_rad_files = .true. 
+    if (clubb_history) stats_metadata%l_stats = .true.
+    if (clubb_rad_history) stats_metadata%l_output_rad_files = .true. 
     if (clubb_cloudtop_cooling) do_cldcool = .true.
     if (clubb_rainevap_turb) do_rainturb = .true.
     
@@ -1334,7 +1340,6 @@ end subroutine clubb_init_cnst
          params_list
 
     use clubb_api_module, only: &
-         l_output_rad_files, &
          print_clubb_config_flags_api, &
          setup_clubb_core_api, &
          init_pdf_params_api, &
@@ -1345,9 +1350,6 @@ end subroutine clubb_init_cnst
          nparams, &
          set_default_parameters_api, &
          read_parameters_api, &
-         l_stats, &
-         l_stats_samp, &
-         l_grads, &
          w_tol_sqd, &
          rt_tol, &
          thl_tol
@@ -1492,11 +1494,11 @@ end subroutine clubb_init_cnst
 
 
     !  Defaults
-    l_stats_samp = .false.
-    l_grads = .false.
+    stats_metadata%l_stats_samp = .false.
+    stats_metadata%l_grads = .false.
 
     !  Overwrite defaults if needbe     
-    if (l_stats) l_stats_samp = .true.
+    if (stats_metadata%l_stats) stats_metadata%l_stats_samp = .true.
 
     !  Define physics buffers indexes
     cld_idx     = pbuf_get_index('CLD')         ! Cloud fraction
@@ -1799,20 +1801,18 @@ end subroutine clubb_init_cnst
     dum2 = 1200._r8
     dum3 = 300._r8
 
-    if (l_stats) then
+    if (stats_metadata%l_stats) then
       
-      do i=1, pcols
-        call stats_init_clubb( .true., dum1, dum2, &
-                               nlev+1, nlev+1, nlev+1, dum3, &
-                               stats_zt(i), stats_zm(i), stats_sfc(i), &
-                               stats_rad_zt(i), stats_rad_zm(i))
-      end do             
+      call stats_init_clubb( .true., dum1, dum2, &
+                             nlev+1, nlev+1, nlev+1, dum3, &
+                             stats_zt(:), stats_zm(:), stats_sfc(:), &
+                             stats_rad_zt(:), stats_rad_zm(:))
 
        allocate(out_zt(pcols,pverp,stats_zt(1)%num_output_fields))
        allocate(out_zm(pcols,pverp,stats_zm(1)%num_output_fields))
        allocate(out_sfc(pcols,1,stats_sfc(1)%num_output_fields))
 
-       if ( l_output_rad_files ) then
+       if ( stats_metadata%l_output_rad_files ) then
          allocate(out_radzt(pcols,pverp,stats_rad_zt(1)%num_output_fields))
          allocate(out_radzm(pcols,pverp,stats_rad_zm(1)%num_output_fields))
        end if
@@ -2024,10 +2024,6 @@ end subroutine clubb_init_cnst
       w_tol_sqd, &
       rt_tol, &
       thl_tol, &
-      l_stats, &
-      stats_tsamp, &
-      stats_tout, &
-      l_output_rad_files, &
       stats_begin_timestep_api, &
       hydromet_dim, calculate_thlp2_rad_api, update_xp2_mc_api, &
       sat_mixrat_liq_api, &
@@ -3009,11 +3005,11 @@ end subroutine clubb_init_cnst
     end do
 
     !  Set stats output and increment equal to CLUBB and host dt
-    stats_tsamp = dtime
-    stats_tout  = hdtime
+    stats_metadata%stats_tsamp = dtime
+    stats_metadata%stats_tout  = hdtime
 
-    stats_nsamp = nint(stats_tsamp/dtime)
-    stats_nout = nint(stats_tout/dtime)
+    stats_nsamp = nint(stats_metadata%stats_tsamp/dtime)
+    stats_nout = nint(stats_metadata%stats_tout/dtime)
  
     !  Heights need to be set at each timestep.  Therefore, recall 
     !  setup_grid and setup_parameters for this.  
@@ -3316,8 +3312,9 @@ end subroutine clubb_init_cnst
     do t=1,nadv    ! do needed number of "sub" timesteps for each CAM step
   
       !  Increment the statistics then being stats timestep
-      if (l_stats) then
-        call stats_begin_timestep_api(t, stats_nsamp, stats_nout)
+      if (stats_metadata%l_stats) then
+        call stats_begin_timestep_api( t, stats_nsamp, stats_nout, &
+                                       stats_metadata )
       endif
 
       !#######################################################################
@@ -3396,6 +3393,7 @@ end subroutine clubb_init_cnst
           grid_dx, grid_dy, &
           clubb_params, nu_vert_res_dep, lmin, &
           clubb_config_flags, &
+          stats_metadata, &
           stats_zt(:ncol), stats_zm(:ncol), stats_sfc(:ncol), &
           um_in, vm_in, upwp_in, vpwp_in, up2_in, vp2_in, up3_in, vp3_in, &
           thlm_in, rtm_in, wprtp_in, wpthlp_in, &
@@ -3478,7 +3476,7 @@ end subroutine clubb_init_cnst
       
       !  Check to see if stats should be output, here stats are read into
       !  output arrays to make them conformable to CAM output
-      if (l_stats) then
+      if (stats_metadata%l_stats) then
         do i=1, ncol
           call stats_end_timestep_clubb(i, stats_zt(i), stats_zm(i), stats_rad_zt(i), stats_rad_zm(i), stats_sfc(i), &
                                         out_zt, out_zm, out_radzt, out_radzm, out_sfc)
@@ -4353,7 +4351,7 @@ end subroutine clubb_init_cnst
     end if
 
     !  Output CLUBB history here
-    if (l_stats) then 
+    if (stats_metadata%l_stats) then 
       
       do j=1,stats_zt(1)%num_output_fields
    
@@ -4373,7 +4371,7 @@ end subroutine clubb_init_cnst
         call outfld(trim(sub),out_zm(:,:,j), pcols, lchnk)
       enddo
 
-      if (l_output_rad_files) then  
+      if (stats_metadata%l_output_rad_files) then  
         do j=1,stats_rad_zt(1)%num_output_fields
           call outfld(trim(stats_rad_zt(1)%file%grid_avg_var(j)%name), out_radzt(:,:,j), pcols, lchnk)
         enddo
@@ -4603,16 +4601,6 @@ end function diag_ustar
     
     !-----------------------------------------------------------------------
 
-    use clubb_api_module, only: &
-      l_stats, &
-      l_output_rad_files, & 
-      stats_tsamp,   & 
-      stats_tout,    & 
-      l_stats_samp,  & 
-      l_stats_last, & 
-      l_netcdf, & 
-      l_grads
-
     use clubb_api_module, only:        time_precision, &   !
                                        nvarmax_zm, stats_init_zm_api, & !
                                        nvarmax_zt, stats_init_zt_api, & !
@@ -4628,7 +4616,7 @@ end function diag_ustar
 
     implicit none
 
-    ! Input Variables
+    !----------------------- Input Variables -----------------------
 
     logical, intent(in) :: l_stats_in ! Stats on? T/F
 
@@ -4642,15 +4630,16 @@ end function diag_ustar
 
     real(kind=time_precision), intent(in) ::   delt         ! Timestep (dtmain in CLUBB)         [s]
     
-    ! Output Variables
-    type (stats), intent(out) :: stats_zt,      & ! stats_zt grid
-                                 stats_zm,      & ! stats_zm grid
-                                 stats_rad_zt,  & ! stats_rad_zt grid
-                                 stats_rad_zm,  & ! stats_rad_zm grid
-                                 stats_sfc        ! stats_sfc
+    !----------------------- Output Variables -----------------------
+    type (stats), intent(out), dimension(pcols) :: &
+      stats_zt,      & ! stats_zt grid
+      stats_zm,      & ! stats_zm grid
+      stats_rad_zt,  & ! stats_rad_zt grid
+      stats_rad_zm,  & ! stats_rad_zm grid
+      stats_sfc        ! stats_sfc
 
 
-    !  Local Variables
+    !----------------------- Local Variables -----------------------
 
     !  Namelist Variables
 
@@ -4669,28 +4658,27 @@ end function diag_ustar
       clubb_vars_rad_zm, & 
       clubb_vars_sfc
 
-    !  Local Variables
-
-    logical :: l_error, &
-               first_call = .false.
+    logical :: l_error
 
     character(len=200) :: temp1, sub
 
-    integer :: i, ntot, read_status
+    integer :: i, ntot, read_status, j
     integer :: iunit, ierr
+
+    !----------------------- Begin Code -----------------------
 
     !  Initialize
     l_error = .false.
 
     !  Set stats_variables variables with inputs from calling subroutine
-    l_stats = l_stats_in
+    stats_metadata%l_stats = l_stats_in
     
-    stats_tsamp = stats_tsamp_in
-    stats_tout  = stats_tout_in
+    stats_metadata%stats_tsamp = stats_tsamp_in
+    stats_metadata%stats_tout  = stats_tout_in
 
-    if ( .not. l_stats ) then
-       l_stats_samp  = .false.
-       l_stats_last  = .false.
+    if ( .not. stats_metadata%l_stats ) then
+       stats_metadata%l_stats_samp  = .false.
+       stats_metadata%l_stats_last  = .false.
        return
     end if
 
@@ -4729,214 +4717,214 @@ end function diag_ustar
     call mpi_bcast(clubb_vars_sfc,     var_length*nvarmax_sfc,      mpi_character, mstrid, mpicom, ierr)
     if (ierr /= 0) call endrun(subr//": FATAL: mpi_bcast: clubb_vars_sfc")
 
+
     !  Hardcode these for use in CAM-CLUBB, don't want either
-    l_netcdf = .false.
-    l_grads  = .false.
+    stats_metadata%l_netcdf = .false.
+    stats_metadata%l_grads  = .false.
 
     !  Check sampling and output frequencies
+    do j = 1, pcols
 
-    !  The model time step length, delt (which is dtmain), should multiply
-    !  evenly into the statistical sampling time step length, stats_tsamp.
-    if ( abs( stats_tsamp/delt - floor(stats_tsamp/delt) ) > 1.e-8_r8 ) then
-       l_error = .true.  ! This will cause the run to stop.
-       write(fstderr,*) 'Error:  stats_tsamp should be an even multiple of ',  &
-                        'delt (which is dtmain).  Check the appropriate ',  &
-                        'model.in file.'
-       write(fstderr,*) 'stats_tsamp = ', stats_tsamp
-       write(fstderr,*) 'delt = ', delt
-    endif
+      !  The model time step length, delt (which is dtmain), should multiply
+      !  evenly into the statistical sampling time step length, stats_tsamp.
+      if ( abs( stats_metadata%stats_tsamp/delt - floor(stats_metadata%stats_tsamp/delt) ) > 1.e-8_r8 ) then
+         l_error = .true.  ! This will cause the run to stop.
+         write(fstderr,*) 'Error:  stats_tsamp should be an even multiple of ',  &
+                          'delt (which is dtmain).  Check the appropriate ',  &
+                          'model.in file.'
+         write(fstderr,*) 'stats_tsamp = ', stats_metadata%stats_tsamp
+         write(fstderr,*) 'delt = ', delt
+      endif
 
-    !  Initialize zt (mass points)
+      !  Initialize zt (mass points)
 
-    i = 1
-    do while ( ichar(clubb_vars_zt(i)(1:1)) /= 0 .and. & 
-               len_trim(clubb_vars_zt(i))   /= 0 .and. & 
-               i <= nvarmax_zt )
-       i = i + 1
-    enddo
-    ntot = i - 1
-    if ( ntot == nvarmax_zt ) then
-       write(fstderr,*) "There are more statistical variables listed in ",  &
-                        "clubb_vars_zt than allowed for by nvarmax_zt."
-       write(fstderr,*) "Check the number of variables listed for clubb_vars_zt ",  &
-                        "in the stats namelist, or change nvarmax_zt."
-       write(fstderr,*) "nvarmax_zt = ", nvarmax_zt
-       call endrun ("stats_init_clubb:  number of zt statistical variables exceeds limit")
-    endif
+      i = 1
+      do while ( ichar(clubb_vars_zt(i)(1:1)) /= 0 .and. & 
+                 len_trim(clubb_vars_zt(i))   /= 0 .and. & 
+                 i <= nvarmax_zt )
+         i = i + 1
+      enddo
+      ntot = i - 1
+      if ( ntot == nvarmax_zt ) then
+         write(fstderr,*) "There are more statistical variables listed in ",  &
+                          "clubb_vars_zt than allowed for by nvarmax_zt."
+         write(fstderr,*) "Check the number of variables listed for clubb_vars_zt ",  &
+                          "in the stats namelist, or change nvarmax_zt."
+         write(fstderr,*) "nvarmax_zt = ", nvarmax_zt
+         call endrun ("stats_init_clubb:  number of zt statistical variables exceeds limit")
+      endif
 
-    ! Sets first_call to true if stats_zt%z is unallocated
-    first_call = (.not. allocated(stats_zt%z))
+      stats_zt(j)%num_output_fields = ntot
+      stats_zt(j)%kk = nnzp
 
-    stats_zt%num_output_fields = ntot
-    stats_zt%kk = nnzp
+      allocate( stats_zt(j)%z( stats_zt(j)%kk ) )
 
-    allocate( stats_zt%z( stats_zt%kk ) )
+      allocate( stats_zt(j)%accum_field_values( 1, 1, stats_zt(j)%kk, stats_zt(j)%num_output_fields ) )
+      allocate( stats_zt(j)%accum_num_samples( 1, 1, stats_zt(j)%kk, stats_zt(j)%num_output_fields ) )
+      allocate( stats_zt(j)%l_in_update( 1, 1, stats_zt(j)%kk, stats_zt(j)%num_output_fields ) )
+      call stats_zero( stats_zt(j)%kk, stats_zt(j)%num_output_fields, stats_zt(j)%accum_field_values, &
+                       stats_zt(j)%accum_num_samples, stats_zt(j)%l_in_update )
 
-    allocate( stats_zt%accum_field_values( 1, 1, stats_zt%kk, stats_zt%num_output_fields ) )
-    allocate( stats_zt%accum_num_samples( 1, 1, stats_zt%kk, stats_zt%num_output_fields ) )
-    allocate( stats_zt%l_in_update( 1, 1, stats_zt%kk, stats_zt%num_output_fields ) )
-    call stats_zero( stats_zt%kk, stats_zt%num_output_fields, stats_zt%accum_field_values, &
-                     stats_zt%accum_num_samples, stats_zt%l_in_update )
+      allocate( stats_zt(j)%file%grid_avg_var( stats_zt(j)%num_output_fields ) )
+      allocate( stats_zt(j)%file%z( stats_zt(j)%kk ) )
 
-    allocate( stats_zt%file%grid_avg_var( stats_zt%num_output_fields ) )
-    allocate( stats_zt%file%z( stats_zt%kk ) )
+      !  Default initialization for array indices for zt
+      call stats_init_zt_api( clubb_vars_zt, &
+                              l_error, &
+                              stats_metadata, stats_zt(j) )
 
-    !  Default initialization for array indices for zt
-    if (first_call) then
-      call stats_init_zt_api( clubb_vars_zt, l_error, &
-                              stats_zt )
-    end if
+      !  Initialize zm (momentum points)
 
-    !  Initialize zm (momentum points)
+      i = 1
+      do while ( ichar(clubb_vars_zm(i)(1:1)) /= 0  .and. & 
+                 len_trim(clubb_vars_zm(i)) /= 0    .and. & 
+                 i <= nvarmax_zm )
+         i = i + 1
+      end do
+      ntot = i - 1
+      if ( ntot == nvarmax_zm ) then
+         write(fstderr,*) "There are more statistical variables listed in ",  &
+                          "clubb_vars_zm than allowed for by nvarmax_zm."
+         write(fstderr,*) "Check the number of variables listed for clubb_vars_zm ",  &
+                          "in the stats namelist, or change nvarmax_zm."
+         write(fstderr,*) "nvarmax_zm = ", nvarmax_zm
+         call endrun ("stats_init_clubb:  number of zm statistical variables exceeds limit")
+      endif
 
-    i = 1
-    do while ( ichar(clubb_vars_zm(i)(1:1)) /= 0  .and. & 
-               len_trim(clubb_vars_zm(i)) /= 0    .and. & 
-               i <= nvarmax_zm )
-       i = i + 1
-    end do
-    ntot = i - 1
-    if ( ntot == nvarmax_zm ) then
-       write(fstderr,*) "There are more statistical variables listed in ",  &
-                        "clubb_vars_zm than allowed for by nvarmax_zm."
-       write(fstderr,*) "Check the number of variables listed for clubb_vars_zm ",  &
-                        "in the stats namelist, or change nvarmax_zm."
-       write(fstderr,*) "nvarmax_zm = ", nvarmax_zm
-       call endrun ("stats_init_clubb:  number of zm statistical variables exceeds limit")
-    endif
+      stats_zm(j)%num_output_fields = ntot
+      stats_zm(j)%kk = nnzp
 
-    stats_zm%num_output_fields = ntot
-    stats_zm%kk = nnzp
+      allocate( stats_zm(j)%z( stats_zm(j)%kk ) )
 
-    allocate( stats_zm%z( stats_zm%kk ) )
+      allocate( stats_zm(j)%accum_field_values( 1, 1, stats_zm(j)%kk, stats_zm(j)%num_output_fields ) )
+      allocate( stats_zm(j)%accum_num_samples( 1, 1, stats_zm(j)%kk, stats_zm(j)%num_output_fields ) )
+      allocate( stats_zm(j)%l_in_update( 1, 1, stats_zm(j)%kk, stats_zm(j)%num_output_fields ) )
+      call stats_zero( stats_zm(j)%kk, stats_zm(j)%num_output_fields, stats_zm(j)%accum_field_values, &
+                       stats_zm(j)%accum_num_samples, stats_zm(j)%l_in_update )
 
-    allocate( stats_zm%accum_field_values( 1, 1, stats_zm%kk, stats_zm%num_output_fields ) )
-    allocate( stats_zm%accum_num_samples( 1, 1, stats_zm%kk, stats_zm%num_output_fields ) )
-    allocate( stats_zm%l_in_update( 1, 1, stats_zm%kk, stats_zm%num_output_fields ) )
-    call stats_zero( stats_zm%kk, stats_zm%num_output_fields, stats_zm%accum_field_values, &
-                     stats_zm%accum_num_samples, stats_zm%l_in_update )
+      allocate( stats_zm(j)%file%grid_avg_var( stats_zm(j)%num_output_fields ) )
+      allocate( stats_zm(j)%file%z( stats_zm(j)%kk ) )
 
-    allocate( stats_zm%file%grid_avg_var( stats_zm%num_output_fields ) )
-    allocate( stats_zm%file%z( stats_zm%kk ) )
+      call stats_init_zm_api( clubb_vars_zm, &
+                              l_error, &
+                              stats_metadata, stats_zm(j) )
 
-    if (first_call) then
-      call stats_init_zm_api( clubb_vars_zm, l_error, &
-                              stats_zm )
-    end if
+      !  Initialize rad_zt (radiation points)
 
-    !  Initialize rad_zt (radiation points)
+      if (stats_metadata%l_output_rad_files) then
+      
+         i = 1
+         do while ( ichar(clubb_vars_rad_zt(i)(1:1)) /= 0  .and. & 
+                    len_trim(clubb_vars_rad_zt(i))   /= 0  .and. & 
+                    i <= nvarmax_rad_zt )
+            i = i + 1
+         end do
+         ntot = i - 1
+         if ( ntot == nvarmax_rad_zt ) then
+            write(fstderr,*) "There are more statistical variables listed in ",  &
+                             "clubb_vars_rad_zt than allowed for by nvarmax_rad_zt."
+            write(fstderr,*) "Check the number of variables listed for clubb_vars_rad_zt ",  &
+                             "in the stats namelist, or change nvarmax_rad_zt."
+            write(fstderr,*) "nvarmax_rad_zt = ", nvarmax_rad_zt
+            call endrun ("stats_init_clubb:  number of rad_zt statistical variables exceeds limit")
+         endif
 
-    if (l_output_rad_files) then
-    
-       i = 1
-       do while ( ichar(clubb_vars_rad_zt(i)(1:1)) /= 0  .and. & 
-                  len_trim(clubb_vars_rad_zt(i))   /= 0  .and. & 
-                  i <= nvarmax_rad_zt )
-          i = i + 1
-       end do
-       ntot = i - 1
-       if ( ntot == nvarmax_rad_zt ) then
-          write(fstderr,*) "There are more statistical variables listed in ",  &
-                           "clubb_vars_rad_zt than allowed for by nvarmax_rad_zt."
-          write(fstderr,*) "Check the number of variables listed for clubb_vars_rad_zt ",  &
-                           "in the stats namelist, or change nvarmax_rad_zt."
-          write(fstderr,*) "nvarmax_rad_zt = ", nvarmax_rad_zt
-          call endrun ("stats_init_clubb:  number of rad_zt statistical variables exceeds limit")
-       endif
+        stats_rad_zt(j)%num_output_fields = ntot
+        stats_rad_zt(j)%kk = nnrad_zt
 
-      stats_rad_zt%num_output_fields = ntot
-      stats_rad_zt%kk = nnrad_zt
+        allocate( stats_rad_zt(j)%z( stats_rad_zt(j)%kk ) )
 
-      allocate( stats_rad_zt%z( stats_rad_zt%kk ) )
+        allocate( stats_rad_zt(j)%accum_field_values( 1, 1, stats_rad_zt(j)%kk, stats_rad_zt(j)%num_output_fields ) )
+        allocate( stats_rad_zt(j)%accum_num_samples( 1, 1, stats_rad_zt(j)%kk, stats_rad_zt(j)%num_output_fields ) )
+        allocate( stats_rad_zt(j)%l_in_update( 1, 1, stats_rad_zt(j)%kk, stats_rad_zt(j)%num_output_fields ) )
 
-      allocate( stats_rad_zt%accum_field_values( 1, 1, stats_rad_zt%kk, stats_rad_zt%num_output_fields ) )
-      allocate( stats_rad_zt%accum_num_samples( 1, 1, stats_rad_zt%kk, stats_rad_zt%num_output_fields ) )
-      allocate( stats_rad_zt%l_in_update( 1, 1, stats_rad_zt%kk, stats_rad_zt%num_output_fields ) )
+        call stats_zero( stats_rad_zt(j)%kk, stats_rad_zt(j)%num_output_fields, stats_rad_zt(j)%accum_field_values, &
+                       stats_rad_zt(j)%accum_num_samples, stats_rad_zt(j)%l_in_update )
 
-      call stats_zero( stats_rad_zt%kk, stats_rad_zt%num_output_fields, stats_rad_zt%accum_field_values, &
-                     stats_rad_zt%accum_num_samples, stats_rad_zt%l_in_update )
+        allocate( stats_rad_zt(j)%file%grid_avg_var( stats_rad_zt(j)%num_output_fields ) )
+        allocate( stats_rad_zt(j)%file%z( stats_rad_zt(j)%kk ) )
 
-      allocate( stats_rad_zt%file%grid_avg_var( stats_rad_zt%num_output_fields ) )
-      allocate( stats_rad_zt%file%z( stats_rad_zt%kk ) )
+         call stats_init_rad_zt_api( clubb_vars_rad_zt, &
+                                     l_error, &
+                                     stats_metadata, stats_rad_zt(j) )
 
-       call stats_init_rad_zt_api( clubb_vars_rad_zt, l_error, &
-                                   stats_rad_zt )
-
-       !  Initialize rad_zm (radiation points)
- 
-       i = 1
-       do while ( ichar(clubb_vars_rad_zm(i)(1:1)) /= 0 .and. & 
-                  len_trim(clubb_vars_rad_zm(i))   /= 0 .and. & 
-                  i <= nvarmax_rad_zm )
-          i = i + 1
-       end do
-       ntot = i - 1
-       if ( ntot == nvarmax_rad_zm ) then
-          write(fstderr,*) "There are more statistical variables listed in ",  &
-                           "clubb_vars_rad_zm than allowed for by nvarmax_rad_zm."
-          write(fstderr,*) "Check the number of variables listed for clubb_vars_rad_zm ",  &
-                           "in the stats namelist, or change nvarmax_rad_zm."
-          write(fstderr,*) "nvarmax_rad_zm = ", nvarmax_rad_zm
-          call endrun ("stats_init_clubb:  number of rad_zm statistical variables exceeds limit")
-       endif
-
-       stats_rad_zm%num_output_fields = ntot
-       stats_rad_zm%kk = nnrad_zm
-
-       allocate( stats_rad_zm%z( stats_rad_zm%kk ) )
-
-       allocate( stats_rad_zm%accum_field_values( 1, 1, stats_rad_zm%kk, stats_rad_zm%num_output_fields ) )
-       allocate( stats_rad_zm%accum_num_samples( 1, 1, stats_rad_zm%kk, stats_rad_zm%num_output_fields ) )
-       allocate( stats_rad_zm%l_in_update( 1, 1, stats_rad_zm%kk, stats_rad_zm%num_output_fields ) )
-
-       call stats_zero( stats_rad_zm%kk, stats_rad_zm%num_output_fields, stats_rad_zm%accum_field_values, &
-                     stats_rad_zm%accum_num_samples, stats_rad_zm%l_in_update )
-
-       allocate( stats_rad_zm%file%grid_avg_var( stats_rad_zm%num_output_fields ) )
-       allocate( stats_rad_zm%file%z( stats_rad_zm%kk ) )
+         !  Initialize rad_zm (radiation points)
    
-       call stats_init_rad_zm_api( clubb_vars_rad_zm, l_error, &
-                                   stats_rad_zm )
-    end if ! l_output_rad_files
+         i = 1
+         do while ( ichar(clubb_vars_rad_zm(i)(1:1)) /= 0 .and. & 
+                    len_trim(clubb_vars_rad_zm(i))   /= 0 .and. & 
+                    i <= nvarmax_rad_zm )
+            i = i + 1
+         end do
+         ntot = i - 1
+         if ( ntot == nvarmax_rad_zm ) then
+            write(fstderr,*) "There are more statistical variables listed in ",  &
+                             "clubb_vars_rad_zm than allowed for by nvarmax_rad_zm."
+            write(fstderr,*) "Check the number of variables listed for clubb_vars_rad_zm ",  &
+                             "in the stats namelist, or change nvarmax_rad_zm."
+            write(fstderr,*) "nvarmax_rad_zm = ", nvarmax_rad_zm
+            call endrun ("stats_init_clubb:  number of rad_zm statistical variables exceeds limit")
+         endif
+
+         stats_rad_zm(j)%num_output_fields = ntot
+         stats_rad_zm(j)%kk = nnrad_zm
+
+         allocate( stats_rad_zm(j)%z( stats_rad_zm(j)%kk ) )
+
+         allocate( stats_rad_zm(j)%accum_field_values( 1, 1, stats_rad_zm(j)%kk, stats_rad_zm(j)%num_output_fields ) )
+         allocate( stats_rad_zm(j)%accum_num_samples( 1, 1, stats_rad_zm(j)%kk, stats_rad_zm(j)%num_output_fields ) )
+         allocate( stats_rad_zm(j)%l_in_update( 1, 1, stats_rad_zm(j)%kk, stats_rad_zm(j)%num_output_fields ) )
+
+         call stats_zero( stats_rad_zm(j)%kk, stats_rad_zm(j)%num_output_fields, stats_rad_zm(j)%accum_field_values, &
+                       stats_rad_zm(j)%accum_num_samples, stats_rad_zm(j)%l_in_update )
+
+         allocate( stats_rad_zm(j)%file%grid_avg_var( stats_rad_zm(j)%num_output_fields ) )
+         allocate( stats_rad_zm(j)%file%z( stats_rad_zm(j)%kk ) )
+     
+         call stats_init_rad_zm_api( clubb_vars_rad_zm, &
+                                     l_error, &
+                                     stats_metadata, stats_rad_zm(j) )
+      end if ! l_output_rad_files
 
 
-    !  Initialize sfc (surface point)
+      !  Initialize sfc (surface point)
 
-    i = 1
-    do while ( ichar(clubb_vars_sfc(i)(1:1)) /= 0 .and. & 
-               len_trim(clubb_vars_sfc(i))   /= 0 .and. & 
-               i <= nvarmax_sfc )
-       i = i + 1
+      i = 1
+      do while ( ichar(clubb_vars_sfc(i)(1:1)) /= 0 .and. & 
+                 len_trim(clubb_vars_sfc(i))   /= 0 .and. & 
+                 i <= nvarmax_sfc )
+         i = i + 1
+      end do
+      ntot = i - 1
+      if ( ntot == nvarmax_sfc ) then
+         write(fstderr,*) "There are more statistical variables listed in ",  &
+                          "clubb_vars_sfc than allowed for by nvarmax_sfc."
+         write(fstderr,*) "Check the number of variables listed for clubb_vars_sfc ",  &
+                          "in the stats namelist, or change nvarmax_sfc."
+         write(fstderr,*) "nvarmax_sfc = ", nvarmax_sfc
+         call endrun ("stats_init_clubb:  number of sfc statistical variables exceeds limit")
+      endif
+
+      stats_sfc(j)%num_output_fields = ntot
+      stats_sfc(j)%kk = 1
+
+      allocate( stats_sfc(j)%z( stats_sfc(j)%kk ) )
+
+      allocate( stats_sfc(j)%accum_field_values( 1, 1, stats_sfc(j)%kk, stats_sfc(j)%num_output_fields ) )
+      allocate( stats_sfc(j)%accum_num_samples( 1, 1, stats_sfc(j)%kk, stats_sfc(j)%num_output_fields ) )
+      allocate( stats_sfc(j)%l_in_update( 1, 1, stats_sfc(j)%kk, stats_sfc(j)%num_output_fields ) )
+
+      call stats_zero( stats_sfc(j)%kk, stats_sfc(j)%num_output_fields, stats_sfc(j)%accum_field_values, &
+                       stats_sfc(j)%accum_num_samples, stats_sfc(j)%l_in_update )
+
+      allocate( stats_sfc(j)%file%grid_avg_var( stats_sfc(j)%num_output_fields ) )
+      allocate( stats_sfc(j)%file%z( stats_sfc(j)%kk ) )
+
+      call stats_init_sfc_api( clubb_vars_sfc, &
+                               l_error, &
+                               stats_metadata, stats_sfc(j) )
+
     end do
-    ntot = i - 1
-    if ( ntot == nvarmax_sfc ) then
-       write(fstderr,*) "There are more statistical variables listed in ",  &
-                        "clubb_vars_sfc than allowed for by nvarmax_sfc."
-       write(fstderr,*) "Check the number of variables listed for clubb_vars_sfc ",  &
-                        "in the stats namelist, or change nvarmax_sfc."
-       write(fstderr,*) "nvarmax_sfc = ", nvarmax_sfc
-       call endrun ("stats_init_clubb:  number of sfc statistical variables exceeds limit")
-    endif
-
-    stats_sfc%num_output_fields = ntot
-    stats_sfc%kk = 1
-
-    allocate( stats_sfc%z( stats_sfc%kk ) )
-
-    allocate( stats_sfc%accum_field_values( 1, 1, stats_sfc%kk, stats_sfc%num_output_fields ) )
-    allocate( stats_sfc%accum_num_samples( 1, 1, stats_sfc%kk, stats_sfc%num_output_fields ) )
-    allocate( stats_sfc%l_in_update( 1, 1, stats_sfc%kk, stats_sfc%num_output_fields ) )
-
-    call stats_zero( stats_sfc%kk, stats_sfc%num_output_fields, stats_sfc%accum_field_values, &
-                     stats_sfc%accum_num_samples, stats_sfc%l_in_update )
-
-    allocate( stats_sfc%file%grid_avg_var( stats_sfc%num_output_fields ) )
-    allocate( stats_sfc%file%z( stats_sfc%kk ) )
-
-    if (first_call) then
-      call stats_init_sfc_api( clubb_vars_sfc, l_error, &
-                               stats_sfc )
-    end if
 
     ! Check for errors
 
@@ -4944,48 +4932,51 @@ end function diag_ustar
        call endrun ('stats_init:  errors found')
     endif
 
-!   Now call add fields
-    if (first_call) then
+    ! Now call add fields
       
-      do i = 1, stats_zt%num_output_fields
-      
-        temp1 = trim(stats_zt%file%grid_avg_var(i)%name)
-        sub   = temp1
-        if (len(temp1) > max_fieldname_len) sub = temp1(1:max_fieldname_len)
-       
-          call addfld(trim(sub),(/ 'ilev' /),&
-               'A',trim(stats_zt%file%grid_avg_var(i)%units),trim(stats_zt%file%grid_avg_var(i)%description))
-      enddo
-      
-      do i = 1, stats_zm%num_output_fields
-      
-        temp1 = trim(stats_zm%file%grid_avg_var(i)%name)
-        sub   = temp1
-        if (len(temp1) > max_fieldname_len) sub = temp1(1:max_fieldname_len)
-      
-         call addfld(trim(sub),(/ 'ilev' /),&
-              'A',trim(stats_zm%file%grid_avg_var(i)%units),trim(stats_zm%file%grid_avg_var(i)%description))
-      enddo
+    do i = 1, stats_zt(1)%num_output_fields
+    
+      temp1 = trim(stats_zt(1)%file%grid_avg_var(i)%name)
+      sub   = temp1
+      if (len(temp1) > max_fieldname_len) sub = temp1(1:max_fieldname_len)
+     
+        call addfld( trim(sub), (/ 'ilev' /), 'A', &
+                     trim(stats_zt(1)%file%grid_avg_var(i)%units), &
+                     trim(stats_zt(1)%file%grid_avg_var(i)%description) )
+    enddo
+    
+    do i = 1, stats_zm(1)%num_output_fields
+    
+      temp1 = trim(stats_zm(1)%file%grid_avg_var(i)%name)
+      sub   = temp1
+      if (len(temp1) > max_fieldname_len) sub = temp1(1:max_fieldname_len)
+    
+       call addfld( trim(sub), (/ 'ilev' /), 'A', &
+                    trim(stats_zm(1)%file%grid_avg_var(i)%units), &
+                    trim(stats_zm(1)%file%grid_avg_var(i)%description) )
+    enddo
 
-      if (l_output_rad_files) then     
+    if (stats_metadata%l_output_rad_files) then     
 
-         do i = 1, stats_rad_zt%num_output_fields
-            call addfld(trim(stats_rad_zt%file%grid_avg_var(i)%name),(/ 'ilev' /),&
-               'A',trim(stats_rad_zt%file%grid_avg_var(i)%units),trim(stats_rad_zt%file%grid_avg_var(i)%description))
-         enddo
-      
-         do i = 1, stats_rad_zm%num_output_fields
-            call addfld(trim(stats_rad_zm%file%grid_avg_var(i)%name),(/ 'ilev' /),&
-               'A',trim(stats_rad_zm%file%grid_avg_var(i)%units),trim(stats_rad_zm%file%grid_avg_var(i)%description))
-         enddo
-      endif
-      
-      do i = 1, stats_sfc%num_output_fields
-         call addfld(trim(stats_sfc%file%grid_avg_var(i)%name),horiz_only,&
-              'A',trim(stats_sfc%file%grid_avg_var(i)%units),trim(stats_sfc%file%grid_avg_var(i)%description))
-      enddo
-      
-    end if
+       do i = 1, stats_rad_zt(1)%num_output_fields
+          call addfld( trim(stats_rad_zt(1)%file%grid_avg_var(i)%name), (/ 'ilev' /), 'A', &
+                       trim(stats_rad_zt(1)%file%grid_avg_var(i)%units), &
+                       trim(stats_rad_zt(1)%file%grid_avg_var(i)%description) )
+       enddo
+    
+       do i = 1, stats_rad_zm(1)%num_output_fields
+          call addfld( trim(stats_rad_zm(1)%file%grid_avg_var(i)%name), (/ 'ilev' /), 'A', &
+                       trim(stats_rad_zm(1)%file%grid_avg_var(i)%units), &
+                       trim(stats_rad_zm(1)%file%grid_avg_var(i)%description) )
+       enddo
+    endif
+    
+    do i = 1, stats_sfc(1)%num_output_fields
+       call addfld( trim(stats_sfc(1)%file%grid_avg_var(i)%name), horiz_only, 'A', &
+                    trim(stats_sfc(1)%file%grid_avg_var(i)%units), &
+                    trim(stats_sfc(1)%file%grid_avg_var(i)%description) )
+    enddo
+    
 
     return
 
@@ -5012,10 +5003,6 @@ end function diag_ustar
 
     use clubb_api_module, only: &
         fstderr, & ! Constant(s)
-        l_stats_last, & 
-        stats_tsamp, & 
-        stats_tout, &
-        l_output_rad_files, &
         clubb_at_least_debug_level_api ! Procedure(s)
 
     use cam_abortutils,  only: endrun
@@ -5045,7 +5032,7 @@ end function diag_ustar
 
     !  Check if it is time to write to file
 
-    if ( .not. l_stats_last ) return
+    if ( .not. stats_metadata%l_stats_last ) return
 
     !  Initialize
     l_error = .false.
@@ -5053,7 +5040,7 @@ end function diag_ustar
     !  Compute averages
     call stats_avg( stats_zt%kk, stats_zt%num_output_fields, stats_zt%accum_field_values, stats_zt%accum_num_samples )
     call stats_avg( stats_zm%kk, stats_zm%num_output_fields, stats_zm%accum_field_values, stats_zm%accum_num_samples )
-    if (l_output_rad_files) then
+    if (stats_metadata%l_output_rad_files) then
       call stats_avg( stats_rad_zt%kk, stats_rad_zt%num_output_fields, stats_rad_zt%accum_field_values, &
                       stats_rad_zt%accum_num_samples )
       call stats_avg( stats_rad_zm%kk, stats_rad_zm%num_output_fields, stats_rad_zm%accum_field_values, &
@@ -5078,7 +5065,7 @@ end function diag_ustar
       enddo   
     enddo
 
-    if (l_output_rad_files) then 
+    if (stats_metadata%l_output_rad_files) then 
       do i = 1, stats_rad_zt%num_output_fields
         do k = 1, stats_rad_zt%kk 
           out_radzt(thecol,pverp-k+1,i) = stats_rad_zt%accum_field_values(1,1,k,i)
@@ -5111,7 +5098,7 @@ end function diag_ustar
                      stats_zt%accum_num_samples, stats_zt%l_in_update )
     call stats_zero( stats_zm%kk, stats_zm%num_output_fields, stats_zm%accum_field_values, &
                      stats_zm%accum_num_samples, stats_zm%l_in_update )
-    if (l_output_rad_files) then
+    if (stats_metadata%l_output_rad_files) then
       call stats_zero( stats_rad_zt%kk, stats_rad_zt%num_output_fields, stats_rad_zt%accum_field_values, &
                        stats_rad_zt%accum_num_samples, stats_rad_zt%l_in_update )
       call stats_zero( stats_rad_zm%kk, stats_rad_zm%num_output_fields, stats_rad_zm%accum_field_values, &

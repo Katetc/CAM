@@ -20,6 +20,7 @@ module subcol_SILHS
   use clubb_intr, only: &
         clubb_config_flags, &
         clubb_params, &
+        stats_metadata, &
         stats_zt, stats_zm, stats_sfc, &
         pdf_params_chnk
         
@@ -603,8 +604,6 @@ contains
 
                                          setup_pdf_parameters_api, &
 
-                                         l_stats_samp, &
-
                                          hydromet_pdf_parameter, &
 
                                          zm2zt_api, setup_grid_heights_api, &
@@ -1134,7 +1133,7 @@ contains
                                      Nc_in_cloud, cld_frac_in, khzm, &                  ! In
                                      ice_supersat_frac_in, hydromet, wphydrometp, &     ! In
                                      corr_array_n_cloud, corr_array_n_below, &          ! In
-                                     pdf_params_chnk(lchnk), l_stats_samp, &            ! In
+                                     pdf_params_chnk(lchnk), &                          ! In
                                      clubb_params, &                                    ! In
                                      clubb_config_flags%iiPDF_type, &                   ! In
                                      clubb_config_flags%l_use_precip_frac, &            ! In
@@ -1143,6 +1142,7 @@ contains
                                      clubb_config_flags%l_calc_w_corr, &                ! In
                                      clubb_config_flags%l_const_Nc_in_cloud, &          ! In
                                      clubb_config_flags%l_fix_w_chi_eta_correlations, & ! In
+                                     stats_metadata, &                                  ! In
                                      stats_zt, stats_zm, stats_sfc, &                   ! In
                                      hydrometp2, &                                      ! Inout
                                      mu_x_1, mu_x_2, &                                  ! Out
@@ -1230,7 +1230,8 @@ contains
                     clubb_config_flags%l_tke_aniso, &                     ! In
                     clubb_config_flags%l_standard_term_ta, &              ! In
                     vert_decorr_coef, &                                   ! In
-                    stats_lh_zt, stats_lh_sfc, &                          ! intent(inout)
+                    stats_metadata, &                                     ! In
+                    stats_lh_zt, stats_lh_sfc, &                          ! InOut
                     X_nl_all_levs, X_mixt_comp_all_levs, &                ! Out
                     lh_sample_point_weights)                              ! Out
 
